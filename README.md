@@ -223,7 +223,7 @@ console.log(account.balance); // "50.00"
 - **What is the practical difference between a data property and an accessor property?** A data property holds a value directly (value, writable flags), whereas an accessor property defines get/set functions and stores no value - logic runs on every read or write.
 - **Why might you choose Object.defineProperty over the get/set shorthand?** Object.defineProperty lets you also set descriptor flags (enumerable, configurable) and attach getters/setters to an object after creation, useful for libraries or meta-programming.
 - **Can a property have both a value and a get/set in its descriptor?** No. A property descriptor is either a data descriptor (value, writable) or an accessor descriptor (get, set). Mixing them throws a TypeError.
-  Higher‑order functions
+### Higher-order functions
 
 #### Definition
 
@@ -1342,15 +1342,15 @@ read();
 - **How do you run asynchronous operations in parallel in Node.js?** By starting them without awaiting immediately and then awaiting them together using Promise.all or related combinators.
 - **What happens if you forget to await a Promise inside an async function?** The function continues execution and returns a pending Promise. Errors may become unhandled rejections if not later awaited or caught.
 - **How should errors be propagated in async/await code?** Throw the error inside the async function or let it bubble up; the returned Promise will be rejected and can be handled by a surrounding try/catch or by a .catch() on the caller.
-  File System – Sync vs Async vs Promises
+### File System - Sync vs Async vs Promises
 
 #### Definition
 
 The Node.js fs module provides APIs to interact with the file system using three different styles:
-Synchronous (fs.*) – blocking operations that halt the event loop until completion.
-Asynchronous Callback-based (fs.*) – non-blocking operations using the error-first callback pattern.
+- Synchronous (fs.*) - blocking operations that halt the event loop until completion.
+- Asynchronous Callback-based (fs.*) - non-blocking operations using the error-first callback pattern.
+- Promise-based (fs/promises) - non-blocking operations that return Promises and integrate naturally with async/await.
 
-Promise-based (fs/promises) – non-blocking operations that return Promises and integrate naturally with async / await.
 All three ultimately perform the same underlying I/O work, but differ in how they affect the event loop and how results are consumed.
 #### Example
 
@@ -1757,47 +1757,47 @@ React emphasizes unidirectional data flow and explicit communication patterns. C
 - **What is the difference between lifting state up and using Context API?** Lifting state up moves shared state to the nearest common ancestor, making data flow explicit but potentially causing prop drilling. Context API allows components to access state directly without passing props through every level, but can make data flow less transparent.
 - **How do custom hooks help with component communication?** Custom hooks encapsulate and share stateful logic between components, allowing multiple components to use the same logic without sharing the actual state instance. Each component gets its own isolated state from the hook.
 - **When should you upgrade from local state to a state management library?** Move to state management when: multiple unrelated components need the same data, you need time-travel debugging, state logic becomes complex and hard to test, or when prop drilling and context become unmanageable.
-  Communication Patterns Reference
-  1. Props (Parent → Child)
-  Step 1: Parent passes data to child via props: `<Child data={value} />`.
-  Step 2: Child receives props as function parameters: function Child({ data }).
-  Step 3: Child uses props in rendering and logic; props are read-only.
-  Note: Props changes trigger re-renders. Use React.memo() to optimize if props haven't changed.
-  2. Callback Functions (Child → Parent)
-  Step 1: Parent passes callback function as prop: `<Child onUpdate={handleUpdate} />`.
-  Step 2: Child calls callback with data: props.onUpdate(newData).
-  Step 3: Parent handles the callback and updates its state accordingly.
-  Note: Use useCallback() to prevent unnecessary re-renders of child components.
-  3. Lifting State Up (Sibling communication)
-  Step 1: Identify the nearest common parent of components that need shared state.
-  Step 2: Move the state to the common parent component.
-  Step 3: Pass state and callbacks down as props to child components.
-  Note: This makes data flow explicit but can lead to prop drilling in deep hierarchies.
-  4. Context API (Any components)
-  Step 1: Create context: const MyContext = createContext().
-  Step 2: Wrap components with Provider: `<MyContext.Provider value={data}>`.
-  Step 3: Consume context in children: const data = useContext(MyContext).
-  Note: Context value changes trigger re-renders in all consuming components. Optimize with memoization.
-  5. useReducer + Context (Global state)
-  Step 1: Create reducer function and initial state.
-  Step 2: Use useReducer hook in parent component.
-  Step 3: Provide dispatch and state via Context to child components.
-  Note: Similar to Redux pattern but built-in. Good for complex state transitions.
-  6. Custom Hooks (Logic sharing)
-  Step 1: Create hook that uses built-in hooks: function useCustomHook() { ... }.
-  Step 2: Multiple components use the same custom hook.
-  Step 3: Each component gets isolated state instance from the hook.
-  Note: Hooks share logic but not state. For shared state, combine with Context or state management.
-  7. Forward Refs (Parent accessing Child)
-  Step 1: Wrap child component with forwardRef().
-  Step 2: Child accepts ref as second parameter and attaches to DOM element.
-  Step 3: Parent creates ref and passes to child: `<Child ref={childRef} />`.
-  Note: Use sparingly as it breaks component encapsulation. Prefer declarative props when possible.
-  8. State Management Libraries (Global)
-  Step 1: Choose library (Redux Toolkit, Zustand, Jotai) and set up store.
-  Step 2: Create slices/stores with state and actions.
-  Step 3: Components use hooks to access state and dispatch actions.
-  Note: Redux Toolkit is recommended for Redux; Zustand is simpler for most use cases.
+#### Communication Patterns Reference
+1. Props (Parent -> Child)
+   - Step 1: Parent passes data to child via props: `<Child data={value} />`.
+   - Step 2: Child receives props as function parameters: function Child({ data }).
+   - Step 3: Child uses props in rendering and logic; props are read-only.
+   - Note: Props changes trigger re-renders. Use React.memo() to optimize if props haven't changed.
+2. Callback Functions (Child -> Parent)
+   - Step 1: Parent passes callback function as prop: `<Child onUpdate={handleUpdate} />`.
+   - Step 2: Child calls callback with data: props.onUpdate(newData).
+   - Step 3: Parent handles the callback and updates its state accordingly.
+   - Note: Use useCallback() to prevent unnecessary re-renders of child components.
+3. Lifting State Up (Sibling communication)
+   - Step 1: Identify the nearest common parent of components that need shared state.
+   - Step 2: Move the state to the common parent component.
+   - Step 3: Pass state and callbacks down as props to child components.
+   - Note: This makes data flow explicit but can lead to prop drilling in deep hierarchies.
+4. Context API (Any components)
+   - Step 1: Create context: const MyContext = createContext().
+   - Step 2: Wrap components with Provider: `<MyContext.Provider value={data}>`.
+   - Step 3: Consume context in children: const data = useContext(MyContext).
+   - Note: Context value changes trigger re-renders in all consuming components. Optimize with memoization.
+5. useReducer + Context (Global state)
+   - Step 1: Create reducer function and initial state.
+   - Step 2: Use useReducer hook in parent component.
+   - Step 3: Provide dispatch and state via Context to child components.
+   - Note: Similar to Redux pattern but built-in. Good for complex state transitions.
+6. Custom Hooks (Logic sharing)
+   - Step 1: Create hook that uses built-in hooks: function useCustomHook() { ... }.
+   - Step 2: Multiple components use the same custom hook.
+   - Step 3: Each component gets isolated state instance from the hook.
+   - Note: Hooks share logic but not state. For shared state, combine with Context or state management.
+7. Forward Refs (Parent accessing Child)
+   - Step 1: Wrap child component with forwardRef().
+   - Step 2: Child accepts ref as second parameter and attaches to DOM element.
+   - Step 3: Parent creates ref and passes to child: `<Child ref={childRef} />`.
+   - Note: Use sparingly as it breaks component encapsulation. Prefer declarative props when possible.
+8. State Management Libraries (Global)
+   - Step 1: Choose library (Redux Toolkit, Zustand, Jotai) and set up store.
+   - Step 2: Create slices/stores with state and actions.
+   - Step 3: Components use hooks to access state and dispatch actions.
+   - Note: Redux Toolkit is recommended for Redux; Zustand is simpler for most use cases.
   Built‑in hooks
 
 #### Definition
@@ -2420,37 +2420,37 @@ Vue.js provides multiple patterns for component communication, each suited for d
 - **What is the difference between using slots and props for component content?** Props pass data values to child components, while slots pass template content. Use props for simple data values and configuration. Use slots when the parent needs control over the rendering of specific sections of the child component, or when building layout components that need to be highly flexible.
 - **How does v-model work under the hood in Vue 3?** v-model is syntactic sugar for :modelValue prop plus @update:modelValue event. For custom components, you define a modelValue prop and emit update:modelValue events. Vue 3 also supports multiple v-model bindings using v-model:propName syntax.
 - **When should you upgrade from local state to Pinia for state management?** Move to Pinia when: multiple unrelated components need the same data, you need to share state across routes, you require time-travel debugging, you have complex state logic that needs to be tested independently, or when prop drilling becomes unwieldy and hard to maintain.
-  Communication Patterns Reference
-  1. Props (Parent → Child)
-  Step 1: Child defines props using defineProps in `<script setup>` or props option.
-  Step 2: Parent passes data via attributes using v-bind (e.g., :prop="value").
-  Step 3: Child uses props as reactive, read-only variables in template or script.
-  Note: Props are reactive and should not be mutated in the child to maintain unidirectional data flow.
-  2. Custom Events (Child → Parent)
-  Step 1: Child defines events using defineEmits in `<script setup>` or emits option.
-  Step 2: Child emits event with optional payload using emit('event', data).
-  Step 3: Parent listens with v-on (e.g., @event="handler") and processes the event.
-  Note: Use update:propName event names for consistency with v-model.
-  3. v-model (Two-Way Binding)
-  Step 1: Child accepts modelValue prop (or custom prop like name).
-  Step 2: Child emits update:modelValue (or update:name) with new value.
-  Step 3: Parent uses v-model="data" (or v-model:name="data") to sync state.
-  Note: Supports custom prop/event names for multiple bindings (e.g., v-model:name).
-  4. Slots (Content Distribution)
-  Step 1: Child defines `<slot>` placeholders in its template (default or named).
-  Step 2: Parent provides content between component tags, optionally using v-slot for named/scoped slots.
-  Step 3: Vue renders parent's content in child's slots, with scoped slots passing child data to parent.
-  Note: Scoped slots (e.g., v-slot="{ item }") allow child-to-parent data sharing.
-  5. Provide/Inject (Deep Nesting)
-  Step 1: Ancestor provides data using provide(key, value) in `<script setup>`.
-  Step 2: Descendant (any level) injects data with inject(key).
-  Step 3: Descendant uses injected data, which is reactive if provided as ref or reactive.
-  Note: Ideal for avoiding prop drilling in deeply nested components.
-  6. State Management with Pinia (Global)
-  Step 1: Create a Pinia store using defineStore with state (e.g., ref), getters (e.g., computed), and actions.
-  Step 2: Components import the store (e.g., useCounterStore) and access state/getters/actions.
-  Step 3: Multiple components share and update the same reactive state.
-  Note: Pinia is Vue 3's recommended state management, similar to MobX; getters provide derived state.
+#### Communication Patterns Reference
+1. Props (Parent -> Child)
+   - Step 1: Child defines props using defineProps in `<script setup>` or props option.
+   - Step 2: Parent passes data via attributes using v-bind (e.g., :prop="value").
+   - Step 3: Child uses props as reactive, read-only variables in template or script.
+   - Note: Props are reactive and should not be mutated in the child to maintain unidirectional data flow.
+2. Custom Events (Child -> Parent)
+   - Step 1: Child defines events using defineEmits in `<script setup>` or emits option.
+   - Step 2: Child emits event with optional payload using emit('event', data).
+   - Step 3: Parent listens with v-on (e.g., @event="handler") and processes the event.
+   - Note: Use update:propName event names for consistency with v-model.
+3. v-model (Two-Way Binding)
+   - Step 1: Child accepts modelValue prop (or custom prop like name).
+   - Step 2: Child emits update:modelValue (or update:name) with new value.
+   - Step 3: Parent uses v-model="data" (or v-model:name="data") to sync state.
+   - Note: Supports custom prop/event names for multiple bindings (e.g., v-model:name).
+4. Slots (Content Distribution)
+   - Step 1: Child defines `<slot>` placeholders in its template (default or named).
+   - Step 2: Parent provides content between component tags, optionally using v-slot for named/scoped slots.
+   - Step 3: Vue renders parent's content in child's slots, with scoped slots passing child data to parent.
+   - Note: Scoped slots (e.g., v-slot="{ item }") allow child-to-parent data sharing.
+5. Provide/Inject (Deep Nesting)
+   - Step 1: Ancestor provides data using provide(key, value) in `<script setup>`.
+   - Step 2: Descendant (any level) injects data with inject(key).
+   - Step 3: Descendant uses injected data, which is reactive if provided as ref or reactive.
+   - Note: Ideal for avoiding prop drilling in deeply nested components.
+6. State Management with Pinia (Global)
+   - Step 1: Create a Pinia store using defineStore with state (e.g., ref), getters (e.g., computed), and actions.
+   - Step 2: Components import the store (e.g., useCounterStore) and access state/getters/actions.
+   - Step 3: Multiple components share and update the same reactive state.
+   - Note: Pinia is Vue 3's recommended state management, similar to MobX; getters provide derived state.
 
 ### Slots & Content Distribution
 
@@ -3017,42 +3017,42 @@ Angular provides a comprehensive set of patterns for component communication, le
 - **What is the difference between @ViewChild and @ContentChild?** @ViewChild accesses elements/components that are part of the component's view (defined in its template), while @ContentChild accesses content that is projected into the component via `<ng-content>` (provided by the parent component).
 - **How does Angular's change detection affect component communication?** Angular's change detection automatically updates views when data changes. With OnPush strategy, components only update when input references change or async pipes receive new values, making input-based communication more efficient but requiring careful immutability practices.
 - **When should you use RxJS Subjects versus simple services for state management?** Use RxJS Subjects when you need reactive programming patterns, multiple subscribers, or complex state transformations. Use simple services for simple data sharing without the need for reactive updates or when the data flow is straightforward.
-  Communication Patterns Reference
-  1. @Input() (Parent → Child)
-  Step 1: Child component defines input properties with @Input() decorator.
-  Step 2: Parent binds data using property binding syntax: [inputName]="value".
-  Step 3: Child uses input properties as regular class properties in template and logic.
-  Note: Inputs are detected by Angular's change detection. Use OnPush strategy with immutable updates for performance.
-  2. @Output() + EventEmitter (Child → Parent)
-  Step 1: Child component defines output properties with @Output() and EventEmitter.
-  Step 2: Child emits events using eventEmitter.emit(payload).
-  Step 3: Parent listens with event binding: (outputName)="handler($event)".
-  Note: Always initialize EventEmitter and type it properly: `@Output() eventName = new EventEmitter<Type>()`.
-  3. [(ngModel)] (Two-Way Binding)
-  Step 1: Import FormsModule in your application module.
-  Step 2: Use [(ngModel)] on form elements: `<input [(ngModel)]="property">`.
-  Step 3: Angular automatically syncs the view and model values.
-  Note: For custom components, implement both @Input() and @Output() with update prefix: @Input() value and @Output() valueChange.
-  4. @ViewChild / @ViewChildren (Parent accessing Child)
-  Step 1: Parent uses @ViewChild decorator to query child component/element.
-  Step 2: Access child after view initialization in ngAfterViewInit lifecycle hook.
-  Step 3: Parent can call child methods or access child properties directly.
-  Note: Use static: true for elements that don't change dynamically; default is static: false.
-  5. Services + Dependency Injection (Any components)
-  Step 1: Create a service with @Injectable() and provide it at appropriate level (root, module, component).
-  Step 2: Inject service into components via constructor: constructor(private service: DataService).
-  Step 3: Components share data through service properties and methods.
-  Note: Service instances are singleton at their provided level. Use component providers for isolated instances.
-  6. RxJS Subjects (Global/Cross-component)
-  Step 1: Create BehaviorSubject/Subject in service: `private data$ = new BehaviorSubject<T>(initial)`.
-  Step 2: Expose as observable: public data$ = this.data$.asObservable().
-  Step 3: Components subscribe to observable and update via service methods.
-  Note: Use async pipe in templates for automatic subscription management and OnPush compatibility.
-  7. Route Parameters (URL-based)
-  Step 1: Define route with parameters: { path: 'user/:id', component: UserComponent }.
-  Step 2: Inject ActivatedRoute and subscribe to params: this.route.params.subscribe().
-  Step 3: Use parameter values to load component data.
-  Note: Use paramMap for better TypeScript support and snapshot for one-time access.
+#### Communication Patterns Reference
+1. @Input() (Parent -> Child)
+   - Step 1: Child component defines input properties with @Input() decorator.
+   - Step 2: Parent binds data using property binding syntax: [inputName]="value".
+   - Step 3: Child uses input properties as regular class properties in template and logic.
+   - Note: Inputs are detected by Angular's change detection. Use OnPush strategy with immutable updates for performance.
+2. @Output() + EventEmitter (Child -> Parent)
+   - Step 1: Child component defines output properties with @Output() and EventEmitter.
+   - Step 2: Child emits events using eventEmitter.emit(payload).
+   - Step 3: Parent listens with event binding: (outputName)="handler($event)".
+   - Note: Always initialize EventEmitter and type it properly: `@Output() eventName = new EventEmitter<Type>()`.
+3. [(ngModel)] (Two-Way Binding)
+   - Step 1: Import FormsModule in your application module.
+   - Step 2: Use [(ngModel)] on form elements: `<input [(ngModel)]="property">`.
+   - Step 3: Angular automatically syncs the view and model values.
+   - Note: For custom components, implement both @Input() and @Output() with update prefix: @Input() value and @Output() valueChange.
+4. @ViewChild / @ViewChildren (Parent accessing Child)
+   - Step 1: Parent uses @ViewChild decorator to query child component/element.
+   - Step 2: Access child after view initialization in ngAfterViewInit lifecycle hook.
+   - Step 3: Parent can call child methods or access child properties directly.
+   - Note: Use static: true for elements that don't change dynamically; default is static: false.
+5. Services + Dependency Injection (Any components)
+   - Step 1: Create a service with @Injectable() and provide it at appropriate level (root, module, component).
+   - Step 2: Inject service into components via constructor: constructor(private service: DataService).
+   - Step 3: Components share data through service properties and methods.
+   - Note: Service instances are singleton at their provided level. Use component providers for isolated instances.
+6. RxJS Subjects (Global/Cross-component)
+   - Step 1: Create BehaviorSubject/Subject in service: `private data$ = new BehaviorSubject<T>(initial)`.
+   - Step 2: Expose as observable: public data$ = this.data$.asObservable().
+   - Step 3: Components subscribe to observable and update via service methods.
+   - Note: Use async pipe in templates for automatic subscription management and OnPush compatibility.
+7. Route Parameters (URL-based)
+   - Step 1: Define route with parameters: { path: 'user/:id', component: UserComponent }.
+   - Step 2: Inject ActivatedRoute and subscribe to params: this.route.params.subscribe().
+   - Step 3: Use parameter values to load component data.
+   - Note: Use paramMap for better TypeScript support and snapshot for one-time access.
 
 ### Forms & Validation
 
@@ -3360,8 +3360,9 @@ Template literals (${placeholders}) support string interpolation and multi‑lin
   ```
 - **How do you provide default values in destructuring?** Specify = value in the destructuring pattern (e.g., const { title = ‘N/A’ } = obj) to fall back when the property is undefined.
 - **How can you rename variables during destructuring?** Use property: newName syntax (e.g., const { id: userId } = user).
-  Bundlers & Compilers
-  This section covers modern tools that transform and bundle JavaScript applications.
+## Bundlers & Compilers
+
+This section covers modern tools that transform and bundle JavaScript applications.
 
 ### Webpack
 
@@ -3427,8 +3428,9 @@ npm, Yarn and pnpm manage packages and dependencies. package.json lists dependen
 - **What is the difference between dependencies, devDependencies and peerDependencies?** dependencies are required at runtime; devDependencies are needed only during development and testing; peerDependencies specify packages that your library expects consumers to install at the same version (e.g., React).
 - **How does pnpm differ from npm or Yarn?** pnpm uses a content‑addressable storage to store dependencies and creates hard links, significantly reducing disk space and speeding up installs compared to npm and Yarn.
 - **What is semantic versioning (semver) and how do caret (^) and tilde (~) ranges work?** Semver defines major.minor.patch versions; ^1.2.0 allows any minor/patch updates up to (but not including) 2.0.0, while ~1.2.0 allows patch updates up to (but not including) 1.3.0.
-  Threading & Data Streams
-  This section covers concurrency and streaming APIs available in the browser.
+## Threading & Data Streams
+
+This section covers concurrency and streaming APIs available in the browser.
 
 ### Service Workers
 
@@ -3449,18 +3451,20 @@ Web Workers run JavaScript in a background thread, allowing you to offload CPU�
 
 - **When would you use a web worker?** For heavy computations, data processing or parsing large files, ensuring the UI remains responsive.
 - **How do you communicate between a web worker and the main thread?** Use worker.postMessage(data) to send data and listen for message events via worker.onmessage.
-  Server‑Sent Events (SSE)
+### Server-Sent Events (SSE)
 
 #### Definition
 
-Server‑Sent Events provide a one‑way push mechanism where a server streams text data over HTTP. In the browser, an EventSource object listens for events sent by the server.
+Server-Sent Events provide a one-way push mechanism where a server streams text data over HTTP. In the browser, an EventSource object listens for events sent by the server.
 #### Common Interview Questions
 
 - **How do SSE differ from WebSockets?** SSE is unidirectional (server to client) and built on top of HTTP; WebSockets are bidirectional and work over a persistent TCP connection.
 - **What are typical use‑cases for SSE?** Live news feeds, notifications and other scenarios where the server needs to push updates to many clients with minimal overhead.
-  Networking & Processing
-  Same-Origin Policy (SOP) & CORS
-  Explain the Same‑Origin Policy (SOP) and CORS. SOP prevents a script from one origin from interacting with resources from another origin (protocol + domain + port). CORS is a mechanism that relaxes SOP via HTTP headers like Access-Control-Allow-Origin, letting servers whitelist other origins.
+## Networking & Processing
+
+### Same-Origin Policy (SOP) & CORS
+
+Explain the Same-Origin Policy (SOP) and CORS. SOP prevents a script from one origin from interacting with resources from another origin (protocol + domain + port). CORS is a mechanism that relaxes SOP via HTTP headers like Access-Control-Allow-Origin, letting servers whitelist other origins.
 
 ### REST vs GraphQL vs WebSockets
 
@@ -3739,7 +3743,7 @@ Canvas and SVG are two distinct web technologies for creating graphics in the br
 - **Can you combine Canvas and SVG in the same application?** Yes, they can be used together - SVG for UI elements and static graphics, Canvas for dynamic visualizations or game elements. They can even be layered using CSS positioning.
 - **How do you handle user interaction differently in Canvas vs SVG?** SVG elements can have direct event listeners (click, mouseover). Canvas requires manual hit detection by tracking mouse coordinates against drawn objects and managing event delegation programmatically.
 - **What are the memory considerations for each technology?** Canvas memory usage depends on canvas size and pixel density. SVG memory scales with the number of elements in the DOM. Large canvases can consume significant GPU memory, while complex SVGs can impact DOM performance.
-  Architecture & Patterns
+## Architecture & Patterns
 
 ### SOLID Principles
 
@@ -3763,7 +3767,7 @@ Open/Closed Principle (OCP): Code should be open for extension but closed for mo
 Liskov Substitution Principle (LSP): Subclasses should seamlessly replace their parent classes. A "Square" should work anywhere a "Shape" is expected without breaking functionality - ensuring inheritance doesn't create surprises.
 Interface Segregation Principle (ISP): Don't force components to depend on interfaces they don't use. Instead of one giant "Printer" interface handling print, scan, and fax, create separate focused interfaces so simple components only implement what they need.
 Dependency Inversion Principle (DIP): High-level modules (business logic) should not depend on low-level details (API calls). Both should depend on abstractions. This allows swapping REST APIs for GraphQL without rewriting your entire application.
-## Why SOLID Matters in Frontend
+#### Why SOLID Matters in Frontend
 
 Following SOLID principles creates code that's more testable, reusable, and adaptable to changes - crucial in fast-paced frontend development. They're particularly valuable in large React/Angular applications where maintainability determines long-term success.
 #### Common Interview Questions
@@ -4025,16 +4029,16 @@ export const ThemeProvider = ({ children }) => {
 
 Performance optimization encompasses techniques to improve website speed, responsiveness, and user experience. Key strategies include lazy loading (deferring non-critical resources), code splitting (breaking JavaScript into smaller chunks), compression (reducing file sizes), caching (storing frequently used data), minimizing browser reflows/repaints (reducing layout recalculations), and using efficient algorithms.
 Proxying involves using a proxy server during development to route API requests, avoiding CORS (Cross-Origin Resource Sharing) issues by making all requests appear to come from the same origin.
-## Critical Rendering Path
+#### Critical Rendering Path
 
 The Critical Rendering Path is the sequence of steps browsers follow to convert HTML, CSS, and JavaScript into pixels on screen:
-DOM Construction: Parse HTML and build the Document Object Model tree
-CSSOM Construction: Parse CSS and build the CSS Object Model tree
-JavaScript Execution: Run scripts (can block parsing if synchronous)
-Render Tree: Combine DOM and CSSOM into a render tree
-Layout/Reflow: Calculate positions and sizes of elements
-Paint: Fill in pixels for each element
-Compositing: Layer and composite the final page
+1. DOM Construction: Parse HTML and build the Document Object Model tree
+2. CSSOM Construction: Parse CSS and build the CSS Object Model tree
+3. JavaScript Execution: Run scripts (can block parsing if synchronous)
+4. Render Tree: Combine DOM and CSSOM into a render tree
+5. Layout/Reflow: Calculate positions and sizes of elements
+6. Paint: Fill in pixels for each element
+7. Compositing: Layer and composite the final page
 #### Common Interview Questions
 
 - **What's the difference between reflow and repaint?** Reflow (layout) involves calculating element positions and geometry, which is computationally expensive. Repaint involves drawing pixels to screen after reflow. Reflow always triggers repaint, but repaint can occur without reflow (e.g., color changes).
