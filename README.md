@@ -742,10 +742,10 @@ HTML5 + refers to HTML5 (2014 Recommendation) plus the ongoing “Living Standar
 #### Common Interview Questions
 
 - **What is the purpose of the <!DOCTYPE html> declaration?** It tells the browser the version of HTML in use (HTML5) and ensures standards‑mode rendering for consistent cross‑browser behavior.
-- **What are the benefits of using semantic HTML5 elements instead of generic tags?** They improve accessibility, SEO and maintainability by giving meaning to page regions (e.g., <header>, <nav>, <main>, <footer>). Screen readers and search engines can better understand the document structure.
-- **How do you implement responsive images in HTML5?** For art direction (different crops or image compositions at different breakpoints): Use the <picture> element with multiple <source> elements and media queries.
-  For resolution switching (serving the same image at different resolutions/sizes): Use the srcset and sizes attributes directly on an <img> element, which is often simpler and sufficient for many use cases.
-  The browser chooses the appropriate image based on device resolution, viewport size, and supported formats. Fallback to an <img> tag ensures support in non-compliant browsers.
+- **What are the benefits of using semantic HTML5 elements instead of generic tags?** They improve accessibility, SEO and maintainability by giving meaning to page regions (e.g., `<header>`, `<nav>`, `<main>`, `<footer>`). Screen readers and search engines can better understand the document structure.
+- **How do you implement responsive images in HTML5?** For art direction (different crops or image compositions at different breakpoints): Use the `<picture>` element with multiple `<source>` elements and media queries.
+  For resolution switching (serving the same image at different resolutions/sizes): Use the srcset and sizes attributes directly on an `<img>` element, which is often simpler and sufficient for many use cases.
+  The browser chooses the appropriate image based on device resolution, viewport size, and supported formats. Fallback to an `<img>` tag ensures support in non-compliant browsers.
 - **What is a Web Component and why are  and  used?** Web Components are reusable custom elements encapsulating markup, style and behaviour. The  tag defines inert markup that can be cloned, and  defines insertion points for children, enabling composability.
   Describe the difference between the defer and async attributes in the `<script>` tag.
   Async
@@ -4040,10 +4040,10 @@ Search Engine Optimization (SEO) is the practice of improving website visibility
 
 - **What are the three pillars of technical SEO?**
 - **Crawling (can search engines discover your content?** ), Indexing (can they understand and store it?), and Ranking (how relevant is your content to search queries?).
-- **What is the difference between ARIA labels and native HTML semantics?** Native HTML elements (<button>, <nav>) provide built-in accessibility. ARIA attributes (aria-label, role) should only be used when native semantics are insufficient, as they don't provide actual functionality.
+- **What is the difference between ARIA labels and native HTML semantics?** Native HTML elements (`<button>`, `<nav>`) provide built-in accessibility. ARIA attributes (aria-label, role) should only be used when native semantics are insufficient, as they don't provide actual functionality.
 - **How does site performance affect SEO?** Performance is a direct ranking factor (Core Web Vitals: LCP, FID/INP, CLS). Slow sites have higher bounce rates, which indirectly affects rankings through user behavior signals.
 - **What are the four WCAG principles (POUR)?** Perceivable (available to senses), Operable (usable via various input methods), Understandable (clear and predictable), and Robust (compatible with current and future tools).
-- **How would you make a complex data table accessible?** Use proper <table> structure with <caption>, <th> headers with scope attributes, and associate data cells with headers using headers attribute or aria-describedby.
+- **How would you make a complex data table accessible?** Use proper `<table>` structure with `<caption>`, `<th>` headers with scope attributes, and associate data cells with headers using headers attribute or aria-describedby.
 
 ### Internationalization (i18n) & Theming
 
@@ -4155,7 +4155,7 @@ The following comparisons summarize key differences between Angular, React, and 
 | Local State & Reactivity | Signals, Change Detection (Zone.js or OnPush), RxJS in components. | useState, useReducer; updates trigger re-render. | ref(), reactive() (Composition API); data() (Options API). Automatic dependency tracking. |
 | Global State Management | Services + RxJS, NgRx (Redux), NgRx/ComponentStore, Akita. | Context API, Redux Toolkit, Zustand, Jotai, Recoil, MobX. | Pinia (official, modern), Vuex (legacy). Composables for shared stateful logic. |
 | DI & Services | Built-in hierarchical Dependency Injection system injects services. | Context API or external libraries for sharing data. | provide()/inject() for component-scoped dependency injection. |
-| Routing | @angular/router with declarative routes and guards. | React Router library with <Routes>, <Route> and components. | Vue Router (official library) with <RouterLink>, <router-view>. |
+| Routing | @angular/router with declarative routes and guards. | React Router library with `<Routes>`, `<Route>` and components. | Vue Router (official library) with `<RouterLink>`, `<router-view>`. |
 | Forms | Template-driven and reactive forms with built-in validators. | Controlled/uncontrolled components; third-party libraries like React Hook Form and Formik. | v-model for two-way binding; built-in modifiers (.lazy, .number, .trim); Vuelidate/VeeValidate for complex validation. |
 | Lazy Loading | Built-in with loadChildren in routes (NgModule) or loadComponent (standalone). | Code splitting with React.lazy and Suspense. | Dynamic imports in Vue Router (component: () => import(...)). |
 | SSR & Hydration | Angular Universal renders on the server. | Next.js or frameworks like Remix handle server-side rendering. | Nuxt.js (full-stack framework) or Vite/SSR plugin. |
