@@ -109,19 +109,20 @@ console.log(dog.__proto__ === Animal.prototype); // true
 - **How does property lookup work in the prototype chain?** The engine first checks the object itself. If the key is absent, it looks at the object’s [[Prototype]], repeating the process up the chain until it finds the property or hits null. The first match stops the search.
 - **What is the difference between Object.create() and using new with a constructor function?** Object.create(proto) directly creates a new object with proto as its prototype and lets you define properties via a second argument. Using new Constructor() runs the constructor function (allowing initialization logic) and sets the resulting object’s prototype to Constructor.prototype automatically.
 - **Why might you place shared methods on the constructor’s prototype instead of inside the constructor function itself?** Methods placed on Constructor.prototype are shared by all instances, saving memory and ensuring behavior consistency. If you define the same function inside the constructor, each instance gets its own copy, which is inefficient.
-  Ways to create objects
-- **What are the different ways to create objects?** Object literals: const obj = {}.
-  Constructor functions: function Car() {}; const myCar = new Car();.
-  Object.create(proto): creates an object with a specified prototype.
-  ES6 classes: syntactic sugar over prototypes: class Car {}; const myCar = new Car();.
+- **What are the different ways to create objects?**
+  - Object literals: `const obj = {};`
+  - Constructor functions: `function Car() {}; const myCar = new Car();`.
+  - `Object.create(proto)`: creates an object with a specified prototype.
+  - ES6 classes: syntactic sugar over prototypes: `class Car {}; const myCar = new Car();`.
 
 ### Pass by value/reference
 
 #### Definition
 
 In JavaScript all function arguments are passed by value.
- • For primitive variables the actual data is copied, so the callee can’t affect the caller’s variable.
- • For object variables the reference value (a pointer) is copied. The callee can mutate the same underlying object through that reference, but reassigning the parameter only changes the local copy of the reference, leaving the caller’s variable untouched.
+
+- For primitive variables the actual data is copied, so the callee can’t affect the caller’s variable.
+- For object variables the reference value (a pointer) is copied. The callee can mutate the same underlying object through that reference, but reassigning the parameter only changes the local copy of the reference, leaving the caller’s variable untouched.
 #### Example
 
 ```
@@ -192,7 +193,7 @@ arrowObj.greet();
 
 #### Common Interview Questions
 
-- Explain the this keyword and its binding rules. this is determined by how a function is called. Default binding: in a standalone function this refers to the global object (or undefined in strict mode). Implicit binding: when a function is called as a method, this refers to the object. Explicit binding: use call, apply or bind to set this. new binding: when a function is invoked with new, this refers to the new object being constructed. Arrow functions don't have their own this and instead capture the this of the enclosing context.
+- **Explain the this keyword and its binding rules.** this is determined by how a function is called. Default binding: in a standalone function this refers to the global object (or undefined in strict mode). Implicit binding: when a function is called as a method, this refers to the object. Explicit binding: use call, apply or bind to set this. new binding: when a function is invoked with new, this refers to the new object being constructed. Arrow functions don't have their own this and instead capture the this of the enclosing context.
 - **What is the difference between arrow functions and regular functions regarding this?** Arrow functions inherit this from their surrounding (lexical) scope at the time they are defined, while regular functions have their own this binding determined by how they are called.
 - **How does strict mode affect this binding?** In strict mode, default binding sets this to undefined instead of the global object, preventing accidental pollution of the global scope.
 - **What is the precedence order of the this binding rules?** new binding > explicit binding (call/apply/bind) > implicit binding (method call) > default binding (standalone function).
@@ -222,7 +223,7 @@ Object.freeze(user);            // object now fully immutable
 #### Common Interview Questions
 
 - **What does the configurable attribute of a property descriptor control?** If configurable: false, the property cannot be deleted and its descriptor (other than writable from true to false) cannot be changed.
-  Compare Object.seal and Object.freeze. Object.seal(obj) stops adding or deleting properties but leaves existing properties’ writability intact. Object.freeze(obj) does the same and sets every existing data property’s writable attribute to false, making the entire object immutable.
+- **Compare Object.seal and Object.freeze.** Object.seal(obj) stops adding or deleting properties but leaves existing properties’ writability intact. Object.freeze(obj) does the same and sets every existing data property’s writable attribute to false, making the entire object immutable.
 - **How would you create a property that is read-only and hidden from enumeration?** Use Object.defineProperty with { writable: false, enumerable: false }. Example: Object.defineProperty(obj, 'secret', { value: 42, writable: false, enumerable: false, configurable: true });
 
 ### Property getters/setters
@@ -276,7 +277,7 @@ logOnce("Hi");    // does nothing
 
 #### Common Interview Questions
 
-- Name three built-in array methods that are higher-order functions and explain why. Array.prototype.map, filter, and reduce each accept a callback function that they invoke on every element; therefore they meet the definition of HOFs.
+- **Name three built-in array methods that are higher-order functions and explain why.** Array.prototype.map, filter, and reduce each accept a callback function that they invoke on every element; therefore they meet the definition of HOFs.
 - **What is the difference between a callback and a higher-order function?** A callback is the function passed to another function. The function receiving (or returning) the callback is the higher-order function.
 - **How do higher-order functions improve code reusability?** They encapsulate common control-flow or data-processing patterns, letting you pass custom logic as callbacks. This separates “what to do” (the callback) from “how to do it” (the HOF), leading to concise, composable, and reusable code.
 
@@ -299,12 +300,14 @@ console.log(factorial(5)); // 120
 
 - **What two elements must every recursive function have?** A base case that returns without further self-calls, preventing infinite recursion, and a recursive case that makes at least one call to itself with a “smaller” or simpler input.
 - **Why can deep recursion cause a “Maximum call stack size exceeded” error in JavaScript, and how can you avoid it?** Each recursive call adds a frame to the call stack. If the depth is too large (common with large datasets or missing base cases), the stack overflows. Solutions: convert to an iterative loop, use tail-call optimization (in engines that support it), or implement recursion manually with your own stack/queue.
-  Explain tail recursion and its potential benefit.  A function is tail-recursive when its recursive call is the last operation it performs. This allows the engine (if optimized) to reuse the same stack frame instead of growing the stack.
-  Example
+- **Explain tail recursion and its potential benefit.** A function is tail-recursive when its recursive call is the last operation it performs. This allows the engine (if optimized) to reuse the same stack frame instead of growing the stack.
+  Example:
+  ```js
   function factorial(n, acc = 1) {
-  if (n === 0) return acc;        // base case
-  return factorial(n - 1, n * acc); // tail call
+    if (n === 0) return acc;        // base case
+    return factorial(n - 1, n * acc); // tail call
   }
+  ```
   ECMAScript specifies Tail Call Optimization (TCO), but most JavaScript engines (e.g., V8 in Chrome/Node) do not implement it, mainly for debugging/stack-trace reasons. Safari’s JavaScriptCore supports it.
 
 ### Closures & scope
@@ -422,11 +425,13 @@ console.log(nums);         // [1, 2, 4, 5]
 
 #### Common Interview Questions
 
-- Compare map, forEach, and reduce. forEach executes a callback for side-effects and always returns undefined.
-- map also iterates but returns a new array of the callback’s return values, keeping length 1-to-1.
-- reduce collapses the array into a single accumulated value (number, object, string, etc.) by repeatedly applying a reducer function.
-- Name four array methods that do not mutate the original array and four that do. Non-mutating: map, filter, slice, concat, toSorted, toSpliced (modern).
-- Mutating: push, pop, shift, unshift, splice, sort, reverse, fill.
+- **Compare map, forEach, and reduce.**
+  - forEach executes a callback for side-effects and always returns undefined.
+  - map iterates and returns a new array of the callback’s return values, keeping length 1-to-1.
+  - reduce collapses the array into a single accumulated value (number, object, string, etc.) by repeatedly applying a reducer function.
+- **Name four array methods that do not mutate the original array and four that do.**
+  - Non-mutating: map, filter, slice, concat, toSorted, toSpliced (modern).
+  - Mutating: push, pop, shift, unshift, splice, sort, reverse, fill.
 - **Why might Array.prototype.find be preferred over filter when you only need one match?** find stops iterating as soon as it locates the first element that satisfies the predicate, returning that single value (or undefined). This is more efficient and expressive than filter, which scans the whole array and returns a new array - even if you only wanted one element.
 
 ### Currying
@@ -445,7 +450,7 @@ console.log(addFive(4)); // 9
 #### Common Interview Questions
 
 - **How does currying differ from partial application?** Currying always transforms a multi-argument function into a chain of unary functions. Partial application fixes one or more arguments of any position and returns a new function expecting the rest. Currying enables partial application, but they are not the same.
-  Give a practical use-case for currying in frontend development. Event handler factories: const withLogging = eventName => handler => e => { console.log(eventName); handler(e); }; You can create onClick = withLogging('click')(handleClick) and reuse the logging wrapper for many events by pre-filling eventName.
+- **Give a practical use-case for currying in frontend development.** Event handler factories: `const withLogging = eventName => handler => e => { console.log(eventName); handler(e); };`. You can create `onClick = withLogging('click')(handleClick)` and reuse the logging wrapper for many events by pre-filling eventName.
 - **Why is Function.prototype.bind not full currying, yet often used similarly?** bind returns a new function with a fixed this value and/or any subset of leading arguments pre-set. It performs partial application, but the returned function still accepts multiple parameters at once; it doesn’t automatically break them into unary calls as true currying does.
 
 ### Memoization
@@ -493,26 +498,26 @@ console.log(str.match(yearRE)); // ["2019", "2025"]
 
 #### Common Interview Questions
 
-- **Explain the difference between test and exec. Both belong to a RegExp instance. test(str) returns a boolean (was there a match?** ). exec(str) returns the match object (array of matched text plus captured groups) or null. When the regex has the g or y flag, successive calls to exec continue from the previous match thanks to the regex’s internal lastIndex pointer.
+- **Explain the difference between test and exec.** Both belong to a RegExp instance. test(str) returns a boolean (was there a match?). exec(str) returns the match object (array of matched text plus captured groups) or null. When the regex has the g or y flag, successive calls to exec continue from the previous match thanks to the regex’s internal lastIndex pointer.
 - **Why might /foo/gi.test("FOO") return false on the second call?** With the g flag, test also advances lastIndex. After the first successful match lastIndex sits at the end of the string; the next test starts there and fails. Reset lastIndex = 0 or omit g when you need a simple boolean check.
 - **How do lookaheads and lookbehinds help build zero-width assertions?** Give an example. Lookaheads (?= ... ) and lookbehinds (?<= ... ) assert that a pattern must (positive) or must not (negative) appear next to the current position without consuming it. Example: /\d+(?=%)/ matches the number before a percent sign in "Price went up 15% last year" → "15". Another example using a lookbehind: /\d+(?<!\.)/ matches a number that is not preceded by a dot. This would match the 5 in version 5.3 but not the 3 (because the 3 is preceded by a dot).
-  ES6 / ES6+ (full feature set)
+### ES6 / ES6+ (full feature set)
 
 #### Definition
 
 ES6 (ECMAScript 2015) and ES6 + refer to the annual editions of the ECMAScript specification starting with 2015. Key additions include:
 
-• Block scope & bindings: let, const
-• Arrow functions & lexical this
-• Template literals with interpolation and tagged templates
-• Destructuring (arrays, objects) & default / rest / spread syntax
-• Enhanced object literals (shorthand props, computed keys, method syntax)
-• Classes and extends / super (plus private #fields, static blocks in later years)
-• Modules (import / export, plus top-level await from ES2022)
-• Promises, async/await (ES2017), Generators / yield, Iterators / for…of
-• Collections & primitives: Map, Set, WeakMap, WeakSet, Symbol, BigInt
-• Reflect & Proxy meta-programming APIs
-• New operators: exponentiation `**`, optional chaining `?.`, nullish coalescing `??`, and logical assignment `&&=`, `||=`, `??=`.
+- Block scope & bindings: let, const
+- Arrow functions & lexical this
+- Template literals with interpolation and tagged templates
+- Destructuring (arrays, objects) & default / rest / spread syntax
+- Enhanced object literals (shorthand props, computed keys, method syntax)
+- Classes and extends / super (plus private #fields, static blocks in later years)
+- Modules (import / export, plus top-level await from ES2022)
+- Promises, async/await (ES2017), Generators / yield, Iterators / for…of
+- Collections & primitives: Map, Set, WeakMap, WeakSet, Symbol, BigInt
+- Reflect & Proxy meta-programming APIs
+- New operators: exponentiation `**`, optional chaining `?.`, nullish coalescing `??`, and logical assignment `&&=`, `||=`, `??=`.
 #### Example
 
 ```
@@ -531,7 +536,7 @@ getUser(1).then(console.log);
 #### Common Interview Questions
 
 - **Why are let and const preferable to var, and when would you still choose let over const?** let/const are block-scoped, eliminating hoisting-gotchas and accidental globals. const signals no reassignment (safer defaults). Use let when the variable truly needs reassignment (e.g., loop counters or re-binding in algorithms).
-  Explain how the spread (...) operator differs when used in array vs. object literals and give one practical use-case for each. In arrays, spread flattens elements: newArr = [...arr1, ...arr2] → concatenation. In objects, it copies enumerable own properties: clone = {...obj} or merges: {...defaults, ...overrides}. Practical cases: array dedup with new Set([...arr]); merging props into React component state {...state, updated}.
+- **Explain how the spread (...) operator differs when used in array vs. object literals and give one practical use-case for each.** In arrays, spread flattens elements: newArr = [...arr1, ...arr2] → concatenation. In objects, it copies enumerable own properties: clone = {...obj} or merges: {...defaults, ...overrides}. Practical cases: array dedup with new Set([...arr]); merging props into React component state {...state, updated}.
 - **What problem did async/await solve over plain Promises, and how does it work under the hood?** async/await lets asynchronous code look synchronous, improving readability and error handling (try/catch). Under the hood the async function returns a Promise; each await pauses execution until the awaited value resolves, then resumes by chaining .then behind the scenes.
 
 ### Event loop
@@ -629,8 +634,7 @@ const increment = () => ++counter; // impure – relies on external state
 #### Common Interview Questions
 
 - **Why are pure functions easier to test than impure functions?** They rely solely on input parameters and return a value without side-effects, so you can assert “given X expect Y” without setting up or mocking global state, timers, I/O, or random data.
-  Explain how pure functions enable memoization and give a practical benefit.
-  Because a pure function’s output depends only on its inputs, you can safely cache results keyed by arguments. Repeated calls with identical inputs bypass expensive recalculation - useful for CPU-heavy tasks like formatting large datasets in UI rendering.
+- **Explain how pure functions enable memoization and give a practical benefit.** Because a pure function’s output depends only on its inputs, you can safely cache results keyed by arguments. Repeated calls with identical inputs bypass expensive recalculation - useful for CPU-heavy tasks like formatting large datasets in UI rendering.
 - **Can a function that throws errors be considered pure?** Yes - throwing is not a side-effect if the error depends solely on the inputs (e.g., sqrt(-1) throws). The key is that no external state is mutated and identical inputs always either return the same value or throw the same error.
 
 ### Hoisting
@@ -639,10 +643,10 @@ const increment = () => ++counter; // impure – relies on external state
 
 Hoisting is JavaScript’s compilation-time behavior that registers declarations before code execution.
 
-• var declarations are hoisted and automatically initialized to undefined.
-• let / const declarations are hoisted without initialization; accessing them before the declaration line triggers a Temporal Dead Zone (TDZ) ReferenceError.
-• Function declarations are hoisted with their full body, so they’re callable earlier in the scope.
-• Function expressions / arrow functions behave like variables: only the variable name is hoisted, not the value.
+- var declarations are hoisted and automatically initialized to undefined.
+- let / const declarations are hoisted without initialization; accessing them before the declaration line triggers a Temporal Dead Zone (TDZ) ReferenceError.
+- Function declarations are hoisted with their full body, so they’re callable earlier in the scope.
+- Function expressions / arrow functions behave like variables: only the variable name is hoisted, not the value.
 #### Example
 
 ```
@@ -656,13 +660,15 @@ function speak() { console.log('Hi!'); }
 
 #### Common Interview Questions
 
-- **What is hoisted for each of these: var, let, const, function declaration, function expression?** var: name + implicit undefined initialization.
-  let / const: name only; no init until definition line (TDZ).
-  Function declaration: name and executable body.
-  Function expression / arrow: variable name only; value assigned at runtime.
-  Explain the Temporal Dead Zone (TDZ). The TDZ is the period between entering a scope and executing a let/const declaration. During this window the identifier exists but is uninitialized; any access throws a ReferenceError, enforcing safer ordering.
+- **What is hoisted for each of these: var, let, const, function declaration, function expression?**
+  - var: name + implicit undefined initialization.
+  - let / const: name only; no init until definition line (TDZ).
+  - Function declaration: name and executable body.
+  - Function expression / arrow: variable name only; value assigned at runtime.
+- **Explain the Temporal Dead Zone (TDZ).** The TDZ is the period between entering a scope and executing a let/const declaration. During this window the identifier exists but is uninitialized; any access throws a ReferenceError, enforcing safer ordering.
 - **Why does calling a function defined with const myFn = () => {} before its declaration fail, whereas calling a function myFn() {} succeeds?** With const, only the variable binding is hoisted - its value isn’t set yet (TDZ), so invoking it before assignment triggers a ReferenceError. A function declaration’s body is hoisted, so it’s fully defined and callable from the top of its scope.
-  Immediately‑Invoked Function Expression (IIFE)
+
+### Immediately-Invoked Function Expression (IIFE)
 
 #### Definition
 
@@ -680,12 +686,15 @@ console.log(typeof secret); // "undefined"
 #### Common Interview Questions
 
 - **Why were IIFEs popular before ES6 modules and let/const?** They offered a simple way to create block-like scope for variables using only var, keeping globals clean in browsers where every script shared one global object.
-  Write the minimal ES6 arrow-syntax IIFE that logs “Hello”.
+- **Write the minimal ES6 arrow-syntax IIFE that logs "Hello".**
+  ```js
   (() => console.log('Hello'))();
+  ```
   Parentheses turn the arrow function into an expression; the trailing () invokes it.
-- **Can an IIFE return a value?** Show a use-case.
-  Yes. Common pattern for singletons/config objects:
-  js const config = (() => { const apiKey = 'XYZ'; return { apiKey, timeout: 5000 }; })();
+- **Can an IIFE return a value? Show a use-case.** Yes. Common pattern for singletons/config objects:
+  ```js
+  const config = (() => { const apiKey = 'XYZ'; return { apiKey, timeout: 5000 }; })();
+  ```
   config now holds the returned object, while apiKey remains private.
 
 ### Shallow vs deep copy
@@ -711,9 +720,9 @@ console.log(original.profile.name); // 'Marko'
 #### Common Interview Questions
 
 - **Why does Object.assign or the spread operator { ...obj } not create a true deep copy?** They only copy enumerable own properties one level deep; nested objects are copied by reference. Mutating a nested field in the copy mutates the same object inside the original.
-  Give two ways to deep-clone an object in modern JavaScript and list one trade-off for each.
-  • structuredClone(obj)  -  handles most data types (even Map, Set, Date), but not functions or DOM nodes; requires modern runtime (Node 17+, modern browsers).
-  • JSON.parse(JSON.stringify(obj))  -  simple and widely supported but loses functions, undefined, symbols, circular references, and date objects turn into strings.
+- **Give two ways to deep-clone an object in modern JavaScript and list one trade-off for each.**
+  - `structuredClone(obj)` - handles most data types (even Map, Set, Date), but not functions or DOM nodes; requires modern runtime (Node 17+, modern browsers).
+  - `JSON.parse(JSON.stringify(obj))` - simple and widely supported but loses functions, undefined, symbols, circular references, and date objects turn into strings.
 - **When is a shallow copy sufficient, and when must you choose a deep copy?** Shallow copy is fine when the structure contains only primitives or you intentionally want shared nested objects. Deep copy is required when you need full isolation - e.g., producing immutable Redux state snapshots or cloning configuration objects that the callee should not mutate.
 
 ### DOM manipulation
@@ -738,7 +747,7 @@ DOM manipulation is the act of reading or changing the browser’s Document Obje
 #### Common Interview Questions
 
 - **What is the difference between innerHTML and textContent, and when would you use each?** innerHTML parses and inserts markup, so it can create nested elements but is vulnerable to XSS if unsafe input is injected. textContent inserts plain text only (no parsing), making it faster and safer when you don’t need HTML.
-  Compare append/prepend with appendChild. append/prepend (modern) can accept multiple arguments and strings, and return nothing; appendChild accepts one Node, returns that node, and errors on strings. Both move existing nodes instead of cloning them.
+- **Compare append/prepend with appendChild.** `append`/`prepend` (modern) can accept multiple arguments and strings, and return nothing; `appendChild` accepts one Node, returns that node, and errors on strings. Both move existing nodes instead of cloning them.
 - **Why is documentFragment useful for performance?** A DocumentFragment is a lightweight, in-memory container. Building complex markup inside it avoids multiple reflows/repaints; once finished you insert the fragment in one operation, letting the browser render just once.
 - **What are data attributes?** Data attributes (data-) allow storing custom data on standard HTML elements. They can be accessed in JavaScript via element.dataset..
 - **What is the difference between the nodeValue and textContent properties?** nodeValue: For text nodes, it returns the text content. For element nodes, it returns null.
@@ -777,15 +786,9 @@ HTML5 + refers to HTML5 (2014 Recommendation) plus the ongoing “Living Standar
   For resolution switching (serving the same image at different resolutions/sizes): Use the srcset and sizes attributes directly on an `<img>` element, which is often simpler and sufficient for many use cases.
   The browser chooses the appropriate image based on device resolution, viewport size, and supported formats. Fallback to an `<img>` tag ensures support in non-compliant browsers.
 - **What is a Web Component and why are `<template>` and `<slot>` used?** Web Components are reusable custom elements encapsulating markup, style and behaviour. The `<template>` tag defines inert markup that can be cloned, and `<slot>` defines insertion points for children, enabling composability.
-  Describe the difference between the defer and async attributes in the `<script>` tag.
-  Async
-  Fetching: scripts are fetched asynchronously and do not block HTML parsing.
-  Execution: runs as soon as the script is fetched.
-  Order: execution order is not guaranteed.
-  Defer
-  Fetching: scripts are also fetched asynchronously and do not block parsing.
-  Execution: runs after the HTML has been fully parsed.
-  Order: scripts maintain execution order.
+- **Describe the difference between the `defer` and `async` attributes in the `<script>` tag.**
+  - Async: fetching scripts is asynchronous and does not block HTML parsing; execution runs as soon as the script is fetched; order is not guaranteed.
+  - Defer: fetching is asynchronous and does not block parsing; execution runs after the HTML has been fully parsed; scripts maintain execution order.
 
 ### EJS
 
@@ -815,13 +818,11 @@ app.listen(3000);
 #### Common Interview Questions
 
 - **How does EJS differ from JSX or Handlebars?** EJS is string-based server-side templating: templates compile to functions that return HTML strings rendered before they hit the browser. JSX is a syntax extension for React that compiles to component calls and usually runs in the browser (or during build). Handlebars is logic-less; it restricts you to helpers, whereas EJS lets you run arbitrary JavaScript inside `<% %>`.
-  Explain the security implications of `<%- %>` vs. `<%= %>` in EJS.
-  `<%= %>` escapes output by default, preventing XSS when rendering user-provided data.
-  `<%- %>` outputs raw, unescaped HTML.
-  Use it only for **trusted, sanitized content** (e.g., Markdown that you’ve cleaned server-side). Using `<%- %>` with untrusted data creates a serious XSS risk.
-- **What performance optimizations are available when using EJS in production?** • Template caching: app.set('view cache', true) or ejs.renderFile(path, data, {cache:true}) stores the compiled function in memory.
-  • Pre-compilation: run ejs-cli to compile templates to JS bundles during build time.
-  • Minify HTML after render to reduce payload size, and avoid heavy logic in templates - prepare data beforehand in controllers or middleware.
+- **Explain the security implications of `<%- %>` vs. `<%= %>` in EJS.** `<%= %>` escapes output by default, preventing XSS when rendering user-provided data. `<%- %>` outputs raw, unescaped HTML. Use it only for **trusted, sanitized content** (e.g., Markdown that you’ve cleaned server-side). Using `<%- %>` with untrusted data creates a serious XSS risk.
+- **What performance optimizations are available when using EJS in production?**
+  - Template caching: app.set('view cache', true) or ejs.renderFile(path, data, {cache:true}) stores the compiled function in memory.
+  - Pre-compilation: run ejs-cli to compile templates to JS bundles during build time.
+  - Minify HTML after render to reduce payload size, and avoid heavy logic in templates - prepare data beforehand in controllers or middleware.
 
 ### Underscore
 
@@ -849,63 +850,62 @@ console.log(avgAge); // 30
 
 - **How does _.map differ from native Array.prototype.map?** _.map works on both arrays and objects (iterates keys), accepts an optional context, and handles null/undefined gracefully. Native map works only on arrays or array-like objects.
 - **What benefit does _.chain provide, and when should you call .value()?** _.chain(obj) wraps the value to enable fluent chaining. Each method call returns the wrapper. You call .value() at the end to unwrap the final result.
-  Compare _.debounce and _.throttle; give a use-case for each.
-  _.debounce(fn, wait) delays execution until no calls happen for wait ms - ideal for search-as-you-type. _.throttle(fn, wait) ensures fn runs at most once per wait ms - useful for scroll listeners.
+- **Compare _.debounce and _.throttle; give a use-case for each.** `_.debounce(fn, wait)` delays execution until no calls happen for wait ms - ideal for search-as-you-type. `_.throttle(fn, wait)` ensures fn runs at most once per wait ms - useful for scroll listeners.
 
 ## Styling
-  This section summarizes modern styling techniques and frameworks, including CSS3+, preprocessors, Bootstrap and Material Design.
-  CSS3+
+
+This section summarizes modern styling techniques and frameworks, including CSS3+, preprocessors, Bootstrap and Material Design.
+
+### CSS3+
 
 #### Definition
 
 CSS3 + encompasses the modular CSS3 specification (2009 – 2016) and the continuous “Level 4+” additions standardized by the W3C Working Groups. Major modern features include:
-• Layout  -  Flexbox, Grid, multi-column, position: sticky.
-• Visual effects  -  2-D/3-D transforms, transitions, animations, filters, blend modes.
-• Responsive design  -  media queries level 4, container queries, @supports feature queries.
-• Typography & UI  -  web fonts (@font-face), variable fonts, :focus-visible, logical properties.
-• Variables & math  -  custom properties (--var), calc(), clamp(), color functions (color-mix(), hsl()), @property for typed variables.
-• Selectors level 4+  -  :is(), :where(), :not(), relational selectors (:has()), case-insensitive attribute flags.
+- Layout - Flexbox, Grid, multi-column, position: sticky.
+- Visual effects - 2-D/3-D transforms, transitions, animations, filters, blend modes.
+- Responsive design - media queries level 4, container queries, @supports feature queries.
+- Typography & UI - web fonts (@font-face), variable fonts, :focus-visible, logical properties.
+- Variables & math - custom properties (--var), calc(), clamp(), color functions (color-mix(), hsl()), @property for typed variables.
+- Selectors level 4+ - :is(), :where(), :not(), relational selectors (:has()), case-insensitive attribute flags.
 All modern browsers ship evergreen updates, so “CSS3+” usually means “everything beyond CSS 2.1 that ships today.”
 #### Common Interview Questions
 
 - **Compare Flexbox and CSS Grid. When would you pick one over the other?** Flexbox is one-dimensional (row or column) and excels at aligning items along a single axis (nav bars, toolbars, centering). Grid is two-dimensional (rows and columns simultaneously) and is suited for full page/section layouts or complex card galleries. You can nest them - use Grid for macro layout, Flexbox for micro alignment inside each cell.
 - **Explain the CSS Box Model. What is box‑sizing: border‑box?** Every element is a box consisting of content → padding → border → margin. In the default content-box model, the width and height properties include only the content; in border‑box the width/height include content, padding and border, making sizing more intuitive.
 - **What advantages do CSS custom properties (--vars) provide over pre-processor variables?** They are live in the cascade: values can change at runtime (e.g., theming with data-theme), participate in inheritance, and work with calc()/color functions. Pre-processor variables (Sass/LESS) are compile-time only, so they can’t react to DOM state or media queries without recompiling.
-  Explain the specificity hierarchy and two ways to override a highly specific rule without !important.
-  Specificity is calculated by (a) inline styles, (b) IDs, (c) classes/attributes/pseudo-classes, (d) elements/pseudo-elements. A later rule with a higher numeric specificity wins. To override without !important:
-  • Increase specificity gently - e.g., prepend a class or use :where() to zero out earlier selectors (.new .btn outranks .btn).
-  • Place the override later in the stylesheet with equal specificity (source-order wins if the numeric score ties).
+- **Explain the specificity hierarchy and two ways to override a highly specific rule without !important.** Specificity is calculated by (a) inline styles, (b) IDs, (c) classes/attributes/pseudo-classes, (d) elements/pseudo-elements. A later rule with a higher numeric specificity wins. To override without !important:
+  - Increase specificity gently - e.g., prepend a class or use :where() to zero out earlier selectors (.new .btn outranks .btn).
+  - Place the override later in the stylesheet with equal specificity (source-order wins if the numeric score ties).
 - **What is CSS specificity and how is it calculated?** CSS specificity is a weight-based system that determines which CSS rule is applied when multiple rules target the same element.
   Specificity is calculated using a four-level ranking system (a, b, c, d), not a base-10 number:
-  Inline styles (style attribute) – highest priority
-  ID selectors (e.g., #nav)
-  Class selectors, attribute selectors, and pseudo-classes (e.g., .button, :hover)
-  Element selectors and pseudo-elements (e.g., div, ::before) – lowest priority
-  The universal selector (*) and combinators (like > or +) do not add to specificity.
-  When comparing selectors, the browser checks each level in order – a higher value in an earlier level wins.
-  Example: #nav .list li a:hover contains 1 ID, 2 classes/pseudo-classes, and 3 elements, giving it a specificity score of (0,1,2,3).
+  - Inline styles (style attribute) - highest priority
+  - ID selectors (e.g., #nav)
+  - Class selectors, attribute selectors, and pseudo-classes (e.g., .button, :hover)
+  - Element selectors and pseudo-elements (e.g., div, ::before) - lowest priority
+  - The universal selector (*) and combinators (like > or +) do not add to specificity.
+  - When comparing selectors, the browser checks each level in order - a higher value in an earlier level wins.
+  - Example: #nav .list li a:hover contains 1 ID, 2 classes/pseudo-classes, and 3 elements, giving it a specificity score of (0,1,2,3).
 - **What is the difference between display: none, visibility: hidden and opacity: 0?** display: none: the element is removed from the document flow, takes no space and causes reflow.
   visibility: hidden: the element is hidden but still occupies space; not interactive.
   opacity: 0: the element is fully transparent but still takes up space and is interactive.
 - **How does z-index work and what is a stacking context?** z-index controls the stacking order of positioned elements. Its effect is constrained by the stacking context, which is formed by the root element, positioned elements with a z-index, opacity less than 1 and other properties. A child’s z-index only has meaning within its parent’s stacking context.
 - **How would you create a responsive website?** Use the viewport meta tag (), fluid layouts (percentages, vw/vh units), media queries (@media (max-width: 768px) { … }), flexible images (max-width: 100%; height: auto), and modern layout techniques like CSS Grid and Flexbox.
 - **How can you center a div horizontally and vertically?** Flexbox: display: flex; justify-content: center; align-items: center; height: 100vh;.
-  Grid: display: grid; place-items: center; height: 100vh;.
-  Legacy (transform): position the child absolutely at 50%/50% and translate it by -50%.
-  Explain CSS pseudo‑elements and pseudo‑classes. Give examples. A pseudo‑class defines a special state of an element (:hover, :focus, :first-child) while a pseudo‑element targets a part of an element (::before, ::after, ::first-line, ::selection).
+  - Grid: display: grid; place-items: center; height: 100vh;.
+  - Legacy (transform): position the child absolutely at 50%/50% and translate it by -50%.
+- **Explain CSS pseudo‑elements and pseudo‑classes. Give examples.** A pseudo‑class defines a special state of an element (:hover, :focus, :first-child) while a pseudo‑element targets a part of an element (::before, ::after, ::first-line, ::selection).
 
 ### CSS Preprocessors (SCSS/Sass/LESS)
 
 #### Definition
 
 CSS preprocessors extend vanilla CSS with features such as variables, nesting, mixins, functions, loops, and modular imports. They compile to plain CSS that browsers understand.
-• Sass (indented) and SCSS (syntax similar to CSS) share the same engine.
-• LESS offers a comparable feature set but uses slightly different syntax (@var vs $var, mixin-as-class conventions). Preprocessors improve maintainability and enable DRY patterns, especially in large code-bases, design-system tokens, and themeable UIs.
+- Sass (indented) and SCSS (syntax similar to CSS) share the same engine.
+- LESS offers a comparable feature set but uses slightly different syntax (@var vs $var, mixin-as-class conventions). Preprocessors improve maintainability and enable DRY patterns, especially in large code-bases, design-system tokens, and themeable UIs.
 #### Common Interview Questions
 
 - **Contrast Sass/SCSS with LESS - why might a team choose one over the other?** Sass offers two syntaxes (indented & SCSS), richer math, first-class modules (@use, @forward), and a mature ecosystem (Dart Sass). LESS integrates into the Node toolchain naturally and treats mixins as first-class rulesets. Choice often depends on toolchain preference, existing code, and required features such as modules or built-in color functions.
-  Explain the difference between a mixin, an extend, and a function in Sass.
-  A mixin injects declarations every time it’s @included (can accept arguments). @extend merges selectors to share a ruleset without duplicating declarations (lighter CSS but tighter coupling). A function returns a single computed value (e.g., scale($size, 1.2)) and is used in property values or other mixins.
+- **Explain the difference between a mixin, an extend, and a function in Sass.** A mixin injects declarations every time it’s @included (can accept arguments). @extend merges selectors to share a ruleset without duplicating declarations (lighter CSS but tighter coupling). A function returns a single computed value (e.g., scale($size, 1.2)) and is used in property values or other mixins.
 - **Why were @import statements deprecated in Sass, and how do the newer @use / @forward directives improve performance?** @import inlined files repeatedly, produced global namespaces, and caused duplicated CSS. @use loads a module once, scopes its members under a namespace (or as *), and supports configurable variables; @forward re-exports parts of a module - together they deliver faster compilation and predictable symbol resolution.
 - **What is BEM?** Block‑Element‑Modifier is a naming convention that makes CSS more maintainable. A block is a standalone entity (e.g., .menu); an element is a part of a block (.menu__item); a modifier changes appearance (.menu–hidden or .menu__item–active).
 
@@ -916,13 +916,15 @@ CSS preprocessors extend vanilla CSS with features such as variables, nesting, m
 Bootstrap is a popular open-source CSS & JS framework created by Twitter. It ships ready-made responsive grid, utility classes, and interactive components (modals, dropdowns, offcanvas, toasts) powered by vanilla JavaScript and Popper. Using a mobile-first 12-column flexbox grid, Bootstrap accelerates prototyping and ensures visual consistency across browsers without writing custom CSS from scratch.
 #### Common Interview Questions
 
-- **Explain Bootstrap’s grid breakpoints and how the class naming works (e.g., col-12, col-md-6). Bootstrap defines five default breakpoints (xs <576 px, sm ≥576, md ≥768, lg ≥992, xl ≥1200, plus xxl ≥1400). Classes follow the pattern col-{breakpoint?** }-{span}: omit the breakpoint for extra-small; specify one to apply from that width upward. Example col-md-6 gives half-width from 768 px+, while remaining full-width below.
+- **Explain Bootstrap’s grid breakpoints and how the class naming works (e.g., col-12, col-md-6).** Bootstrap defines five default breakpoints (xs <576 px, sm ≥576, md ≥768, lg ≥992, xl ≥1200, plus xxl ≥1400). Classes follow the pattern `col-{breakpoint?}-{span}`: omit the breakpoint for extra-small; specify one to apply from that width upward. Example col-md-6 gives half-width from 768 px+, while remaining full-width below.
 - **What advantages do Bootstrap utility classes (.d-flex, .text-center, .mt-3, etc.) provide over writing custom CSS?** They enable rapid, consistent styling directly in markup, reduce context-switching between HTML/CSS, and leverage a well-tested design system. Utilities are generated via Sass maps, so you can customize scales and colors while keeping bundle size predictable.
 - **How would you customize Bootstrap’s default theme colors without editing the core files?** Install Bootstrap’s Sass source, then override Sass variables before importing:
+  ```scss
   // custom.scss
   $primary: #6f42c1; // brand purple
   $font-family-base: 'Inter', sans-serif;
   @import "bootstrap"; // compiles with new variables
+  ```
   Compile with Dart Sass or the official build tools. Alternatively, use CSS variables in v5 (:root { --bs-primary: #6f42c1; }) for runtime theming without recompilation.
 
 ### Material (Material Design & MUI)
@@ -933,7 +935,7 @@ Material Design is Google’s opinionated design system that defines visual, mot
 #### Common Interview Questions
 
 - **How does MUI’s theming system differ from plain CSS variables or Sass themes?** MUI’s createTheme() builds a JS object consumed by every styled component via React context - changes propagate automatically, and you can access the theme in JS (useTheme) for dynamic styling or logic. CSS variables/Sass themes operate at the stylesheet layer and don’t provide runtime access in JavaScript.
-  Explain the pros and cons of MUI’s “styled API” (@mui/styled-engine) compared to the sx prop. styled() generates re-usable, themed components with full CSS-in-JS power; great for design-system atoms but heavier in bundle size. The sx prop is terse, tree-shakable, evaluated at runtime, and ideal for one-off overrides, but mixing too many sx styles in JSX can hurt readability.
+- **Explain the pros and cons of MUI’s “styled API” (@mui/styled-engine) compared to the sx prop.** styled() generates re-usable, themed components with full CSS-in-JS power; great for design-system atoms but heavier in bundle size. The sx prop is terse, tree-shakable, evaluated at runtime, and ideal for one-off overrides, but mixing too many sx styles in JSX can hurt readability.
 - **What accessibility features are built into MUI components, and how would you audit them?** Components ship with proper ARIA roles/attributes (e.g., role="button" on IconButton, aria-label support). Keyboard navigation and focus rings follow WCAG. Audit with Lighthouse, axe-core, or @testing-library/jest-dom to ensure props like aria-label, color contrast, and focus order remain valid after customization.
 
 ## Node.js Fundamentals
@@ -1229,7 +1231,7 @@ const textFile = fs.readFileSync('note.txt', 'utf8'); // String
   Buffer.allocUnsafe(size) allocates uninitialized memory (faster but must be filled before use to avoid leaking old data).
 - **Why is encoding important when converting between Buffers and Strings?** Because the same sequence of bytes can represent different characters under different encodings (utf8, ascii, latin1, base64, hex). Incorrect encoding leads to corrupted or misinterpreted data.
 - **How are Buffers used together with Streams?** Streams typically emit and consume Buffers for binary data. Transform streams often operate on Buffer chunks, modifying or re-encoding them before passing them downstream.
-  Modules: CommonJS vs ES Modules
+### Modules: CommonJS vs ES Modules
 
 #### Definition
 
@@ -1669,7 +1671,7 @@ Key fields that are commonly discussed:
 - **What are peerDependencies used for?** They express compatibility requirements with a host package (e.g., a React plugin declaring it works with React 17–18). They are not installed automatically and must be provided by the consuming project.
 - **What is the bin field used for?** It exposes executables when the package is installed globally or via npx, enabling CLI tools.
 - **Why is the engines field important?** It declares the supported Node.js versions and allows package managers and CI systems to warn or fail when the runtime does not meet the required version.
-  Package Managers: npm vs pnpm vs yarn (2026 perspective)
+### Package Managers: npm vs pnpm vs yarn (2026 perspective)
 
 #### Definition
 
@@ -1692,23 +1694,23 @@ a lockfile (package-lock.json, yarn.lock, pnpm-lock.yaml)
 - **What is the main architectural difference between npm/yarn and pnpm?** npm and yarn create a flat node_modules tree with duplicated packages.
   pnpm uses a content-addressable global store and hard links, so each package version is stored once on disk and shared across projects, dramatically reducing disk usage and install time.
 - **Why is pnpm considered faster and more deterministic?** Because it:
-  Avoids duplicate downloads via a global store.
-  Enforces strict dependency boundaries (no phantom dependencies).
-  Uses a single lockfile format that fully describes the dependency graph.
+  - Avoids duplicate downloads via a global store.
+  - Enforces strict dependency boundaries (no phantom dependencies).
+  - Uses a single lockfile format that fully describes the dependency graph.
 - **What are “phantom dependencies” and how does pnpm prevent them?** In npm/yarn, a package may accidentally import a dependency that exists higher in the tree but is not listed in its own package.json. pnpm’s strict node_modules structure prevents this, forcing every package to declare its dependencies explicitly.
-- **Why did many large monorepos move to pnpm by 2024–2026?** Massive disk savings.
-  Faster CI installs.
-  Better workspace handling.
-  Deterministic builds.
-  Stricter dependency correctness.
+- **Why did many large monorepos move to pnpm by 2024–2026?**
+  - Massive disk savings.
+  - Faster CI installs.
+  - Better workspace handling.
+  - Deterministic builds.
+  - Stricter dependency correctness.
 - **What is Yarn Berry (v2+) and how does it differ from Yarn Classic?** Yarn Berry introduced Plug’n’Play (PnP), removing node_modules entirely and resolving packages via a virtual filesystem. This improves performance but can cause tooling compatibility issues, which is why many teams either stay on Yarn Classic or migrate to pnpm instead.
-- **In 2026, when would you still choose npm?** Simplicity and zero setup.
-  Maximum compatibility with legacy tooling.
-  Default in Node.js installations.
-  Small projects where install speed and disk efficiency are not critical.
-- **In one sentence: how would you summarize the 2026 landscape?** npm = universal baseline,
-  yarn = legacy + PnP niche,
-  pnpm = modern default for serious projects and monorepos.
+- **In 2026, when would you still choose npm?**
+  - Simplicity and zero setup.
+  - Maximum compatibility with legacy tooling.
+  - Default in Node.js installations.
+  - Small projects where install speed and disk efficiency are not critical.
+- **In one sentence: how would you summarize the 2026 landscape?** npm = universal baseline, yarn = legacy + PnP niche, pnpm = modern default for serious projects and monorepos.
 
 ### Performance Hooks & AsyncLocalStorage
 
@@ -2271,7 +2273,8 @@ React Portals enable rendering React components into DOM nodes outside their par
 - **What performance considerations should be made when using portals?** Portal creation/cleanup overhead, memory leaks from improper cleanup, excessive re-renders affecting portal content, and impact on React's reconciliation process.
 
 ## Vue Deep Dive
-  Vue 2 vs Vue 3: The Composition API Revolution
+
+### Vue 2 vs Vue 3: The Composition API Revolution
 
 #### Definition
 
@@ -2279,8 +2282,7 @@ Vue 3 represents a significant evolution from Vue 2, introducing a new, flexible
 #### Common Interview Questions
 
 - **What are the primary advantages of Vue 3 over Vue 2?** Key advantages include: the Composition API for better logic reuse and organization, superior performance through a new reactivity system (using Proxies) and a more efficient virtual DOM, first-class TypeScript support with stronger typing and inference, and a smaller core runtime with improved tree-shaking. (Note: The overall bundle size of a full application using Vue Router and Pinia may be comparable to Vue 2, but the core is more optimized.)
-  Explain the fundamental difference between the Options API and the Composition API.
-  The Options API organizes code by options (data, methods, computed, lifecycle hooks), which can fragment related logic across different sections. The Composition API uses a setup function where all related logic (state, methods, computed properties) can be colocated, making complex components more readable and maintainable.
+- **Explain the fundamental difference between the Options API and the Composition API.** The Options API organizes code by options (data, methods, computed, lifecycle hooks), which can fragment related logic across different sections. The Composition API uses a setup function where all related logic (state, methods, computed properties) can be colocated, making complex components more readable and maintainable.
 - **Is the Composition API a replacement for the Options API?** No, it is an additive alternative. The Options API is still fully supported and is often the best choice for simple components. The Composition API shines in complex components and for creating reusable composables.
 - **What problem does the Composition API solve that the Options API struggled with?** It solves two main problems:
   Logic Fragmentation: In the Options API, code for a single feature (e.g., user authentication) could be split across data, methods, and computed, making it hard to follow.
@@ -2297,11 +2299,9 @@ In Vue 2, the Vue instance is the root of every application, created with new Vu
 #### Common Interview Questions
 
 - **What is the key difference between creating a Vue 2 instance and a Vue 3 application?** In Vue 2, you use new Vue() to create a root instance, which is a singleton pattern that can cause conflicts when multiple apps exist on a page. In Vue 3, you use const app = createApp(App) to create a context-isolated application instance, enabling multiple Vue apps to coexist independently.
-  Explain the purpose of the mount method in both Vue 2 and Vue 3.
-  The mount method attaches the Vue application/instance to a DOM element, initiating the compilation and rendering process. In Vue 2, it's called on the instance: new Vue({...}).mount('#app'). In Vue 3, it's called on the application instance: createApp(App).mount('#app').
+- **Explain the purpose of the mount method in both Vue 2 and Vue 3.** The mount method attaches the Vue application/instance to a DOM element, initiating the compilation and rendering process. In Vue 2, it's called on the instance: new Vue({...}).mount('#app'). In Vue 3, it's called on the application instance: createApp(App).mount('#app').
 - **What are the main lifecycle phases of a Vue component?** The main phases are: Creation (initial setup), Mounting (DOM insertion), Updating (re-rendering due to data changes), and Destruction (teardown and cleanup).
-  Name the most commonly used lifecycle hooks and their execution order.
-  The core hooks in execution order are: beforeCreate, created, beforeMount, mounted, beforeUpdate, updated, beforeUnmount (Vue 3) / beforeDestroy (Vue 2), and unmounted (Vue 3) / destroyed (Vue 2).
+- **Name the most commonly used lifecycle hooks and their execution order.** The core hooks in execution order are: beforeCreate, created, beforeMount, mounted, beforeUpdate, updated, beforeUnmount (Vue 3) / beforeDestroy (Vue 2), and unmounted (Vue 3) / destroyed (Vue 2).
 - **In which lifecycle hook are component data and events initialized?** Data observation and events are initialized at the end of the beforeCreate hook and are fully available within the created hook.
 - **Why is the mounted hook crucial for DOM-dependent operations?** The mounted hook is called after the component's DOM has been rendered for the first time. This makes it the safest place to perform operations that require access to or manipulation of the rendered DOM elements.
 - **What is the difference between beforeUnmount and unmounted?** beforeUnmount is called just before the component is torn down, when the component is still fully functional. This is the ideal place to clean up manually added event listeners or cancel network requests. unmounted is called after the component has been destroyed and its DOM elements have been removed.
@@ -2315,15 +2315,14 @@ Vue uses an HTML-based template syntax that allows you to declaratively bind the
 #### Common Interview Questions
 
 - **What is the primary purpose of Vue's template syntax?** To provide a declarative way to bind data to the DOM, enabling a clear relationship between the component's state and the rendered output. Vue compiles these templates into highly-optimized JavaScript render functions.
-  Explain the difference between the v-bind and v-on directives.
-  v-bind is used for one-way data binding from the component's data to an HTML attribute (e.g., id, class, href), often shortened to :. v-on is used to listen to DOM events and execute some JavaScript, often shortened to @.
+- **Explain the difference between the v-bind and v-on directives.** v-bind is used for one-way data binding from the component's data to an HTML attribute (e.g., id, class, href), often shortened to :. v-on is used to listen to DOM events and execute some JavaScript, often shortened to @.
 - **What are the different ways to use the v-bind directive for an element's class?** You can use a string, an object (to toggle classes), or an array (to apply a list of classes). The object syntax is common for conditionally applying classes based on data properties.
 - **How does the v-model directive work under the hood?** v-model is syntactic sugar that combines v-bind for value binding and v-on for input event listening. For a text input, `<input v-model="searchText">` is equivalent to `<input :value="searchText" @input="searchText = $event.target.value">`.
 - **What is the purpose of the v-if vs v-show directives and when would you choose one over the other?** v-if conditionally renders the element, fully destroying and recreating it and its children/components. v-show always renders the element and toggles its CSS display property. Use v-if if the condition is unlikely to change at runtime (lazy, toggles infrequently). Use v-show for expensive elements that need to be toggled very frequently.
 - **Describe the use case for the v-for key attribute. Why is it important?** The key attribute is a unique identifier for each iterated node. It helps Vue's virtual DOM algorithm identify nodes and efficiently patch and reorder elements when the list changes. Using a stable, unique key (like an id) is crucial for performance and correct component state management within lists.
 - **What are the available argument modifiers for the v-on directive?** Vue provides event modifiers to handle common DOM event details. Common modifiers include .stop (equivalent to event.stopPropagation()), .prevent (equivalent to event.preventDefault()), .capture, and .self.
 - **What is the purpose of the v-once and v-memo directives?** v-once renders the element and component once, skipping future updates. v-memo is a performance optimization that skips updates of a subtree unless a specific set of dependencies has changed, useful for large v-for lists.
-  Reactivity Fundamentals: ref(), reactive(), and Proxies
+### Reactivity Fundamentals: ref(), reactive(), and Proxies
 
 #### Definition
 
@@ -2335,8 +2334,7 @@ Reactivity is the core feature of Vue that automatically updates the DOM when th
 - **How does Vue 3's Proxy-based reactivity differ from Vue 2's Object.defineProperty approach?** Vue 2's Object.defineProperty could only track property access and mutation, requiring workarounds for adding new properties (Vue.set). Vue 3's Proxies can track property addition, deletion, and array index mutation natively, providing more comprehensive reactivity with better performance.
 - **When should you use ref() over reactive(), and vice versa?** Use ref() for: primitive values, when you need to replace the entire object reference, or when working with template refs. Use reactive() for: groups of data that logically belong together and you don't intend to replace the entire object reference.
 - **What is the limitation of destructuring a reactive() object?** Destructuring a reactive object breaks the reactivity connection because the extracted variables are primitive values or simple references. To maintain reactivity when destructuring, you must use toRefs() which converts each property into a ref.
-  Explain the purpose of the toRef() and toRefs() utility functions.
-  toRef() creates a ref for a specific property on a reactive source object. toRefs() converts a reactive object into a plain object where each property is a ref pointing to the corresponding property of the original object. This is essential for maintaining reactivity when destructuring or returning reactive state from composables.
+- **Explain the purpose of the toRef() and toRefs() utility functions.** toRef() creates a ref for a specific property on a reactive source object. toRefs() converts a reactive object into a plain object where each property is a ref pointing to the corresponding property of the original object. This is essential for maintaining reactivity when destructuring or returning reactive state from composables.
 - **Why might you see .value in your JavaScript code but not in your templates?** Vue automatically unwraps refs in templates, so you can use {{ count }} instead of {{ count.value }}. However, in the `<script setup>` section, you must use .value to access and mutate the underlying value of a ref.
 - **What happens if you try to use reactive() with a primitive value?** Using reactive() with a primitive value (string, number, boolean) will return the original value unchanged and will issue a warning in development mode, as reactive() only works with objects and arrays.
 
@@ -2407,7 +2405,7 @@ Event handling in Vue allows components to respond to user interactions through 
 - **What's the difference between using v-model and manually binding :value with @input?** There is no functional difference - v-model is just more concise. However, using separate :value and @input bindings can be useful when you need more control over the data flow or want to perform custom transformations.
 - **How do you handle multiple checkboxes with the same v-model?** When multiple checkboxes share the same v-model bound to an array, Vue automatically manages the array to include the values of checked boxes. Each checkbox should have a unique value attribute.
 - **What is the proper way to implement custom form components with v-model?** In Vue 3, custom components can implement v-model by expecting a modelValue prop and emitting an update:modelValue event. For multiple v-model bindings, use specific prop names like v-model:title and emit update:title.
-  Component Fundamentals: Props & Custom Events
+### Component Fundamentals: Props & Custom Events
 
 #### Definition
 
@@ -2502,7 +2500,7 @@ Lifecycle hooks are functions that allow you to execute code at specific stages 
 - **How do you handle cleanup logic in the Composition API versus Options API?** In the Options API, cleanup is done in beforeUnmount. In the Composition API, you can return a cleanup function from effect functions like onMounted and onUnmounted, or use onUnmounted directly for cleanup tasks.
 - **What lifecycle hooks were renamed from Vue 2 to Vue 3 and why?** beforeDestroy was renamed to beforeUnmount and destroyed was renamed to unmounted to better align with the mounting phase (beforeMount/mounted) and improve naming consistency.
 - **When would you use onUpdated versus a watcher for reacting to data changes?** Use onUpdated when you need to perform DOM operations after any component update. Use watchers when you need to react to changes in specific reactive properties with more granular control and access to previous values.
-  Composition API Deep Dive: setup(), ref() vs reactive()
+### Composition API Deep Dive: setup(), ref() vs reactive()
 
 #### Definition
 
@@ -2518,7 +2516,7 @@ The Composition API is a set of function-based APIs introduced in Vue 3 that all
 - **What is the role of the context parameter in the setup() function?** The context parameter provides access to component features not available as props: attrs (fallthrough attributes), slots (slot content), and emit (function to emit custom events).
 - **How do you access component instance properties like $emit in the Composition API?** In the Composition API, you don't use this. Instead, you access emit through the context parameter in setup(): setup(props, { emit }) { emit('event') }.
 - **What is the mental model shift from Options API to Composition API?** The shift moves from organizing code by options type (data, methods, computed) to organizing code by feature/concern, colocating all logic related to a specific feature within the same scope in the setup() function.
-  Compiler Macros (defineProps, defineEmits in `<script setup>`)
+### Compiler Macros (defineProps, defineEmits in `<script setup>`)
 
 #### Definition
 
@@ -2535,7 +2533,7 @@ Compiler macros are special functions that are processed at compile time rather 
 - **What is the withDefaults helper and when would you use it?** withDefaults is a compiler macro that works with defineProps to provide default values for TypeScript-type-based prop definitions: `withDefaults(defineProps<{ size?: number }>(), { size: 10 })`. It's only needed when using type-only props definitions.
 - **How do compiler macros enable better performance and smaller bundle sizes?** Since compiler macros are processed at build time, they can be optimized away and replaced with more efficient runtime code. This eliminates runtime overhead for prop validation in production and enables better dead code elimination through static analysis.
 - **What are the limitations of using `<script setup>` with compiler macros?** Limitations include: no access to the component instance via this, more complex setup for certain advanced patterns like render functions, and potential confusion for developers coming from Options API. Some IDE setups may also require additional configuration for full support.
-  Composables: The Vue Equivalent of Custom Hooks
+### Composables: The Vue Equivalent of Custom Hooks
 
 #### Definition
 
@@ -2551,7 +2549,7 @@ Composables are functions that leverage Vue's Composition API to encapsulate and
 - **How do you handle asynchronous operations in composables?** Async operations in composables typically use refs to track loading state, error state, and data, often with lifecycle hooks to handle cleanup and cancellation.
 - **Can composables accept parameters and how should they be made reactive?** Yes, composables can accept parameters. If parameters need to be reactive, they should be passed as refs, or the composable can convert them to refs using toRef or toRefs.
 - **What is the composable equivalent of Options API patterns like data, methods, and computed?** Data becomes ref() or reactive(), methods become regular functions, and computed properties become computed() - all colocated within the composable function and returned to the component.
-  Dependency Injection: provide() & inject()
+### Dependency Injection: provide() & inject()
 
 #### Definition
 
@@ -2584,7 +2582,7 @@ Template refs are a feature that allows direct access to DOM elements or child c
 - **What are the best practices for using template refs?** Use template refs sparingly as they break declarative patterns. Prefer declarative solutions when possible. Always check if the ref exists before using it, and clean up any event listeners or side effects in onUnmounted().
 - **How do you access a child component's methods or data using refs?** By attaching a ref to a child component, you can access its exposed properties and methods via childRef.value.someMethod(). However, this creates tight coupling and should be used judiciously.
 - **What is the TypeScript consideration when working with template refs?** You should properly type your refs: `const inputRef = ref<HTMLInputElement | null>(null)` for DOM elements, or `const childRef = ref<InstanceType<typeof ChildComponent> | null>(null)` for component instances.
-  Built-in Components: `<KeepAlive>`, `<Teleport>`, `<Suspense>`
+### Built-in Components: `<KeepAlive>`, `<Teleport>`, `<Suspense>`
 
 #### Definition
 
@@ -2669,7 +2667,7 @@ Plugins in Vue are a way to package and distribute reusable functionality that c
 - **Can plugins be asynchronous and how do you handle async initialization?** Yes, plugins can be asynchronous. The use() method returns a promise if the plugin's install function returns a promise. This allows for async plugin initialization: await app.use(asyncPlugin).
 - **What are the best practices for writing maintainable plugins?** Best practices include: providing clear documentation, using TypeScript for better type safety, validating configuration options, handling errors gracefully, avoiding side effects in the plugin's top-level scope, making plugins tree-shakable when possible, and following semantic versioning for releases.
 - **How do you test Vue plugins?** Plugins can be tested by creating a test Vue application, registering the plugin, and verifying that the expected functionality is added. Use testing utilities like Vue Test Utils to mount components that use the plugin's features and assert the expected behavior.
-  State Management: Pinia (Modern) vs Vuex (Legacy)
+### State Management: Pinia (Modern) vs Vuex (Legacy)
 
 #### Definition
 
@@ -2719,7 +2717,7 @@ Data fetching in Vue involves retrieving data from external sources like APIs an
 - **How do you handle dependent data fetching where one request relies on another's result?** Use computed properties to create dependencies between data sources, and watch effects to trigger subsequent fetches when dependent data changes, or use async/await chaining within the composable.
 - **What is the role of the onServerPrefetch lifecycle hook in SSR data fetching?** onServerPrefetch allows you to perform async operations during SSR and wait for them to complete before rendering, ensuring the server sends fully populated HTML to the client.
 - **How can you share data fetching state across multiple components using composables?** Return reactive state from composables and import the same composable instance in multiple components, or combine composables with global state management (Pinia) for application-wide data sharing.
-  SSR & Hydration: Nuxt.js Framework
+### SSR & Hydration: Nuxt.js Framework
 
 #### Definition
 
@@ -2753,7 +2751,7 @@ Server-Side Rendering (SSR) in Vue is a technique where Vue components are rende
 - **What are common performance optimizations for Vue SSR applications?** Implement component-level caching for frequently rendered components, use micro-caching for dynamic content, optimize bundle splitting, leverage HTTP/2 push for critical assets, and implement proper cache headers for static resources.
 - **How do you debug SSR-specific issues in Vue applications?** Use Vue DevTools in SSR mode, check server logs for rendering errors, compare server-rendered HTML with client-rendered HTML for mismatches, use debugging tools like vue-server-renderer's debug mode, and implement comprehensive error logging on both server and client.
 - **What are the limitations and trade-offs of using SSR in Vue applications?** Trade-offs include: increased server costs and complexity, potential for slower Time to Interactive (TTI), more complex development setup, limitations with certain browser-only libraries, and challenges with complex animations and interactions that rely on client-side timing.
-  Optimization & Performance: v-once, v-memo, and Virtual Scrolling
+### Optimization & Performance: v-once, v-memo, and Virtual Scrolling
 
 #### Definition
 
@@ -2778,7 +2776,7 @@ Vue provides several built-in optimization techniques to improve rendering perfo
 
 #### Definition
 
-A Component is a special type of directive that has a template and is the primary UI building block in Angular. Components manage a view (HTML template), contain business logic in their class, and can receive data via @Input() and emit events via @Output(). A Directive is a class that adds custom behavior to existing DOM elements or components. There are three types of directives: Components (directives with templates), Structural Directives (alter DOM layout by adding/removing elements, e.g., *ngIf, *ngFor), and Attribute Directives (change appearance/behavior of elements, e.g., NgClass, NgStyle).
+A Component is a special type of directive that has a template and is the primary UI building block in Angular. Components manage a view (HTML template), contain business logic in their class, and can receive data via @Input() and emit events via @Output(). A Directive is a class that adds custom behavior to existing DOM elements or components. There are three types of directives: Components (directives with templates), Structural Directives (alter DOM layout by adding/removing elements, e.g., `*ngIf`, `*ngFor`), and Attribute Directives (change appearance/behavior of elements, e.g., `NgClass`, `NgStyle`).
 #### Evolution Timeline
 
 - Angular 2+ (2016): Introduced components as the primary building blocks alongside directives
@@ -2817,11 +2815,11 @@ Pipes transform data in templates. Angular provides built‑in pipes like date, 
 
 #### Definition
 
-Structural directives shape the DOM by adding or removing elements. Built‑in directives include ngIf for conditional rendering, ngFor for iteration and *ngSwitch for multiple conditions. Custom directives can be created using the @Directive decorator and manipulating the TemplateRef and ViewContainerRef.
+Structural directives shape the DOM by adding or removing elements. Built‑in directives include `*ngIf` for conditional rendering, `*ngFor` for iteration and `*ngSwitch` for multiple conditions. Custom directives can be created using the @Directive decorator and manipulating the TemplateRef and ViewContainerRef.
 
 #### Common Interview Questions
 
-- **What happens to component state when *ngIf toggles false?** The view is destroyed; component instances are removed and recreated on next true.
+- **What happens to component state when `*ngIf` toggles false?** The view is destroyed; component instances are removed and recreated on next true.
 - **What is the difference between ngIf and [hidden]?** ngIf removes the element from the DOM entirely when the condition is false, whereas [hidden] toggles the CSS display property, keeping the element in the DOM.
 - **How do you create a custom structural directive?** Inject TemplateRef (the template to render) and ViewContainerRef (the insertion point), then use createEmbeddedView and clear to control when the template is rendered.
 
@@ -2943,25 +2941,17 @@ A signal is a reactivity primitive that holds a value and notifies interested co
 #### Common Interview Questions
 
 - **What problem do Signals solve in Angular?** Signals provide a simpler, more granular, and more performant reactivity model compared to the traditional Zone.js-based change detection. They allow Angular to know exactly which parts of the template depend on which pieces of state, eliminating the need for unnecessary checks and enabling future optimizations like fine-grained re-rendering.
-  Explain the difference between signal(), computed(), and effect().
-  signal(): A writable signal that holds a value. You can update it with .set() or .update().
-  computed(): A read-only signal that derives its value from other signals. Its value is cached and recalculated only when its dependencies change.
-  effect(): A side effect that runs whenever any signal value it depends on changes. It's used for operations like logging, DOM manipulation outside the template, or syncing with external libraries.
-- **How do Signals differ from RxJS Observables in Angular?** Feature
-  Signals
-  RxJS Observables
-  Purpose
-  Primarily for reactive state in templates
-  General-purpose async/data streams
-  Granularity
-  Fine-grained, know their dependencies
-  Coarse-grained, push-based
-  Usage
-  Synchronous value access via ()
-  Asynchronous subscription via subscribe()
-  Strength
-  Simplicity, performance, deep integration with Angular templates
-  Powerful operators, handling complex async events, websockets
+- **Explain the difference between signal(), computed(), and effect().**
+  - `signal()`: A writable signal that holds a value. You can update it with .set() or .update().
+  - `computed()`: A read-only signal that derives its value from other signals. Its value is cached and recalculated only when its dependencies change.
+  - `effect()`: A side effect that runs whenever any signal value it depends on changes. It's used for operations like logging, DOM manipulation outside the template, or syncing with external libraries.
+- **How do Signals differ from RxJS Observables in Angular?**
+  | Feature | Signals | RxJS Observables |
+  | --- | --- | --- |
+  | Purpose | Primarily for reactive state in templates | General-purpose async/data streams |
+  | Granularity | Fine-grained, know their dependencies | Coarse-grained, push-based |
+  | Usage | Synchronous value access via () | Asynchronous subscription via subscribe() |
+  | Strength | Simplicity, performance, deep integration with Angular templates | Powerful operators, handling complex async events, websockets |
 - **What is "fine-grained reactivity" and how do Signals enable it?** Fine-grained reactivity means the framework can update the specific part of the DOM that depends on a changed value, instead of checking the entire component tree. Signals track their dependencies automatically, so when a signal changes, Angular can precisely know which components or even which HTML expressions need to be updated.
 - **Can Signals replace RxJS and Zone.js in Angular?** Not entirely. Signals are intended to work alongside RxJS, not replace it. RxJS is still superior for complex async operations and event streams. Signals may eventually reduce or eliminate the need for Zone.js in many applications, as they provide a more explicit way to trigger change detection.
 - **How would you use a Signal in an Angular template?** You use a signal the same way you use a component property, by calling it as a function (due to its getter nature).
@@ -2980,27 +2970,18 @@ RxJS is a library for reactive programming using Observables, making it easier t
 #### Common Interview Questions
 
 - **How do Observables differ from Promises?** Observables are lazy (execute only when subscribed), can emit multiple values over time, are cancellable, and support powerful operators. Promises are eager (execute immediately), emit a single value, and lack built-in cancellation or transformation operators.
-  Feature
-  Promise
-  Observable
-  Eagerness
-  Eager (executes immediately)
-  Lazy (executes on subscription)
-  Values
-  Single value
-  Multiple values over time (stream)
-  Cancellation
-  No native cancellation
-  Native via unsubscribe()
-  Operators
-  Limited static methods (all, race)
-  Rich operators (map, filter, switchMap)
+  | Feature | Promise | Observable |
+  | --- | --- | --- |
+  | Eagerness | Eager (executes immediately) | Lazy (executes on subscription) |
+  | Values | Single value | Multiple values over time (stream) |
+  | Cancellation | No native cancellation | Native via unsubscribe() |
+  | Operators | Limited static methods (all, race) | Rich operators (map, filter, switchMap) |
 - **What is the purpose of the pipe method in RxJS?** pipe composes operators in sequence, returning a new Observable that applies each operator to the source stream. It enables functional, reusable operator composition without modifying the original Observable.
-  Explain the difference between switchMap, mergeMap, concatMap, and exhaustMap.
-  switchMap: Cancels previous inner Observable when new value arrives (ideal for search)
-  mergeMap: Runs all inner Observables concurrently (order not guaranteed)
-  concatMap: Runs inner Observables sequentially (maintains order)
-  exhaustMap: Ignores new values until current inner Observable completes (ideal for save operations)
+- **Explain the difference between switchMap, mergeMap, concatMap, and exhaustMap.**
+  - switchMap: Cancels previous inner Observable when new value arrives (ideal for search).
+  - mergeMap: Runs all inner Observables concurrently (order not guaranteed).
+  - concatMap: Runs inner Observables sequentially (maintains order).
+  - exhaustMap: Ignores new values until current inner Observable completes (ideal for save operations).
 - **How do you prevent memory leaks with Observables?** Use proper subscription management:
   ```ts
   // Manual subscription (unsubscribe needed)
@@ -3087,7 +3068,7 @@ Angular provides two approaches for handling forms: template-driven forms (decla
 - **How do you trigger validation manually in reactive forms?** Call form.markAllAsTouched() to mark all controls as touched, or control.updateValueAndValidity() to re-run validation on a specific control.
 - **Why prefer async validators for uniqueness checks?** Async validators return Observable/Promise, allowing Angular to manage pending state and automatically handle HTTP debouncing and cancellation. They're ideal for server-side validation like username/email uniqueness.
 - **What are typed forms (Angular 14+) and why use them?** Typed forms provide TypeScript type safety for form values. Instead of `FormControl<any>`, use `FormControl<string>` to get compile-time type checking and better IDE support.
-- **How do you handle dynamic form arrays?** Use FormArray to manage dynamic lists of controls. Add/remove controls dynamically with formArray.push() and formArray.removeAt(), and iterate in template with *ngFor.
+- **How do you handle dynamic form arrays?** Use FormArray to manage dynamic lists of controls. Add/remove controls dynamically with formArray.push() and formArray.removeAt(), and iterate in template with `*ngFor`.
 - **What's the difference between form.value and form.getRawValue()?** form.value excludes disabled controls, while form.getRawValue() includes all controls regardless of disabled state, useful when you need complete form data.
 - **How do you implement cross-field validation?** Add validation at the form group level rather than individual controls:
   this.form = new FormGroup({
@@ -3180,22 +3161,22 @@ Lazy loading is an optimization technique where feature modules are loaded on-de
   }
 - **What are common lazy loading pitfalls?** Circular dependencies between modules, over-splitting (too many small chunks), forgetting to use forChild() in feature modules, or not handling loading states in the UI.
 - **How does lazy loading affect SEO?** Search engines may not execute JavaScript to load lazy content. Use SSR (Angular Universal) or ensure critical content is in the initial bundle for SEO-sensitive pages.
-  New Control Flow (@if, @for, @switch) - Angular 17+
+### New Control Flow (@if, @for, @switch) - Angular 17+
 
 #### Definition
 
-The new control flow is a declarative template syntax introduced in Angular 17 that replaces the structural directives *ngIf, *ngFor, and *ngSwitch with more ergonomic, performant, and intuitive built-in blocks. This new syntax is compile-time transformed for better performance and provides better type checking and developer experience.
+The new control flow is a declarative template syntax introduced in Angular 17 that replaces the structural directives `*ngIf`, `*ngFor`, and `*ngSwitch` with more ergonomic, performant, and intuitive built-in blocks. This new syntax is compile-time transformed for better performance and provides better type checking and developer experience.
 #### Common Interview Questions
 
 - **What are the performance benefits of the new control flow?** The new syntax is compile-time transformed into efficient JavaScript, eliminating the need for directive instances and reducing runtime overhead. It also enables better tree-shaking and smaller bundle sizes.
 - **How does the track clause differ from trackBy?** The track clause is required and more intuitive. Instead of a function reference, you directly specify the property to track: @for (item of items; track item.id). This provides better type safety and performance.
-- **What is the @empty block and when is it useful?** The @empty block displays content when the collection is empty, eliminating the need for separate *ngIf checks. It's executed only when the array is empty, making it more declarative.
+- **What is the @empty block and when is it useful?** The @empty block displays content when the collection is empty, eliminating the need for separate `*ngIf` checks. It's executed only when the array is empty, making it more declarative.
 - **Why was this change introduced in Angular 17?** To improve developer experience with more intuitive syntax, better performance through compile-time optimizations, enhanced type checking, and alignment with modern JavaScript frameworks.
 - **Do you need to import anything to use the new control flow?** No, the new control flow is built into the Angular template compiler starting from version 17. It works out of the box without any imports.
-- **Can you mix old and new control flow syntax?** Yes, Angular supports gradual migration. You can use both *ngIf and @if in the same template, but it's recommended to migrate consistently for better maintainability.
+- **Can you mix old and new control flow syntax?** Yes, Angular supports gradual migration. You can use both `*ngIf` and @if in the same template, but it's recommended to migrate consistently for better maintainability.
 - **How does the new syntax handle template scoping?** Variables defined in control flow blocks are block-scoped, preventing accidental variable leakage and providing better isolation than the previous directive approach.
 - **What happened to ng-template with the new control flow?** The new syntax eliminates the need for most ng-template usage. The blocks are self-contained and don't require external template references, making the code more readable.
-  Deferrable Views (@defer) - Angular 17+
+### Deferrable Views (@defer) - Angular 17+
 
 #### Definition
 
@@ -3221,7 +3202,7 @@ Deferrable views are a performance optimization feature introduced in Angular 17
 - **What error handling options are available?** The @error block displays when loading fails. You can also use error handling in the component's constructor or ngOnInit to manage failures gracefully.
 - **How do deferrable views differ from traditional lazy loading?** Traditional lazy loading works at the route/component level, while deferrable views work at the template block level within a single component, providing more granular control.
 - **When should you avoid using @defer?** Avoid deferring content that's critical for initial rendering, above-the-fold content, or components needed for immediate user interaction. Also avoid over-deferring, which can cause too many sequential loads.
-  SSR & Hydration (Server-Side Rendering) - Angular 16+
+### SSR & Hydration (Server-Side Rendering) - Angular 16+
 
 #### Definition
 
@@ -3339,17 +3320,19 @@ Map stores key–value pairs with any data type as keys; Set stores unique value
 Promises represent asynchronous operations that can be pending, fulfilled or rejected. then and catch register callbacks; static methods like Promise.all, Promise.race, Promise.allSettled and Promise.any manage multiple promises. async/await syntax sugar wraps promises in synchronous‑looking code.
 #### Common Interview Questions
 
-- Explain Promise.all, Promise.allSettled, Promise.race, and Promise.any.
-- Promise.all: fulfills when all promises fulfill; rejects if any promise rejects.
-- Promise.allSettled: waits for all promises to settle (fulfill or reject) and returns an array of their results.
-- Promise.race: settles as soon as any promise in the iterable settles (fulfills or rejects).
-- Promise.any: fulfills as soon as any promise fulfills; rejects only if all promises reject.
+- **Explain Promise.all, Promise.allSettled, Promise.race, and Promise.any.**
+  - Promise.all: fulfills when all promises fulfill; rejects if any promise rejects.
+  - Promise.allSettled: waits for all promises to settle (fulfill or reject) and returns an array of their results.
+  - Promise.race: settles as soon as any promise in the iterable settles (fulfills or rejects).
+  - Promise.any: fulfills as soon as any promise fulfills; rejects only if all promises reject.
 - **Why use async/await instead of plain promises?** async/await reads like synchronous code, enabling easier error handling via try/catch and avoiding nested callbacks.
-- **What are the different ways to handle Promises and when should you use each?** Async/Await  -  Recommended for sequential logic, linear readable code with try/catch. Best for complex sequential operations and data processing pipelines.
-  .then().catch()  -  Recommended for parallel operations and promise chains. Best for multiple independent async operations and Promise.all scenarios.
-  Combined Approach  -  Use for mixed scenarios needing both patterns, like parallel fetching with sequential processing.
+- **What are the different ways to handle Promises and when should you use each?**
+  - Async/Await - recommended for sequential logic, linear readable code with try/catch. Best for complex sequential operations and data processing pipelines.
+  - `.then().catch()` - recommended for parallel operations and promise chains. Best for multiple independent async operations and Promise.all scenarios.
+  - Combined approach - use for mixed scenarios needing both patterns, like parallel fetching with sequential processing.
 - **What is the purpose of the finally block?** The finally block executes regardless of success or failure  -  ideal for cleanup operations like hiding loading spinners, resetting states, or logging completion.
-  Built‑in Methods & Utilities
+
+### Built-in Methods & Utilities
 
 #### Definition
 
@@ -3523,8 +3506,7 @@ socket.onclose = (event) => {
   HTTP Long Polling: Client requests data; server holds the request open until new data is available or a timeout occurs. The client then immediately reconnects. Better than polling but still has significant overhead.
   SSE: Server can push data to the client over a single, long-lived HTTP connection, but it's unidirectional (server-to-client only). Built on HTTP, easier to implement but less flexible than WebSockets.
   WebSockets: True bidirectional communication over a dedicated protocol (ws:// or wss://). Once the handshake is complete, overhead is minimal (tiny frames), making it the most efficient option for high-frequency, low-latency communication in both directions.
-  Describe the WebSocket connection handshake.
-  The handshake is an HTTP upgrade request. The client sends a standard HTTP request with Connection: Upgrade and Upgrade: websocket headers. The server responds with HTTP/1.1 101 Switching Protocols if it supports WebSockets. This initial handshake allows WebSockets to work over standard HTTP ports (80, 443), easing deployment with firewalls and proxies.
+- **Describe the WebSocket connection handshake.** The handshake is an HTTP upgrade request. The client sends a standard HTTP request with Connection: Upgrade and Upgrade: websocket headers. The server responds with HTTP/1.1 101 Switching Protocols if it supports WebSockets. This initial handshake allows WebSockets to work over standard HTTP ports (80, 443), easing deployment with firewalls and proxies.
 - **What are some common challenges when working directly with the native WebSocket API, and how do libraries like SignalR or Socket.IO address them?** Challenge: Manual reconnection logic if the connection drops.
   Library Solution: Automatic reconnect with configurable strategies and backoff.
   Challenge: Lack of built-in heartbeat/ping-pong to detect dead connections.
@@ -3535,23 +3517,24 @@ socket.onclose = (event) => {
   Library Solution: Abstraction like Hubs (SignalR) or Namespaces/Rooms (Socket.IO) for grouping connections and invoking RPC-like methods (hub.invoke('SendMessage', text)).
 - **You mentioned SignalR. What is its primary advantage?** SignalR is an abstraction layer that automatically chooses the best transport (WebSockets, Server-Sent Events, long polling) based on client and server capabilities. It provides a simple RPC-like model using Hubs, allowing the server to call methods on clients and vice versa. This dramatically simplifies the code needed to build real-time applications compared to managing raw WebSocket connections and message parsing manually.
 - **How would you implement basic reconnection logic for a native WebSocket connection?** You would use a pattern involving setTimeout and increasing delay (exponential backoff). On the onclose event, you would attempt to reconnect after a short delay. If that fails, you wait longer before trying again, up to a maximum limit.
-  javascript
+  ```js
   let reconnectInterval = 1000; // Start with 1 second
   function connect() {
-  const ws = new WebSocket('wss://my-server.com');
-  // ... setup event handlers ...
-  ws.onclose = function(e) {
-  console.log('Socket is closed. Reconnect will be attempted in ' + reconnectInterval + 'ms.', e.reason);
-  setTimeout(function() {
-  reconnectInterval *= 2; // Double the delay each time
-  connect();
-  }, reconnectInterval);
-  };
-  ws.onopen = function() {
-  reconnectInterval = 1000; // Reset the delay on a successful connection
-  };
+    const ws = new WebSocket('wss://my-server.com');
+    // ... setup event handlers ...
+    ws.onclose = function (e) {
+      console.log('Socket is closed. Reconnect will be attempted in ' + reconnectInterval + 'ms.', e.reason);
+      setTimeout(function () {
+        reconnectInterval *= 2; // Double the delay each time
+        connect();
+      }, reconnectInterval);
+    };
+    ws.onopen = function () {
+      reconnectInterval = 1000; // Reset the delay on a successful connection
+    };
   }
   connect();
+  ```
 - **What security considerations are important for WebSocket connections?** Use wss:// (WebSocket Secure), the equivalent of HTTPS, to encrypt data in transit.
   Validate and sanitize all data received over the WebSocket connection on both the client and server, just as you would with HTTP requests, to prevent injection attacks.
   Authenticate the connection during the initial HTTP handshake using cookies, tokens, or query parameters. Do not try to implement a custom authentication protocol after the WebSocket is open.
@@ -3733,22 +3716,13 @@ Web Storage (LocalStorage and SessionStorage) stores key–value pairs in the br
 - **What are the security concerns with localStorage vs. cookies for storing tokens?** localStorage is vulnerable to XSS because malicious scripts can read the token. Cookies can be secured with flags: HttpOnly makes the cookie inaccessible to JavaScript; Secure ensures it is only sent over HTTPS; SameSite restricts when cookies are sent, preventing CSRF.
 - **When should you use IndexedDB over LocalStorage?** When you need to store large or complex data (objects, files) or perform queries; IndexedDB supports indexes.
 - **How do localStorage and sessionStorage differ?** LocalStorage persists until cleared; SessionStorage is cleared when the tab or browser is closed.
-  Compare localStorage, sessionStorage, and cookies.
-  ----------------------------------------------------------------------
-  Feature           localStorage      sessionStorage    Cookies
-  ---------------- ----------------- ----------------- -----------------
-  Capacity          ~5–10 MB          ~5–10 MB          ~4 KB
-  Lifetime          Persistent until  Lasts only for    Set with
-  manually cleared  the session (tab  max-age/expires
-  is open)
-  Accessibility     Client‑side only  Client‑side only  Sent with every
-  HTTP request
-  (client &
-  server‑side)
-  Use case          Storing user      Storing temporary Authentication
-  preferences       form data         tokens, user
-  tracking
-  ----------------------------------------------------------------------
+- **Compare localStorage, sessionStorage, and cookies.**
+  | Feature | localStorage | sessionStorage | Cookies |
+  | --- | --- | --- | --- |
+  | Capacity | ~5-10 MB | ~5-10 MB | ~4 KB |
+  | Lifetime | Persistent until manually cleared | Lasts only for the session (tab is open) | Set with max-age/expires |
+  | Accessibility | Client-side only | Client-side only | Sent with every HTTP request (client & server-side) |
+  | Use case | Storing user preferences | Storing temporary form data | Authentication tokens, user tracking |
 
 ### Graphics & Media
 
@@ -3757,7 +3731,7 @@ Web Storage (LocalStorage and SessionStorage) stores key–value pairs in the br
 Canvas and SVG are two distinct web technologies for creating graphics in the browser. Canvas is a raster-based drawing API that provides a pixel-level interface for programmatic rendering, ideal for dynamic, performance-intensive graphics. SVG (Scalable Vector Graphics) is an XML-based vector format that describes shapes as mathematical objects, making it resolution-independent and DOM-accessible. The choice between them depends on factors like interactivity, scalability, performance requirements, and accessibility needs.
 #### Common Interview Questions
 
-- Explain the Canvas and SVG and when to use each. Canvas: A raster API that lets you draw pixels programmatically. Best for complex graphics, games and pixel-based operations; it is resolution-dependent. SVG: A vector API using XML to describe shapes. Best for icons, logos, charts and maps that need to scale without quality loss; resolution-independent and accessible via the DOM.
+- **Explain Canvas and SVG and when to use each.** Canvas: A raster API that lets you draw pixels programmatically. Best for complex graphics, games and pixel-based operations; it is resolution-dependent. SVG: A vector API using XML to describe shapes. Best for icons, logos, charts and maps that need to scale without quality loss; resolution-independent and accessible via the DOM.
 - **What are the performance implications of Canvas vs SVG?** Canvas performs better for many moving objects or frequent redraws (games, animations) because it operates at the pixel level. SVG can become slow with thousands of elements since each is a DOM node, but excels for static or moderately complex vector graphics.
 - **How does accessibility differ between Canvas and SVG?** SVG is inherently accessible - elements can have titles, descriptions, and respond to CSS. Canvas requires additional ARIA attributes and custom keyboard handling since it's essentially a bitmap image to screen readers.
 - **Can you combine Canvas and SVG in the same application?** Yes, they can be used together - SVG for UI elements and static graphics, Canvas for dynamic visualizations or game elements. They can even be layered using CSS positioning.
@@ -3908,18 +3882,20 @@ const kanbanBoard = {
 #### Common Interview Questions
 
 - **What are the key differences between Scrum and Kanban?** Scrum uses fixed-length sprints with three defined roles (Product Owner, Scrum Master, Developers) and formal events; Kanban focuses on continuous flow with visual workflow management, per-column WIP limits, and can overlay existing team structures without role changes.
-- **What are the three primary Scrum roles and their responsibilities?** Product Owner: Maximizes product value, manages backlog, defines priorities
-  Scrum Master: Ensures Scrum adherence, removes impediments, facilitates events
-  Developers: Cross-functional group that delivers potentially releasable increments each sprint
+- **What are the three primary Scrum roles and their responsibilities?**
+  - Product Owner: Maximizes product value, manages backlog, defines priorities.
+  - Scrum Master: Ensures Scrum adherence, removes impediments, facilitates events.
+  - Developers: Cross-functional group that delivers potentially releasable increments each sprint.
 - **Is Backlog Refinement a formal Scrum event?** No, according to the Scrum Guide 2020+, Backlog Refinement is an ongoing activity rather than a formal event. It involves continuously grooming and preparing backlog items for future sprints.
 - **What is the advantage of Kanban having "no prescribed roles"?** Kanban can be implemented on top of existing team structures and roles without organizational disruption, making it easier to adopt incrementally and suitable for teams with established responsibilities.
-  Name the four formal Scrum events and their purposes.
-  Sprint Planning: Determine what can be delivered in the upcoming sprint and how
-  Daily Scrum: 15-minute sync for Developers to plan next 24 hours
-  Sprint Review: Inspect the increment and adapt the Product Backlog
-  Sprint Retrospective: Plan improvements for next sprint
-- **What metrics would you track to improve team performance in each framework?** Scrum: Velocity (forecasting), Sprint Burndown (daily progress), Burnup Chart (scope changes)
-  Kanban: Cycle Time (lead time optimization), Throughput (work completion rate), Cumulative Flow Diagram (bottleneck identification)
+- **Name the four formal Scrum events and their purposes.**
+  - Sprint Planning: Determine what can be delivered in the upcoming sprint and how.
+  - Daily Scrum: 15-minute sync for Developers to plan next 24 hours.
+  - Sprint Review: Inspect the increment and adapt the Product Backlog.
+  - Sprint Retrospective: Plan improvements for next sprint.
+- **What metrics would you track to improve team performance in each framework?**
+  - Scrum: Velocity (forecasting), Sprint Burndown (daily progress), Burnup Chart (scope changes).
+  - Kanban: Cycle Time (lead time optimization), Throughput (work completion rate), Cumulative Flow Diagram (bottleneck identification).
 
 ## SEO & Accessibility
 
@@ -4079,8 +4055,8 @@ The following comparisons summarize key differences between Angular, React, and 
 | --- | --- | --- | --- |
 | Architecture & Philosophy | Full-featured, "batteries-included" framework with strong opinions. | Lean UI library focused on flexibility, requiring choices for routing, state, etc. | Progressive framework; can be used for simple enhancement or full SPAs with official libraries. |
 | Building Blocks | Components, templates, and directives compose the UI; services provide logic. | Function components and hooks compose the UI; logic is encapsulated in custom hooks. | Single-File Components (SFCs) with templates, script, and style; logic via Options API or Composition API. |
-| Template Syntax | HTML templates with directives (*ngIf, *ngFor, [(ngModel)]) and pipes. | JSX (JavaScript + XML) with JavaScript expressions, ternaries, and curly braces. | HTML-based templates with directives (v-if, v-for, v-model); logic via template expressions. |
-| Loops & Conditionals | *ngFor, *ngIf, *ngSwitch modify the DOM. | Use array methods (map) and short-circuit or ternary expressions to conditionally render elements. | v-for, v-if, v-else-if, v-else, v-show directives. |
+| Template Syntax | HTML templates with directives (`*ngIf`, `*ngFor`, `[(ngModel)]`) and pipes. | JSX (JavaScript + XML) with JavaScript expressions, ternaries, and curly braces. | HTML-based templates with directives (v-if, v-for, v-model); logic via template expressions. |
+| Loops & Conditionals | `*ngFor`, `*ngIf`, `*ngSwitch` modify the DOM. | Use array methods (map) and short-circuit or ternary expressions to conditionally render elements. | v-for, v-if, v-else-if, v-else, v-show directives. |
 | Styling & Classes | Binding syntax: [ngClass], [ngStyle]. | Use className, conditional expressions, or libraries like classnames. | Direct class/style binding, :class (object/array), :style (object/array) bindings. |
 | Local State & Reactivity | Signals, Change Detection (Zone.js or OnPush), RxJS in components. | useState, useReducer; updates trigger re-render. | ref(), reactive() (Composition API); data() (Options API). Automatic dependency tracking. |
 | Global State Management | Services + RxJS, NgRx (Redux), NgRx/ComponentStore, Akita. | Context API, Redux Toolkit, Zustand, Jotai, Recoil, MobX. | Pinia (official, modern), Vuex (legacy). Composables for shared stateful logic. |
