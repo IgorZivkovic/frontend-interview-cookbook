@@ -4084,6 +4084,10 @@ See `BONUS.md` for the narrative walkthrough.
 
 See `CHANGELOG.md`.
 
+## Author
+
+LinkedIn: https://www.linkedin.com/in/igor-%C5%BEivkovi%C4%87-124431124/
+
 ## License
 
 This project is licensed under the MIT License. See `LICENSE`.
