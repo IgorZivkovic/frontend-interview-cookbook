@@ -713,12 +713,12 @@ DOM manipulation is the act of reading or changing the browser’s Document Obje
 - **Why is documentFragment useful for performance?** A DocumentFragment is a lightweight, in-memory container. Building complex markup inside it avoids multiple reflows/repaints; once finished you insert the fragment in one operation, letting the browser render just once.
 - **What are data attributes?** Data attributes (data-) allow storing custom data on standard HTML elements. They can be accessed in JavaScript via element.dataset..
 - **What is the difference between the nodeValue and textContent properties?** nodeValue: For text nodes, it returns the text content. For element nodes, it returns null.
-  textContent: Returns the concatenated text of all descendants, including <script> and <style> content. It is more performant than innerText as it doesn't require layout calculations.
+  textContent: Returns the concatenated text of all descendants, including `<script>` and `<style>` content. It is more performant than innerText as it doesn't require layout calculations.
   Markup (HTML5+)
 
 #### Definition
 
-HTML5 + refers to HTML5 (2014 Recommendation) plus the ongoing “Living Standard” additions that browsers have adopted since - bringing new semantic elements (<header>, <article>, <nav> …), richer media & graphics (<video>, <canvas>, WebGL), modern forms & validation (type="email", required, pattern), responsive images (<picture>, srcset, sizes), interactive controls (<dialog>, <details>/<summary>), and hooks for Web Components (<template>, <slot>, custom elements).
+HTML5 + refers to HTML5 (2014 Recommendation) plus the ongoing “Living Standard” additions that browsers have adopted since - bringing new semantic elements (`<header>`, `<article>`, `<nav>` …), richer media & graphics (`<video>`, `<canvas>`, WebGL), modern forms & validation (`type="email"`, required, pattern), responsive images (`<picture>`, srcset, sizes), interactive controls (`<dialog>`, `<details>`/`<summary>`), and hooks for Web Components (`<template>`, `<slot>`, custom elements).
 #### Example
 
 ```
@@ -747,7 +747,7 @@ HTML5 + refers to HTML5 (2014 Recommendation) plus the ongoing “Living Standar
   For resolution switching (serving the same image at different resolutions/sizes): Use the srcset and sizes attributes directly on an <img> element, which is often simpler and sufficient for many use cases.
   The browser chooses the appropriate image based on device resolution, viewport size, and supported formats. Fallback to an <img> tag ensures support in non-compliant browsers.
 - **What is a Web Component and why are  and  used?** Web Components are reusable custom elements encapsulating markup, style and behaviour. The  tag defines inert markup that can be cloned, and  defines insertion points for children, enabling composability.
-  Describe the difference between the defer and async attributes in the <script> tag.
+  Describe the difference between the defer and async attributes in the `<script>` tag.
   Async
   Fetching: scripts are fetched asynchronously and do not block HTML parsing.
   Execution: runs as soon as the script is fetched.
@@ -2371,7 +2371,7 @@ Reactivity is the core feature of Vue that automatically updates the DOM when th
 - **What is the limitation of destructuring a reactive() object?** Destructuring a reactive object breaks the reactivity connection because the extracted variables are primitive values or simple references. To maintain reactivity when destructuring, you must use toRefs() which converts each property into a ref.
   Explain the purpose of the toRef() and toRefs() utility functions.
   toRef() creates a ref for a specific property on a reactive source object. toRefs() converts a reactive object into a plain object where each property is a ref pointing to the corresponding property of the original object. This is essential for maintaining reactivity when destructuring or returning reactive state from composables.
-- **Why might you see .value in your JavaScript code but not in your templates?** Vue automatically unwraps refs in templates, so you can use {{ count }} instead of {{ count.value }}. However, in the <script setup> section, you must use .value to access and mutate the underlying value of a ref.
+- **Why might you see .value in your JavaScript code but not in your templates?** Vue automatically unwraps refs in templates, so you can use {{ count }} instead of {{ count.value }}. However, in the `<script setup>` section, you must use .value to access and mutate the underlying value of a ref.
 - **What happens if you try to use reactive() with a primitive value?** Using reactive() with a primitive value (string, number, boolean) will return the original value unchanged and will issue a warning in development mode, as reactive() only works with objects and arrays.
 
 ### Computed Properties & Watchers
@@ -2403,7 +2403,7 @@ Conditional rendering controls whether elements are rendered in the DOM based on
 - **Why is the key attribute crucial when using v-for?** The key attribute gives Vue a hint to track node identity, enabling efficient DOM patching and reordering. It prevents state inconsistencies in child components and ensures proper animation behavior when list items are added, removed, or reordered.
 - **What happens if you use the same key value for multiple items in a v-for list?** Using duplicate keys can cause rendering errors, incorrect component state preservation, and unpredictable behavior during list updates. Keys must be unique among siblings.
 - **How can you access the index when iterating with v-for?** You can access the current iteration index as the second parameter: v-for="(item, index) in items". For objects, you can access the key as the second parameter and index as the third: v-for="(value, key, index) in object".
-- **What is the recommended approach for using v-if and v-for on the same element?** Avoid using both directives on the same element. Instead, move the v-if to a wrapper <template> tag or use a computed property to pre-filter the list before rendering with v-for.
+- **What is the recommended approach for using v-if and v-for on the same element?** Avoid using both directives on the same element. Instead, move the v-if to a wrapper `<template>` tag or use a computed property to pre-filter the list before rendering with v-for.
 - **How does Vue handle the lifecycle of components inside a v-if conditional?** When v-if is false, the component and its children are fully destroyed and removed from the DOM. When v-if becomes true again, the components are recreated and go through their full lifecycle (mounted, etc.).
 - **What is the purpose of the v-else and v-else-if directives?** v-else provides an "else" block for v-if, and v-else-if provides an "else if" block. They must immediately follow a v-if or v-else-if element and allow for building complex conditional rendering logic.
 - **How can you iterate over a range of numbers with v-for?** You can use v-for with a number: v-for="n in 10" will iterate from 1 to 10, with n taking values from 1 through 10.
@@ -2473,12 +2473,12 @@ Vue.js provides multiple patterns for component communication, each suited for d
 - **When should you upgrade from local state to Pinia for state management?** Move to Pinia when: multiple unrelated components need the same data, you need to share state across routes, you require time-travel debugging, you have complex state logic that needs to be tested independently, or when prop drilling becomes unwieldy and hard to maintain.
   Communication Patterns Reference
   1. Props (Parent → Child)
-  Step 1: Child defines props using defineProps in <script setup> or props option.
+  Step 1: Child defines props using defineProps in `<script setup>` or props option.
   Step 2: Parent passes data via attributes using v-bind (e.g., :prop="value").
   Step 3: Child uses props as reactive, read-only variables in template or script.
   Note: Props are reactive and should not be mutated in the child to maintain unidirectional data flow.
   2. Custom Events (Child → Parent)
-  Step 1: Child defines events using defineEmits in <script setup> or emits option.
+  Step 1: Child defines events using defineEmits in `<script setup>` or emits option.
   Step 2: Child emits event with optional payload using emit('event', data).
   Step 3: Parent listens with v-on (e.g., @event="handler") and processes the event.
   Note: Use update:propName event names for consistency with v-model.
@@ -2488,12 +2488,12 @@ Vue.js provides multiple patterns for component communication, each suited for d
   Step 3: Parent uses v-model="data" (or v-model:name="data") to sync state.
   Note: Supports custom prop/event names for multiple bindings (e.g., v-model:name).
   4. Slots (Content Distribution)
-  Step 1: Child defines <slot> placeholders in its template (default or named).
+  Step 1: Child defines `<slot>` placeholders in its template (default or named).
   Step 2: Parent provides content between component tags, optionally using v-slot for named/scoped slots.
   Step 3: Vue renders parent's content in child's slots, with scoped slots passing child data to parent.
   Note: Scoped slots (e.g., v-slot="{ item }") allow child-to-parent data sharing.
   5. Provide/Inject (Deep Nesting)
-  Step 1: Ancestor provides data using provide(key, value) in <script setup>.
+  Step 1: Ancestor provides data using provide(key, value) in `<script setup>`.
   Step 2: Descendant (any level) injects data with inject(key).
   Step 3: Descendant uses injected data, which is reactive if provided as ref or reactive.
   Note: Ideal for avoiding prop drilling in deeply nested components.
@@ -2512,11 +2512,11 @@ Slots are a mechanism for content distribution in Vue components that allow pare
 
 - **What is the primary purpose of slots in Vue components?** Slots enable component composition by allowing parent components to pass template content to child components, creating flexible and reusable components that can adapt to different content needs while maintaining their core structure and behavior.
 - **What is the difference between the default slot and named slots?** The default slot (anonymous slot) serves as the catch-all outlet for content that doesn't have a specific slot name. Named slots allow you to target specific areas in the child component's template using the v-slot directive with a slot name.
-- **How do you use the v-slot directive with named slots?** In the parent template, use <template v-slot:name> to specify content for a named slot. The shorthand is #name. The child component uses <slot name="name"> to define where the content should be rendered.
+- **How do you use the v-slot directive with named slots?** In the parent template, use `<template v-slot:name>` to specify content for a named slot. The shorthand is #name. The child component uses `<slot name="name">` to define where the content should be rendered.
 - **What are scoped slots and what problem do they solve?** Scoped slots allow child components to pass data back to the parent's slot content, enabling the parent to control the rendering while having access to the child's internal state. This solves the problem of making slot content dynamic based on the child component's data.
-- **How do you provide fallback content in slots?** You can provide default content between the <slot> tags in the child component. This content will be rendered if the parent doesn't provide any content for that slot.
-- **What is the difference between v-slot syntax on <template> versus directly on components?** v-slot can only be used on <template> elements unless the component has only a default slot. For default slots only, you can use v-slot directly on the component tag, but this is less common and can be confusing.
-- **How can you access slot data in the parent component?** Using the scoped slot syntax: <template #name="slotProps"> or <template v-slot:name="slotProps">. The slotProps object contains the data passed from the child component via v-bind on the slot.
+- **How do you provide fallback content in slots?** You can provide default content between the `<slot>` tags in the child component. This content will be rendered if the parent doesn't provide any content for that slot.
+- **What is the difference between v-slot syntax on `<template>` versus directly on components?** v-slot can only be used on `<template>` elements unless the component has only a default slot. For default slots only, you can use v-slot directly on the component tag, but this is less common and can be confusing.
+- **How can you access slot data in the parent component?** Using the scoped slot syntax: `<template #name="slotProps">` or `<template v-slot:name="slotProps">`. The slotProps object contains the data passed from the child component via v-bind on the slot.
 - **What is the purpose of dynamic slot names?** Dynamic slot names allow you to determine the slot name at runtime using a variable: v-slot:[dynamicSlotName] or #[dynamicSlotName]. This enables more flexible component patterns where the slot target can change based on application state.
 - **How do slots differ from props in terms of content distribution?** Props pass data values to child components, while slots pass template content. Props are better for simple data values, while slots are better for complex markup, layout composition, and when the parent needs control over the rendering of specific sections.
 
@@ -2553,15 +2553,15 @@ The Composition API is a set of function-based APIs introduced in Vue 3 that all
 - **What is the role of the context parameter in the setup() function?** The context parameter provides access to component features not available as props: attrs (fallthrough attributes), slots (slot content), and emit (function to emit custom events).
 - **How do you access component instance properties like $emit in the Composition API?** In the Composition API, you don't use this. Instead, you access emit through the context parameter in setup(): setup(props, { emit }) { emit('event') }.
 - **What is the mental model shift from Options API to Composition API?** The shift moves from organizing code by options type (data, methods, computed) to organizing code by feature/concern, colocating all logic related to a specific feature within the same scope in the setup() function.
-  Compiler Macros (defineProps, defineEmits in <script setup>)
+  Compiler Macros (defineProps, defineEmits in `<script setup>`)
 
 #### Definition
 
-Compiler macros are special functions that are processed at compile time rather than runtime when using Vue's <script setup> syntax. They provide a declarative way to define component props, emits, and other metadata directly within the script setup block. These macros are stripped away during compilation and replaced with appropriate runtime code, offering better TypeScript integration and more concise component definition compared to the Options API.
+Compiler macros are special functions that are processed at compile time rather than runtime when using Vue's `<script setup>` syntax. They provide a declarative way to define component props, emits, and other metadata directly within the script setup block. These macros are stripped away during compilation and replaced with appropriate runtime code, offering better TypeScript integration and more concise component definition compared to the Options API.
 #### Common Interview Questions
 
 - **What are compiler macros and how do they differ from regular JavaScript functions?** Compiler macros are special functions that are processed and removed during Vue's compilation process, unlike regular functions that execute at runtime. They provide hints to the Vue compiler about component structure and are replaced with actual JavaScript code in the final output.
-- **What is the purpose of defineProps and how does it compare to the Options API props definition?** defineProps is used to declare component props within <script setup>. It's more concise than the Options API and provides better TypeScript support. Unlike the Options API where props are defined in a separate object, defineProps is called directly in the setup context and returns a reactive props object.
+- **What is the purpose of defineProps and how does it compare to the Options API props definition?** defineProps is used to declare component props within `<script setup>`. It's more concise than the Options API and provides better TypeScript support. Unlike the Options API where props are defined in a separate object, defineProps is called directly in the setup context and returns a reactive props object.
 - **How do you define prop types and defaults using defineProps?**
 - **You can pass a type-based definition: defineProps<{ title: string; count?** : number }>() for TypeScript, or a runtime declaration: defineProps({ title: { type: String, required: true }, count: { type: Number, default: 0 } }). For TypeScript with runtime defaults, use withDefaults helper.
 - **What is the role of defineEmits and how do you type emitted events?** defineEmits declares the events a component can emit. With TypeScript, you can use a type-based declaration: defineEmits<{ (e: 'update', value: string): void; (e: 'submit'): void }>(). This provides full type checking for event names and payloads.
@@ -2571,7 +2571,7 @@ Compiler macros are special functions that are processed at compile time rather 
 - **What is the withDefaults helper and when would you use it?**
 - **withDefaults is a compiler macro that works with defineProps to provide default values for TypeScript-type-based prop definitions: withDefaults(defineProps<{ size?** : number }>(), { size: 10 }). It's only needed when using type-only props definitions.
 - **How do compiler macros enable better performance and smaller bundle sizes?** Since compiler macros are processed at build time, they can be optimized away and replaced with more efficient runtime code. This eliminates runtime overhead for prop validation in production and enables better dead code elimination through static analysis.
-- **What are the limitations of using <script setup> with compiler macros?** Limitations include: no access to the component instance via this, more complex setup for certain advanced patterns like render functions, and potential confusion for developers coming from Options API. Some IDE setups may also require additional configuration for full support.
+- **What are the limitations of using `<script setup>` with compiler macros?** Limitations include: no access to the component instance via this, more complex setup for certain advanced patterns like render functions, and potential confusion for developers coming from Options API. Some IDE setups may also require additional configuration for full support.
   Composables: The Vue Equivalent of Custom Hooks
 
 #### Definition
@@ -2670,7 +2670,7 @@ Render functions provide an alternative to templates by allowing you to programm
 - **What is the equivalent of template directives (v-if, v-for) in render functions?** There are no direct equivalents - you use JavaScript instead. v-if becomes ternary operators or logical AND, v-for becomes array.map(), v-model becomes manual value binding and event handling, and v-bind becomes object property assignment.
 - **How do you handle slots in render functions?** Access slots via the slots object in the render function's context parameter. Use slots.default() for default slot content and slots.name() for named slots. You can also pass data to scoped slots by providing arguments to the slot function calls.
 - **What are the performance implications of using render functions vs templates?** Templates are generally faster for most use cases because they can be statically analyzed and optimized by Vue's compiler. Render functions have runtime overhead but can be more efficient for highly dynamic scenarios where the template compiler's optimizations don't apply.
-- **How do you use JSX with Vue's Composition API?** You can return JSX directly from the setup() function, or use the <script setup> syntax with a JSX/TSX file. The Composition API's reactive variables and functions work seamlessly with JSX, making it a natural pairing for developers coming from React hooks.
+- **How do you use JSX with Vue's Composition API?** You can return JSX directly from the setup() function, or use the `<script setup>` syntax with a JSX/TSX file. The Composition API's reactive variables and functions work seamlessly with JSX, making it a natural pairing for developers coming from React hooks.
 - **What is the difference between functional components and regular components in render functions?** Functional components are stateless and instanceless - they don't have this context and receive props as the first argument. They're more performant for simple presentational components but cannot use lifecycle hooks or maintain local state.
 
 ### Custom Directives
