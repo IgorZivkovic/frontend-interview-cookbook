@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.1] - 2026-01-13
+
+### Added
+- Created the repository (content previously existed as a Google Doc).
+
 ## [1.7] - 2026-01-10
 
 ### Added
