@@ -1,7 +1,12 @@
 # Frontend Interview Cookbook
 
+## Frontend Interview Questions (Q&A)
+
+A practical frontend interview cookbook for anyone preparing for a frontend interview, from early-career to senior refreshers. It includes frontend interview questions and concise answers across JavaScript, React, Angular, Vue, HTML, and CSS for real-world prep.
+
 ## Table of Contents
 
+- [Frontend Interview Questions (Q&A)](#frontend-interview-questions-qa)
 - [JavaScript Fundamentals](#javascript-fundamentals)
 - [Markup (HTML5+)](#markup-html5)
 - [Styling](#styling)
@@ -3817,30 +3822,30 @@ DevOps integrates development and operations to automate software delivery. Cont
 - **How do npm, Yarn and pnpm fit into CI workflows?** These package managers install dependencies and run scripts (e.g., build, test) within CI; lockfiles ensure deterministic builds across environments.
 
 ## Git
-  Explain the difference between git merge and git rebase.
-  git merge integrates changes from one branch into another by creating a new merge commit, preserving the full history of both branches.
-  git rebase moves a branch to begin on the tip of another branch, rewriting history by creating new commits. It results in a cleaner linear history. Golden rule: rebase local branches; merge when integrating into main.
-- **What is the .gitignore file?** It specifies intentionally untracked files that Git should ignore - such as node_modules/, .env files with secrets, build directories and OS‑specific files like .DS_Store.
-  Describe a typical Git workflow. A common feature‑branch workflow:
-  main contains production‑ready code.
-  Create a feature branch: git checkout -b feature/new-login-page.
-  Commit changes: make changes, git add, and git commit on the feature branch.
-  Push and open a PR: git push origin feature/new-login-page and open a pull request.
-  Code review & merge: teammates review; after approval, the PR is merged.
-- **What is git stash?** git stash temporarily shelves (stashes) changes in your working copy so you can work on something else. Later, git stash pop applies the stashed changes and removes them from the stash list.
-- **How do you revert a commit that has already been pushed?** git revert  creates a new commit that undoes the changes of the specified commit; it is safe for shared history.
-  git reset –hard  moves the branch pointer backwards, effectively erasing commits; it rewrites history and should only be used on commits that have not been shared.
-- **What is git cherry-pick and what problem does it solve?** git cherry-pick is a Git command that allows you to apply the changes introduced by a specific commit from one branch onto another branch. It takes a commit's patch and replays it on your current branch, creating a new commit with a different hash. It solves the problem of needing a specific change or bug fix in a branch (like main or a release branch) without merging the entire feature branch or history.
-- **What is the typical workflow for using git cherry-pick?** Identify the hash of the commit you want to apply.
-  Check out the destination branch (e.g., git checkout main).
-  Execute the command `git cherry-pick <commit-hash>`.
-  Resolve any merge conflicts if they occur, then git add and git cherry-pick --continue.
+#### Common Interview Questions
+
+- **Explain the difference between git merge and git rebase.** git merge integrates changes from one branch into another by creating a new merge commit, preserving the full history of both branches. git rebase moves a branch to begin on the tip of another branch, rewriting history by creating new commits. It results in a cleaner linear history. Golden rule: rebase local branches; merge when integrating into main.
+- **What is the .gitignore file?** It specifies intentionally untracked files that Git should ignore - such as node_modules/, .env files with secrets, build directories and OS-specific files like .DS_Store.
+- **Describe a typical Git workflow.** A common feature-branch workflow:
+  - main contains production-ready code.
+  - Create a feature branch: `git checkout -b feature/new-login-page`.
+  - Commit changes: make changes, `git add`, and `git commit` on the feature branch.
+  - Push and open a PR: `git push origin feature/new-login-page` and open a pull request.
+  - Code review and merge: teammates review; after approval, the PR is merged.
+- **What is git stash?** `git stash` temporarily shelves (stashes) changes in your working copy so you can work on something else. Later, `git stash pop` applies the stashed changes and removes them from the stash list.
+- **How do you revert a commit that has already been pushed?** `git revert` creates a new commit that undoes the changes of the specified commit; it is safe for shared history. `git reset --hard` moves the branch pointer backwards, effectively erasing commits; it rewrites history and should only be used on commits that have not been shared.
+- **What is git cherry-pick and what problem does it solve?** `git cherry-pick` applies the changes introduced by a specific commit from one branch onto another. It takes a commit's patch and replays it on your current branch, creating a new commit with a different hash. It solves the problem of needing a specific change or bug fix in a branch (like main or a release branch) without merging the entire feature branch or history.
+- **What is the typical workflow for using git cherry-pick?**
+  - Identify the hash of the commit you want to apply.
+  - Check out the destination branch (e.g., `git checkout main`).
+  - Execute the command `git cherry-pick <commit-hash>`.
+  - Resolve any merge conflicts if they occur, then `git add` and `git cherry-pick --continue`.
 - **What are the main risks or drawbacks of using git cherry-pick?** The primary risk is duplicating commits in the repository history. If you later merge the original feature branch, Git may not recognize that the cherry-picked commit is essentially the same change, leading to confusing history and potential merge conflicts. It can also break the semantic link between related commits if you cherry-pick one commit but not others that depend on it.
 - **How does git cherry-pick differ from git merge or git rebase?** git merge integrates all changes from one branch into another, preserving the entire history. git rebase replays a sequence of commits from one branch onto another, creating a linear history. git cherry-pick is more surgical; it selectively applies individual commits, not entire branches or commit sequences.
 - **When is it appropriate to use git cherry-pick?** It is appropriate for specific scenarios like:
-  Hotfixes: Applying a critical bug fix from a development branch to a stable release or main branch.
-  Saving Work: Rescuing a specific, well-defined change from a messy or abandoned feature branch.
-  Partial Feature Integration: Moving a single, self-contained feature or commit from one long-running branch to another without merging everything.
+  - Hotfixes: applying a critical bug fix from a development branch to a stable release or main branch.
+  - Saving work: rescuing a specific, well-defined change from a messy or abandoned feature branch.
+  - Partial feature integration: moving a single, self-contained feature or commit from one long-running branch to another without merging everything.
 
 ## Agile, Kanban & Scrum
 
