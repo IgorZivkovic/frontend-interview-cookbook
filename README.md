@@ -741,12 +741,12 @@ HTML5 + refers to HTML5 (2014 Recommendation) plus the ongoing “Living Standar
 
 #### Common Interview Questions
 
-- **What is the purpose of the <!DOCTYPE html> declaration?** It tells the browser the version of HTML in use (HTML5) and ensures standards‑mode rendering for consistent cross‑browser behavior.
+- **What is the purpose of the `<!DOCTYPE html>` declaration?** It tells the browser the version of HTML in use (HTML5) and ensures standards‑mode rendering for consistent cross‑browser behavior.
 - **What are the benefits of using semantic HTML5 elements instead of generic tags?** They improve accessibility, SEO and maintainability by giving meaning to page regions (e.g., `<header>`, `<nav>`, `<main>`, `<footer>`). Screen readers and search engines can better understand the document structure.
 - **How do you implement responsive images in HTML5?** For art direction (different crops or image compositions at different breakpoints): Use the `<picture>` element with multiple `<source>` elements and media queries.
   For resolution switching (serving the same image at different resolutions/sizes): Use the srcset and sizes attributes directly on an `<img>` element, which is often simpler and sufficient for many use cases.
   The browser chooses the appropriate image based on device resolution, viewport size, and supported formats. Fallback to an `<img>` tag ensures support in non-compliant browsers.
-- **What is a Web Component and why are  and  used?** Web Components are reusable custom elements encapsulating markup, style and behaviour. The  tag defines inert markup that can be cloned, and  defines insertion points for children, enabling composability.
+- **What is a Web Component and why are `<template>` and `<slot>` used?** Web Components are reusable custom elements encapsulating markup, style and behaviour. The `<template>` tag defines inert markup that can be cloned, and `<slot>` defines insertion points for children, enabling composability.
   Describe the difference between the defer and async attributes in the `<script>` tag.
   Async
   Fetching: scripts are fetched asynchronously and do not block HTML parsing.
@@ -761,7 +761,7 @@ HTML5 + refers to HTML5 (2014 Recommendation) plus the ongoing “Living Standar
 
 #### Definition
 
-EJS (Embedded JavaScript) is a server‑side templating engine for Node.js. EJS lets you embed JavaScript into HTML using tags: <%= %> for HTML‑escaped output, <%- %> for unescaped raw HTML, <% code %> for running arbitrary logic and <% include file %> for partials. It renders templates on the server and sends HTML to the client.
+EJS (Embedded JavaScript) is a server‑side templating engine for Node.js. EJS lets you embed JavaScript into HTML using tags: `<%= %>` for HTML‑escaped output, `<%- %>` for unescaped raw HTML, `<% code %>` for running arbitrary logic and `<% include file %>` for partials. It renders templates on the server and sends HTML to the client.
 #### Example
 
 ```
@@ -784,11 +784,11 @@ app.listen(3000);
 
 #### Common Interview Questions
 
-- **How does EJS differ from JSX or Handlebars?** EJS is string-based server-side templating: templates compile to functions that return HTML strings rendered before they hit the browser. JSX is a syntax extension for React that compiles to component calls and usually runs in the browser (or during build). Handlebars is logic-less; it restricts you to helpers, whereas EJS lets you run arbitrary JavaScript inside <% %>.
-  Explain the security implications of <%- %> vs. <%= %> in EJS.
-  <%= %> escapes output by default, preventing XSS when rendering user-provided data.
-  <%- %> outputs raw, unescaped HTML.
-  Use it only for **trusted, sanitized content** (e.g., Markdown that you’ve cleaned server-side). Using <%- %> with untrusted data creates a serious XSS risk.
+- **How does EJS differ from JSX or Handlebars?** EJS is string-based server-side templating: templates compile to functions that return HTML strings rendered before they hit the browser. JSX is a syntax extension for React that compiles to component calls and usually runs in the browser (or during build). Handlebars is logic-less; it restricts you to helpers, whereas EJS lets you run arbitrary JavaScript inside `<% %>`.
+  Explain the security implications of `<%- %>` vs. `<%= %>` in EJS.
+  `<%= %>` escapes output by default, preventing XSS when rendering user-provided data.
+  `<%- %>` outputs raw, unescaped HTML.
+  Use it only for **trusted, sanitized content** (e.g., Markdown that you’ve cleaned server-side). Using `<%- %>` with untrusted data creates a serious XSS risk.
 - **What performance optimizations are available when using EJS in production?** • Template caching: app.set('view cache', true) or ejs.renderFile(path, data, {cache:true}) stores the compiled function in memory.
   • Pre-compilation: run ejs-cli to compile templates to JS bundles during build time.
   • Minify HTML after render to reduce payload size, and avoid heavy logic in templates - prepare data beforehand in controllers or middleware.
@@ -1809,12 +1809,12 @@ React emphasizes unidirectional data flow and explicit communication patterns. C
 - **When should you upgrade from local state to a state management library?** Move to state management when: multiple unrelated components need the same data, you need time-travel debugging, state logic becomes complex and hard to test, or when prop drilling and context become unmanageable.
   Communication Patterns Reference
   1. Props (Parent → Child)
-  Step 1: Parent passes data to child via props: <Child data={value} />.
+  Step 1: Parent passes data to child via props: `<Child data={value} />`.
   Step 2: Child receives props as function parameters: function Child({ data }).
   Step 3: Child uses props in rendering and logic; props are read-only.
   Note: Props changes trigger re-renders. Use React.memo() to optimize if props haven't changed.
   2. Callback Functions (Child → Parent)
-  Step 1: Parent passes callback function as prop: <Child onUpdate={handleUpdate} />.
+  Step 1: Parent passes callback function as prop: `<Child onUpdate={handleUpdate} />`.
   Step 2: Child calls callback with data: props.onUpdate(newData).
   Step 3: Parent handles the callback and updates its state accordingly.
   Note: Use useCallback() to prevent unnecessary re-renders of child components.
@@ -1825,7 +1825,7 @@ React emphasizes unidirectional data flow and explicit communication patterns. C
   Note: This makes data flow explicit but can lead to prop drilling in deep hierarchies.
   4. Context API (Any components)
   Step 1: Create context: const MyContext = createContext().
-  Step 2: Wrap components with Provider: <MyContext.Provider value={data}>.
+  Step 2: Wrap components with Provider: `<MyContext.Provider value={data}>`.
   Step 3: Consume context in children: const data = useContext(MyContext).
   Note: Context value changes trigger re-renders in all consuming components. Optimize with memoization.
   5. useReducer + Context (Global state)
@@ -1841,7 +1841,7 @@ React emphasizes unidirectional data flow and explicit communication patterns. C
   7. Forward Refs (Parent accessing Child)
   Step 1: Wrap child component with forwardRef().
   Step 2: Child accepts ref as second parameter and attaches to DOM element.
-  Step 3: Parent creates ref and passes to child: <Child ref={childRef} />.
+  Step 3: Parent creates ref and passes to child: `<Child ref={childRef} />`.
   Note: Use sparingly as it breaks component encapsulation. Prefer declarative props when possible.
   8. State Management Libraries (Global)
   Step 1: Choose library (Redux Toolkit, Zustand, Jotai) and set up store.
@@ -2352,7 +2352,7 @@ Vue uses an HTML-based template syntax that allows you to declaratively bind the
   Explain the difference between the v-bind and v-on directives.
   v-bind is used for one-way data binding from the component's data to an HTML attribute (e.g., id, class, href), often shortened to :. v-on is used to listen to DOM events and execute some JavaScript, often shortened to @.
 - **What are the different ways to use the v-bind directive for an element's class?** You can use a string, an object (to toggle classes), or an array (to apply a list of classes). The object syntax is common for conditionally applying classes based on data properties.
-- **How does the v-model directive work under the hood?** v-model is syntactic sugar that combines v-bind for value binding and v-on for input event listening. For a text input, <input v-model="searchText"> is equivalent to <input :value="searchText" @input="searchText = $event.target.value">.
+- **How does the v-model directive work under the hood?** v-model is syntactic sugar that combines v-bind for value binding and v-on for input event listening. For a text input, `<input v-model="searchText">` is equivalent to `<input :value="searchText" @input="searchText = $event.target.value">`.
 - **What is the purpose of the v-if vs v-show directives and when would you choose one over the other?** v-if conditionally renders the element, fully destroying and recreating it and its children/components. v-show always renders the element and toggles its CSS display property. Use v-if if the condition is unlikely to change at runtime (lazy, toggles infrequently). Use v-show for expensive elements that need to be toggled very frequently.
 - **Describe the use case for the v-for key attribute. Why is it important?** The key attribute is a unique identifier for each iterated node. It helps Vue's virtual DOM algorithm identify nodes and efficiently patch and reorder elements when the list changes. Using a stable, unique key (like an id) is crucial for performance and correct component state management within lists.
 - **What are the available argument modifiers for the v-on directive?** Vue provides event modifiers to handle common DOM event details. Common modifiers include .stop (equivalent to event.stopPropagation()), .prevent (equivalent to event.preventDefault()), .capture, and .self.
@@ -2422,7 +2422,7 @@ Class and style bindings are specialized forms of data binding that allow you to
 - **How can you bind inline styles using the object syntax?** You can bind styles with an object where keys are CSS property names (in camelCase or kebab-case) and values are the style values: :style="{ color: activeColor, fontSize: fontSize + 'px' }".
 - **What is the advantage of binding a style object directly versus using inline object syntax?** Binding a style object directly (:style="styleObject") keeps your template cleaner and allows you to compute complex style logic in the component's JavaScript, improving maintainability.
 - **How does Vue handle vendor-prefixed CSS properties in style bindings?** When you use a CSS property that requires a vendor prefix in :style, Vue will automatically add appropriate prefixes. For example, if you use transform, Vue will detect and add -webkit-transform if needed.
-- **Can you combine static classes with dynamic class bindings?** Yes, the static class attribute and dynamic :class binding merge automatically: <div class="static" :class="{ active: isActive }"> will render as <div class="static active"> when isActive is truthy.
+- **Can you combine static classes with dynamic class bindings?** Yes, the static class attribute and dynamic :class binding merge automatically: `<div class="static" :class="{ active: isActive }">` will render as `<div class="static active">` when isActive is truthy.
 - **How do you bind multiple style objects to the same element?** You can use the array syntax for styles to apply multiple style objects: :style="[baseStyles, overridingStyles]". The objects are merged, with later objects taking precedence for conflicting properties.
 - **What happens when you use both static and dynamic style bindings?** Similar to class bindings, static style attributes and dynamic :style bindings are merged. For conflicting CSS properties, the dynamic binding takes precedence over the static attribute.
 
@@ -2452,8 +2452,8 @@ Components are the building blocks of Vue applications, allowing you to split th
 - **What are the two main ways to define props in Vue components?** Props can be defined as an array of strings (props: ['title', 'content']) for simple declaration, or as an object (props: { title: String, count: Number }) for type checking and validation.
 - **What is the one-way data flow principle with props and why is it important?** Props follow a one-way data flow from parent to child. This prevents child components from accidentally mutating the parent's state, making the data flow easier to understand and debug. If a child needs to modify data, it should emit an event to request the change from the parent.
 - **How do you validate props in Vue components?** When defining props as an object, you can specify validation requirements including type checking, required flag, default values, and custom validator functions to ensure props meet specific criteria.
-- **What is the difference between kebab-case and camelCase for prop names?** In templates, you should use kebab-case (<my-component user-name="John">) because HTML is case-insensitive. In the component's JavaScript definition, use camelCase (props: ['userName']). Vue automatically handles the mapping between the two.
-- **How do custom events enable child-to-parent communication?** Child components use the $emit method to trigger custom events (this.$emit('update', newValue)). Parent components listen to these events using v-on or @ (<child-component @update="handleUpdate">).
+- **What is the difference between kebab-case and camelCase for prop names?** In templates, you should use kebab-case (`<my-component user-name="John">`) because HTML is case-insensitive. In the component's JavaScript definition, use camelCase (props: ['userName']). Vue automatically handles the mapping between the two.
+- **How do custom events enable child-to-parent communication?** Child components use the $emit method to trigger custom events (this.$emit('update', newValue)). Parent components listen to these events using v-on or @ (`<child-component @update="handleUpdate">`).
 - **What are the best practices for naming custom events?** Use kebab-case for event names in templates, as HTML is case-insensitive. For multi-word event names, use descriptive names that clearly indicate the action being performed.
 - **How can you pass data from a child to a parent component through custom events?** You can pass data as the second parameter of $emit: this.$emit('update', newValue). The parent component can access this data in the event handler method or via the $event variable in inline handlers.
 - **What is the purpose of defining emitted events in a component using the emits option?** Declaring emitted events in the emits option makes the component's interface more self-documenting, enables Vue to validate event names, and allows you to define validation for event payloads in development mode.
@@ -2563,13 +2563,13 @@ Compiler macros are special functions that are processed at compile time rather 
 - **What are compiler macros and how do they differ from regular JavaScript functions?** Compiler macros are special functions that are processed and removed during Vue's compilation process, unlike regular functions that execute at runtime. They provide hints to the Vue compiler about component structure and are replaced with actual JavaScript code in the final output.
 - **What is the purpose of defineProps and how does it compare to the Options API props definition?** defineProps is used to declare component props within `<script setup>`. It's more concise than the Options API and provides better TypeScript support. Unlike the Options API where props are defined in a separate object, defineProps is called directly in the setup context and returns a reactive props object.
 - **How do you define prop types and defaults using defineProps?**
-- **You can pass a type-based definition: defineProps<{ title: string; count?** : number }>() for TypeScript, or a runtime declaration: defineProps({ title: { type: String, required: true }, count: { type: Number, default: 0 } }). For TypeScript with runtime defaults, use withDefaults helper.
-- **What is the role of defineEmits and how do you type emitted events?** defineEmits declares the events a component can emit. With TypeScript, you can use a type-based declaration: defineEmits<{ (e: 'update', value: string): void; (e: 'submit'): void }>(). This provides full type checking for event names and payloads.
+- **You can pass a type-based definition with `defineProps<{ title: string; count?: number }>()` for TypeScript, or a runtime declaration with `defineProps({ title: { type: String, required: true }, count: { type: Number, default: 0 } })`. For TypeScript with runtime defaults, use the `withDefaults` helper.
+- **What is the role of defineEmits and how do you type emitted events?** defineEmits declares the events a component can emit. With TypeScript, you can use a type-based declaration: `defineEmits<{ (e: 'update', value: string): void; (e: 'submit'): void }>()`. This provides full type checking for event names and payloads.
 - **How do you access the props and emits defined with macros in your component logic?** defineProps() returns a reactive object containing the props, which you can use directly in your template and logic. defineEmits() returns an emit function that you can call to trigger events: const emit = defineEmits(); emit('update', value).
 - **What are the advantages of using compiler macros over the Options API?** Advantages include: better TypeScript integration with full type inference, reduced boilerplate, colocation of related logic, improved IDE support with autocompletion, and better tree-shaking since unused features can be eliminated at compile time.
 - **Can you use defineProps and defineEmits with both TypeScript and JavaScript?** Yes, both work with JavaScript and TypeScript. However, TypeScript users get additional benefits like type checking, autocompletion, and the ability to use pure type-based definitions without runtime overhead.
 - **What is the withDefaults helper and when would you use it?**
-- **withDefaults is a compiler macro that works with defineProps to provide default values for TypeScript-type-based prop definitions: withDefaults(defineProps<{ size?** : number }>(), { size: 10 }). It's only needed when using type-only props definitions.
+- **withDefaults is a compiler macro that works with defineProps to provide default values for TypeScript-type-based prop definitions: `withDefaults(defineProps<{ size?: number }>(), { size: 10 })`. It's only needed when using type-only props definitions.
 - **How do compiler macros enable better performance and smaller bundle sizes?** Since compiler macros are processed at build time, they can be optimized away and replaced with more efficient runtime code. This eliminates runtime overhead for prop validation in production and enables better dead code elimination through static analysis.
 - **What are the limitations of using `<script setup>` with compiler macros?** Limitations include: no access to the component instance via this, more complex setup for certain advanced patterns like render functions, and potential confusion for developers coming from Options API. Some IDE setups may also require additional configuration for full support.
   Composables: The Vue Equivalent of Custom Hooks
@@ -2613,30 +2613,30 @@ Template refs are a feature that allows direct access to DOM elements or child c
 #### Common Interview Questions
 
 - **What is the primary use case for template refs?** Template refs are used when you need direct access to DOM elements for operations like focus management, text selection, media playback control, or integrating with third-party libraries that require direct DOM manipulation.
-- **How do you create a template ref in Vue 3's Composition API?** You declare a ref with const myRef = ref(null) and attach it to an element using the ref attribute: <input ref="myRef">. The DOM element will be assigned to myRef.value after component mount.
+- **How do you create a template ref in Vue 3's Composition API?** You declare a ref with `const myRef = ref(null)` and attach it to an element using the ref attribute: `<input ref="myRef">`. The DOM element will be assigned to myRef.value after component mount.
 - **What is the timing consideration when accessing template refs?** Template refs are only populated after the component has mounted. Accessing them in setup() or created() lifecycle hooks will return null because the DOM hasn't been rendered yet. Use onMounted() to ensure refs are available.
 - **How do template refs work with v-for directives?** When using ref inside v-for, the ref value becomes an array containing all the DOM elements or component instances. However, this array order is not guaranteed to match the data array order.
 - **What is the difference between using refs on DOM elements versus component instances?** When used on DOM elements, the ref contains the actual DOM node. When used on Vue components, the ref contains the component instance, giving you access to its properties, methods, and emitted events.
 - **How can you create multiple refs for elements in a list without using v-for?** You can use a function ref that gets called for each element: :ref="(el) => { if (el) itemsRefs.push(el) }". This gives you more control over how refs are collected.
 - **What are the best practices for using template refs?** Use template refs sparingly as they break declarative patterns. Prefer declarative solutions when possible. Always check if the ref exists before using it, and clean up any event listeners or side effects in onUnmounted().
 - **How do you access a child component's methods or data using refs?** By attaching a ref to a child component, you can access its exposed properties and methods via childRef.value.someMethod(). However, this creates tight coupling and should be used judiciously.
-- **What is the TypeScript consideration when working with template refs?** You should properly type your refs: const inputRef = ref<HTMLInputElement | null>(null) for DOM elements, or const childRef = ref<InstanceType<typeof ChildComponent> | null>(null) for component instances.
-  Built-in Components: <KeepAlive>, <Teleport>, <Suspense>
+- **What is the TypeScript consideration when working with template refs?** You should properly type your refs: `const inputRef = ref<HTMLInputElement | null>(null)` for DOM elements, or `const childRef = ref<InstanceType<typeof ChildComponent> | null>(null)` for component instances.
+  Built-in Components: `<KeepAlive>`, `<Teleport>`, `<Suspense>`
 
 #### Definition
 
-Vue provides several built-in components that solve common architectural patterns in web applications. <KeepAlive> enables state preservation for dynamic component switching, <Teleport> allows rendering content in different parts of the DOM tree, and <Suspense> provides a way to handle async component dependencies with fallback states.
+Vue provides several built-in components that solve common architectural patterns in web applications. `<KeepAlive>` enables state preservation for dynamic component switching, `<Teleport>` allows rendering content in different parts of the DOM tree, and `<Suspense>` provides a way to handle async component dependencies with fallback states.
 #### Common Interview Questions
 
-- **What problem does the <KeepAlive> component solve?** <KeepAlive> preserves component state and avoids re-rendering when dynamically switching between components, improving performance and maintaining user interaction state like form inputs, scroll positions, or component lifecycle.
-- **How do you control which components get cached by <KeepAlive>?** Use the include and exclude props to specify which component names should or shouldn't be cached. You can use strings, regex patterns, or arrays to define the caching strategy.
-- **What lifecycle hooks are triggered specifically for <KeepAlive> components?** Cached components trigger activated when inserted into the DOM and deactivated when removed from the DOM but kept in cache. These hooks help manage component state during cache transitions.
-- **What is the primary use case for the <Teleport> component?** <Teleport> allows rendering a component's content in a different part of the DOM tree while maintaining its logical position in the Vue component hierarchy. This is essential for modals, tooltips, notifications, and other overlay elements.
-- **How does <Teleport> maintain component context while rendering elsewhere?** Although the content renders in a different DOM location, the component remains part of the original parent's component tree, preserving props, event listeners, and injection context.
-- **Can you conditionally disable <Teleport> and how?** Yes, use the disabled prop to conditionally disable teleportation. When disabled is true, the content renders in its original position instead of the target location.
-- **What problem does <Suspense> solve in Vue applications?** <Suspense> provides a declarative way to handle async component dependencies and display fallback content while waiting for async operations to complete, simplifying loading state management.
-- **What are the two types of async dependencies that <Suspense> can wait for?** <Suspense> can wait for: 1) Components with async setup() functions, and 2) Components with Async Components (dynamic imports with loading states).
-- **What are the limitations of <Suspense> in its current implementation?** <Suspense> is still considered experimental in Vue 3, has limited nesting support, and doesn't work with Server-Side Rendering (SSR). It's primarily designed for component-level async dependencies rather than application-level data fetching.
+- **What problem does the `<KeepAlive>` component solve?** `<KeepAlive>` preserves component state and avoids re-rendering when dynamically switching between components, improving performance and maintaining user interaction state like form inputs, scroll positions, or component lifecycle.
+- **How do you control which components get cached by `<KeepAlive>`?** Use the include and exclude props to specify which component names should or shouldn't be cached. You can use strings, regex patterns, or arrays to define the caching strategy.
+- **What lifecycle hooks are triggered specifically for `<KeepAlive>` components?** Cached components trigger activated when inserted into the DOM and deactivated when removed from the DOM but kept in cache. These hooks help manage component state during cache transitions.
+- **What is the primary use case for the `<Teleport>` component?** `<Teleport>` allows rendering a component's content in a different part of the DOM tree while maintaining its logical position in the Vue component hierarchy. This is essential for modals, tooltips, notifications, and other overlay elements.
+- **How does `<Teleport>` maintain component context while rendering elsewhere?** Although the content renders in a different DOM location, the component remains part of the original parent's component tree, preserving props, event listeners, and injection context.
+- **Can you conditionally disable `<Teleport>` and how?** Yes, use the disabled prop to conditionally disable teleportation. When disabled is true, the content renders in its original position instead of the target location.
+- **What problem does `<Suspense>` solve in Vue applications?** `<Suspense>` provides a declarative way to handle async component dependencies and display fallback content while waiting for async operations to complete, simplifying loading state management.
+- **What are the two types of async dependencies that `<Suspense>` can wait for?** `<Suspense>` can wait for: 1) Components with async setup() functions, and 2) Components with Async Components (dynamic imports with loading states).
+- **What are the limitations of `<Suspense>` in its current implementation?** `<Suspense>` is still considered experimental in Vue 3, has limited nesting support, and doesn't work with Server-Side Rendering (SSR). It's primarily designed for component-level async dependencies rather than application-level data fetching.
 
 ### Error Handling with errorCaptured Hook
 
@@ -2736,7 +2736,7 @@ Vue Router is the official router for Vue.js applications, enabling the creation
 - **What are navigation guards and what are the different types?** Navigation guards are hooks that allow you to control navigation. Types include: global guards (beforeEach, beforeResolve, afterEach), per-route guards (beforeEnter), and in-component guards (beforeRouteEnter, beforeRouteUpdate, beforeRouteLeave).
 - **How do you handle dynamic route parameters and access them in components?** Define dynamic segments in routes using colons (path: '/user/:id') and access them in components via the params object: const route = useRoute(); const userId = route.params.id.
 - **What is the difference between router.push and router.replace?** router.push adds a new entry to the browser history stack, while router.replace replaces the current history entry. Use replace when you don't want the user to navigate back to the previous URL.
-- **How do you implement nested routes (child routes) in Vue Router?** Define nested routes using the children property in route configuration, and use <router-view> components in parent components to render the child routes.
+- **How do you implement nested routes (child routes) in Vue Router?** Define nested routes using the children property in route configuration, and use `<router-view>` components in parent components to render the child routes.
 - **What are route meta fields and how are they commonly used?** Route meta fields are custom properties attached to routes, commonly used for authentication guards, breadcrumbs, page titles, or any route-specific metadata that needs to be accessed in navigation guards or components.
 - **How does Vue Router handle lazy loading of route components?** Use dynamic imports with component: () => import('./views/User.vue') in route configuration. This enables code splitting where each route's component is loaded only when needed.
 - **What is the purpose of the useRoute and useRouter composables?** useRoute returns the current route object (read-only, for accessing params, query, hash), while useRouter returns the router instance (for programmatic navigation and router methods). Both are used in the Composition API.
@@ -2771,7 +2771,7 @@ Server-Side Rendering (SSR) generates HTML on the server and sends fully-rendere
 - **How does Nuxt.js handle data fetching for SSR?** Nuxt provides special hooks like useAsyncData and useFetch composables, and asyncData method (in Options API) that execute on both server and client, ensuring data is fetched before rendering.
 - **What are the key rendering modes available in Nuxt 3?** Nuxt 3 supports Universal (SSR + SPA hydration), Client-Side only (SPA), and Static Site Generation (pre-rendered HTML). The rendering mode can be configured per-route or globally.
 - **How do you handle authentication in Nuxt SSR applications?** Use server-side middleware for authentication checks, store tokens in httpOnly cookies (accessible on server), and use composables like useAuth to manage authentication state consistently across server and client.
-- **What is the purpose of the <NuxtLink> component compared to regular <a> tags?** <NuxtLink> provides intelligent client-side navigation with prefetching, automatic active state management, and prevents full page reloads while maintaining SSR benefits.
+- **What is the purpose of the `<NuxtLink>` component compared to regular `<a>` tags?** `<NuxtLink>` provides intelligent client-side navigation with prefetching, automatic active state management, and prevents full page reloads while maintaining SSR benefits.
 - **How does Nuxt.js optimize performance through automatic code splitting?** Nuxt automatically splits code by pages and components, loading only the necessary JavaScript for each route, significantly reducing initial bundle size and improving load times.
 
 ### Server-Side Rendering (SSR) Deep Dive
@@ -2881,14 +2881,17 @@ Dependency Injection is a design pattern where classes receive their dependencie
 
 - **What is the provider hierarchy in Angular?** Providers registered with providedIn: 'root' are application-wide singletons. Providers in NgModules are available to that module and its children. Providers on components create new instances for each component instance and its children.
 - **How do you inject tokens that are not classes (e.g., values)?** Use the InjectionToken and useValue provider:
+  ```ts
   export const APP_CONFIG = new InjectionToken<any>('APP_CONFIG');
   providers: [
-  { provide: APP_CONFIG, useValue: { apiUrl: '...', timeout: 5000 } }
-  ]
+    { provide: APP_CONFIG, useValue: { apiUrl: '...', timeout: 5000 } }
+  ];
   constructor(@Inject(APP_CONFIG) private config: any) {}
-- **constructor(@Optional() private loggingService?** : LoggingService) {}
+  // Optional dependency
+  constructor(@Optional() private loggingService?: LoggingService) {}
   // Or with inject function
   private loggingService = inject(LoggingService, { optional: true });
+  ```
 - **What's the difference between useClass, useValue, useFactory, and useExisting?** useClass: Provides an instance of the given class
   useValue: Provides a specific value
   useFactory: Provides a value created by a factory function
@@ -2946,7 +2949,7 @@ Angular 17 (2023): Enhanced hooks for improved performance and developer experie
   ngAfterViewInit() (View and children initialized)
   ngAfterViewChecked()
   ngOnDestroy() (Cleanup)
-- **When would you use ngAfterContentInit vs ngAfterViewInit?** ngAfterContentInit: When you need to work with projected content (<ng-content>)
+- **When would you use ngAfterContentInit vs ngAfterViewInit?** ngAfterContentInit: When you need to work with projected content (`<ng-content>`)
   ngAfterViewInit: When you need to access the component's own view and children (@ViewChild)
 - **How do the new afterRender hooks help with SSR (Server-Side Rendering)?** The new hooksare skipped during server rendering, preventing errors from browser-specific APIs.
   This makes it safer to write code that works in both server and client environments.
@@ -2999,10 +3002,11 @@ Future: Planned to become the default reactivity model, potentially reducing Zon
 - **What is "fine-grained reactivity" and how do Signals enable it?** Fine-grained reactivity means the framework can update the specific part of the DOM that depends on a changed value, instead of checking the entire component tree. Signals track their dependencies automatically, so when a signal changes, Angular can precisely know which components or even which HTML expressions need to be updated.
 - **Can Signals replace RxJS and Zone.js in Angular?** Not entirely. Signals are intended to work alongside RxJS, not replace it. RxJS is still superior for complex async operations and event streams. Signals may eventually reduce or eliminate the need for Zone.js in many applications, as they provide a more explicit way to trigger change detection.
 - **How would you use a Signal in an Angular template?** You use a signal the same way you use a component property, by calling it as a function (due to its getter nature).
-  html
+  ```html
   <p>Count: {{ count() }}</p>
   <p>Doubled: {{ doubleCount() }}</p>
   <button (click)="count.set(count() + 1)">Increment</button>
+  ```
 - **Are there signals in other frameworks?** Yes. Preact and Solid.js have signals as their core reactivity model. Vue's ref() and computed() are very similar in concept to signals. This pattern is becoming a modern standard for state management due to its simplicity and performance.
 
 ### RxJS (Reactive Extensions for JavaScript)
@@ -3035,6 +3039,7 @@ RxJS is a library for reactive programming using Observables, making it easier t
   concatMap: Runs inner Observables sequentially (maintains order)
   exhaustMap: Ignores new values until current inner Observable completes (ideal for save operations)
 - **How do you prevent memory leaks with Observables?** Use proper subscription management:
+  ```ts
   // Manual subscription (unsubscribe needed)
   private subscription = this.data$.subscribe();
   ngOnDestroy() { this.subscription.unsubscribe(); }
@@ -3045,6 +3050,7 @@ RxJS is a library for reactive programming using Observables, making it easier t
   // Using async pipe (automatic cleanup)
   data$ = this.service.getData();
   template: `{{ data$ | async }}`
+  ```
 - **What are Cold vs Hot Observables?** Cold Observables: Start execution on each subscription (e.g., http.get())
   Hot Observables: Emit values regardless of subscriptions (e.g., fromEvent, Subjects)
 - **When would you use a Subject vs a regular Observable?** Use Subjects when you need to multicast (share execution among multiple subscribers) or imperatively push values. Use regular Observables for unicast, declarative data streams.
@@ -3062,7 +3068,7 @@ Angular provides a comprehensive set of patterns for component communication, le
 
 - **What are the main component communication patterns in Angular and when should you use each?** Use @Input() for parent-to-child data flow, @Output() with EventEmitter for child-to-parent communication, [(ngModel)] for two-way binding in forms, Services with DI for sharing data between unrelated components, @ViewChild for parent accessing child component instances, and RxJS Subjects for reactive global state management.
 - **How do you choose between services and input/output for component communication?** Use input/output for direct parent-child relationships where the communication is explicit and hierarchical. Use services when components are not directly related, when you need to share state across multiple components, or when the data needs to be persisted beyond component lifecycle.
-- **What is the difference between @ViewChild and @ContentChild?** @ViewChild accesses elements/components that are part of the component's view (defined in its template), while @ContentChild accesses content that is projected into the component via <ng-content> (provided by the parent component).
+- **What is the difference between @ViewChild and @ContentChild?** @ViewChild accesses elements/components that are part of the component's view (defined in its template), while @ContentChild accesses content that is projected into the component via `<ng-content>` (provided by the parent component).
 - **How does Angular's change detection affect component communication?** Angular's change detection automatically updates views when data changes. With OnPush strategy, components only update when input references change or async pipes receive new values, making input-based communication more efficient but requiring careful immutability practices.
 - **When should you use RxJS Subjects versus simple services for state management?** Use RxJS Subjects when you need reactive programming patterns, multiple subscribers, or complex state transformations. Use simple services for simple data sharing without the need for reactive updates or when the data flow is straightforward.
   Communication Patterns Reference
@@ -3075,10 +3081,10 @@ Angular provides a comprehensive set of patterns for component communication, le
   Step 1: Child component defines output properties with @Output() and EventEmitter.
   Step 2: Child emits events using eventEmitter.emit(payload).
   Step 3: Parent listens with event binding: (outputName)="handler($event)".
-  Note: Always initialize EventEmitter and type it properly: @Output() eventName = new EventEmitter<Type>().
+  Note: Always initialize EventEmitter and type it properly: `@Output() eventName = new EventEmitter<Type>()`.
   3. [(ngModel)] (Two-Way Binding)
   Step 1: Import FormsModule in your application module.
-  Step 2: Use [(ngModel)] on form elements: <input [(ngModel)]="property">.
+  Step 2: Use [(ngModel)] on form elements: `<input [(ngModel)]="property">`.
   Step 3: Angular automatically syncs the view and model values.
   Note: For custom components, implement both @Input() and @Output() with update prefix: @Input() value and @Output() valueChange.
   4. @ViewChild / @ViewChildren (Parent accessing Child)
@@ -3092,7 +3098,7 @@ Angular provides a comprehensive set of patterns for component communication, le
   Step 3: Components share data through service properties and methods.
   Note: Service instances are singleton at their provided level. Use component providers for isolated instances.
   6. RxJS Subjects (Global/Cross-component)
-  Step 1: Create BehaviorSubject/Subject in service: private data$ = new BehaviorSubject<T>(initial).
+  Step 1: Create BehaviorSubject/Subject in service: `private data$ = new BehaviorSubject<T>(initial)`.
   Step 2: Expose as observable: public data$ = this.data$.asObservable().
   Step 3: Components subscribe to observable and update via service methods.
   Note: Use async pipe in templates for automatic subscription management and OnPush compatibility.
@@ -3117,7 +3123,7 @@ Angular 15+: Improved standalone component support for forms
 - **What are the key differences between template-driven and reactive forms?** Template-driven forms are declarative and simpler for basic scenarios. Reactive forms are imperative, provide better type safety, easier testing, and more control for complex scenarios like dynamic forms or cross-field validation.
 - **How do you trigger validation manually in reactive forms?** Call form.markAllAsTouched() to mark all controls as touched, or control.updateValueAndValidity() to re-run validation on a specific control.
 - **Why prefer async validators for uniqueness checks?** Async validators return Observable/Promise, allowing Angular to manage pending state and automatically handle HTTP debouncing and cancellation. They're ideal for server-side validation like username/email uniqueness.
-- **What are typed forms (Angular 14+) and why use them?** Typed forms provide TypeScript type safety for form values. Instead of FormControl<any>, use FormControl<string> to get compile-time type checking and better IDE support.
+- **What are typed forms (Angular 14+) and why use them?** Typed forms provide TypeScript type safety for form values. Instead of `FormControl<any>`, use `FormControl<string>` to get compile-time type checking and better IDE support.
 - **How do you handle dynamic form arrays?** Use FormArray to manage dynamic lists of controls. Add/remove controls dynamically with formArray.push() and formArray.removeAt(), and iterate in template with *ngFor.
 - **What's the difference between form.value and form.getRawValue()?** form.value excludes disabled controls, while form.getRawValue() includes all controls regardless of disabled state, useful when you need complete form data.
 - **How do you implement cross-field validation?** Add validation at the form group level rather than individual controls:
@@ -3141,26 +3147,30 @@ HTTP Interceptors are classes that implement the HttpInterceptor interface. They
 - **What are typical uses of HTTP interceptors?** Adding authentication tokens, logging requests/responses, handling errors globally, showing loading indicators, caching responses, adding retry logic, or modifying request/response data.
 - **How do you register an interceptor?** Provide it in the root module or applicationConfig providers array:
 - **How do you handle retry logic in an interceptor?** Use RxJS operators like retry or retryWhen:
+  ```ts
   return next.handle(req).pipe(
-  retryWhen(errors => errors.pipe(
-  delay(1000),
-  take(3)
-  ))
+    retryWhen(errors => errors.pipe(
+      delay(1000),
+      take(3)
+    ))
   );
+  ```
 - **What does the multi: true option do?** It allows multiple interceptors to be registered for the same token (HTTP_INTERCEPTORS), forming an interceptor chain instead of replacing previous interceptors.
 - **How do you ensure interceptors execute in a specific order?** Interceptors execute in the order they're provided. The first interceptor provided is the first to process the request and last to process the response.
 - **What's the difference between functional and class-based interceptors?** Functional interceptors (Angular 15+) are simpler functions that work better with standalone components. Class-based interceptors implement the HttpInterceptor interface and work with dependency injection.
 - **How can you skip an interceptor for specific requests?** Add a custom header to the request and check for it in the interceptor:
+  ```ts
   const request = httpRequest.clone({
-  headers: httpRequest.headers.set('Skip-Interceptor', 'true')
+    headers: httpRequest.headers.set('Skip-Interceptor', 'true')
   });
   // In your interceptor
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-  if (req.headers.has('Skip-Interceptor')) {
-  return next.handle(req);
+    if (req.headers.has('Skip-Interceptor')) {
+      return next.handle(req);
+    }
+    // ... normal interceptor logic
   }
-  // ... normal interceptor logic
-  }
+  ```
 
 ### Modules & Lazy Loading
 
@@ -3240,9 +3250,11 @@ Deferrable views are a performance optimization feature introduced in Angular 17
 - **What's the difference between @placeholder and @loading blocks?** @placeholder shows content before the deferred block starts loading. @loading shows content during the loading process. The placeholder is typically static content, while loading shows progress indicators.
 - **How does prefetching work with deferrable views?** Prefetching loads the deferred content in the background without rendering it. Use prefetch on trigger to start loading when a condition is met, then the main on trigger to actually display it.
 - **Can you defer content that depends on async data?** Yes, combine @defer with async pipes or use the when condition to defer based on data availability:
+  ```html
   @defer (when dataLoaded) {
-  <app-data-view [data]="data" />
+    <app-data-view [data]="data" />
   }
+  ```
 - **What error handling options are available?** The @error block displays when loading fails. You can also use error handling in the component's constructor or ngOnInit to manage failures gracefully.
 - **How do deferrable views differ from traditional lazy loading?** Traditional lazy loading works at the route/component level, while deferrable views work at the template block level within a single component, providing more granular control.
 - **When should you avoid using @defer?** Avoid deferring content that's critical for initial rendering, above-the-fold content, or components needed for immediate user interaction. Also avoid over-deferring, which can cause too many sequential loads.
@@ -3391,13 +3403,15 @@ Template literals (${placeholders}) support string interpolation and multi‑lin
 #### Common Interview Questions
 
 - **What are tagged template literals?** A tagged template literal is a function that preprocesses template literals; it receives the string parts and substitution values as arguments and returns a new string. Example:
+  ```js
   function highlight(strings, ...values) {
-  return strings.reduce((result, str, i) =>
-  `${result}${str}<span class="hl">${values[i] || ''}</span>`, '');
+    return strings.reduce((result, str, i) =>
+      `${result}${str}<span class="hl">${values[i] || ''}</span>`, '');
   }
   const name = 'John';
   highlight`Hello, ${name}!`;
-  // → "Hello, <span class="hl">John</span>!"
+  // → "Hello, <span class=\"hl\">John</span>!"
+  ```
 - **How do you provide default values in destructuring?** Specify = value in the destructuring pattern (e.g., const { title = ‘N/A’ } = obj) to fall back when the property is undefined.
 - **How can you rename variables during destructuring?** Use property: newName syntax (e.g., const { id: userId } = user).
   Bundlers & Compilers
@@ -3889,7 +3903,7 @@ DevOps integrates development and operations to automate software delivery. Cont
 - **What is git cherry-pick and what problem does it solve?** git cherry-pick is a Git command that allows you to apply the changes introduced by a specific commit from one branch onto another branch. It takes a commit's patch and replays it on your current branch, creating a new commit with a different hash. It solves the problem of needing a specific change or bug fix in a branch (like main or a release branch) without merging the entire feature branch or history.
 - **What is the typical workflow for using git cherry-pick?** Identify the hash of the commit you want to apply.
   Check out the destination branch (e.g., git checkout main).
-  Execute the command git cherry-pick <commit-hash>.
+  Execute the command `git cherry-pick <commit-hash>`.
   Resolve any merge conflicts if they occur, then git add and git cherry-pick --continue.
 - **What are the main risks or drawbacks of using git cherry-pick?** The primary risk is duplicating commits in the repository history. If you later merge the original feature branch, Git may not recognize that the cherry-picked commit is essentially the same change, leading to confusing history and potential merge conflicts. It can also break the semantic link between related commits if you cherry-pick one commit but not others that depend on it.
 - **How does git cherry-pick differ from git merge or git rebase?** git merge integrates all changes from one branch into another, preserving the entire history. git rebase replays a sequence of commits from one branch onto another, creating a linear history. git cherry-pick is more surgical; it selectively applies individual commits, not entire branches or commit sequences.
@@ -3897,48 +3911,22 @@ DevOps integrates development and operations to automate software delivery. Cont
   Hotfixes: Applying a critical bug fix from a development branch to a stable release or main branch.
   Saving Work: Rescuing a specific, well-defined change from a messy or abandoned feature branch.
   Partial Feature Integration: Moving a single, self-contained feature or commit from one long-running branch to another without merging everything.
-  Other Topics
+
+## Other Topics
 
 ### Agile, Kanban & Scrum
 
 #### Definition
 
 Agile is a project management philosophy based on the Agile Manifesto, emphasizing iterative development, customer collaboration, and adaptability to change. Scrum and Kanban are specific frameworks that implement Agile principles:
-## Aspect
 
-## Scrum
-
-## Kanban
-
-## Approach
-
-## Iterative, time-boxed sprints (2-4 weeks)
-
-## Continuous flow
-
-## Roles
-
-## Product Owner, Scrum Master, Developers
-
-## No prescribed roles (can overlay existing teams)
-
-## Cadence
-
-## Regular ceremonies (sprint planning, review, retrospective)
-
-## Continuous delivery
-
-## Change Policy
-
-## Changes discouraged during sprint
-
-## Changes can be made at any time
-
-## Metrics
-
-## Velocity, Sprint Burndown, Burnup Chart
-
-### Cycle Time, Throughput, Cumulative Flow Diagram
+| Aspect | Scrum | Kanban |
+| --- | --- | --- |
+| Approach | Iterative, time-boxed sprints (2-4 weeks) | Continuous flow |
+| Roles | Product Owner, Scrum Master, Developers | No prescribed roles (can overlay existing teams) |
+| Cadence | Regular ceremonies (sprint planning, review, retrospective) | Continuous delivery |
+| Change Policy | Changes discouraged during sprint | Changes can be made at any time |
+| Metrics | Velocity, Sprint Burndown, Burnup Chart | Cycle Time, Throughput, Cumulative Flow Diagram |
 
 #### Example
 
