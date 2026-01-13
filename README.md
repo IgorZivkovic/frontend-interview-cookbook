@@ -1736,7 +1736,7 @@ AsyncLocalStorage (async_hooks) – per-request context storage across async bou
   Bottleneck detection in async pipelines
 
 ## React Deep Dive
-  This section explores advanced React concepts beyond basic hooks and components.
+This section explores advanced React concepts beyond basic hooks and components.
 
 ### State vs Props
 
@@ -1828,12 +1828,14 @@ Hooks are functions that enable functional components to use React features like
 - React 16.8 (2019): Basic Hooks - useState, useEffect, useContext, useReducer, useCallback, useMemo, useRef, useImperativeHandle, useLayoutEffect
 - React 18 (2022): Concurrent Hooks - useId, useSyncExternalStore, useTransition, useDeferredValue
 - React 19 (2024): Action Hooks - use hook, useOptimistic, useFormState, useFormStatus
+- React 19.2 (2025): useEffectEvent for separating event logic from effects
 - Note on React 19 features: While these hooks are documented in React RFCs and available in Canary releases, production adoption may vary. Always check the official React documentation for stable release status and consider progressive adoption strategies for mission-critical applications.
 #### Common Interview Questions
 
 - **How did hooks change React development patterns since their introduction in 16.8?** Hooks enabled functional components to fully replace class components, introduced better code reuse through custom hooks, simplified complex component logic, and paved the way for concurrent features.
 - **What problem do concurrent hooks (useTransition, useDeferredValue) solve in React 18?** They enable non-blocking user interfaces by allowing React to interrupt rendering, prioritize urgent updates (like typing), and defer non-urgent updates (like rendering large lists), improving perceived performance.
 - **How does the use hook in React 19 differ from traditional async patterns?** The use hook allows components to consume Promises and Context directly in render, simplifying data fetching patterns and enabling more natural async/await syntax in components.
+- **What does useEffectEvent solve?** It lets you move event-like logic out of effects while still reading the latest props/state, reducing stale-closure bugs without re-running the effect.
 - **When would you choose useLayoutEffect over useEffect?** useLayoutEffect runs synchronously after DOM mutations but before paint, making it suitable for measurements or DOM manipulations that must happen before the browser repaints. useEffect runs asynchronously after paint.
 - **How do you run code when a component mounts and unmounts?** Use the dependency array for mount timing and return a cleanup function for unmount. Empty array [] runs once after mount; return function handles unmount cleanup.
 - **What common operations require cleanup on unmount?** Timers/Intervals  -  clearTimeout, clearInterval
@@ -1868,6 +1870,7 @@ The React component lifecycle refers to the series of phases a component goes th
 
 - **What happens during component mount and unmount?** Mount Phase  -  DOM elements created and inserted, initial state established, useEffect with empty dependency array runs. Common operations: API calls, analytics, subscriptions.
   Unmount Phase  -  Component removed from DOM, cleanup functions run, state and effects destroyed. Common operations: cleanup, resource disposal.
+- **How do you temporarily hide UI without unmounting it?** Use `<Activity>` (React 19.2+) to hide and restore a subtree while preserving its internal state, useful for tabs and transitions.
 - **How do you prevent memory leaks in React components?** Always clean up intervals and timeouts
   Cancel ongoing API requests with AbortController
   Remove event listeners properly
@@ -2047,13 +2050,16 @@ Server-Side Rendering has evolved from basic string rendering to sophisticated h
 - React 15-16 (2016-2017): ReactDOM.hydrate() replaces render() for SSR
 - Next.js 1-8 (2016-2019): Framework-level SSR abstractions
 - React 18 (2022): Streaming SSR with renderToPipeableStream()
+- React 19.2 (2025): Resume/prerender APIs for partial prerendering and Node Web Streams support
 - Next.js 13+ (2022): App Router, React Server Components, partial hydration
 - Modern Era (2023+): Islands architecture, resumability, fine-grained hydration
 #### Common Interview Questions
 
 - **How has SSR evolved from basic string rendering to modern streaming approaches?** Early SSR blocked until entire page was ready. Modern streaming SSR sends the shell immediately and streams components as they resolve, significantly improving Time to First Byte (TTFB) and perceived performance.
 - **What problem does React 18's streaming SSR solve?** It eliminates the "waterfall" problem where servers wait for all data before sending HTML. Now, the shell can be sent immediately while dynamic content streams in later.
+- **What do the React 19.2 resume/prerender APIs enable?** They let you pause a prerender and later resume it to a stream (`resume*`), which supports partial prerendering and more flexible streaming/hydration workflows on both Web Streams and Node streams.
 - **How do React Server Components change the SSR landscape?** RSCs execute on the server only, producing zero client JavaScript. They enable finer-grained loading states, reduce bundle size, and allow direct data access without API endpoints.
+- **What is cacheSignal in React Server Components?** It's a signal that lets RSCs detect when a cache lifetime ends, helping frameworks coordinate cache invalidation and refresh behavior.
 - **What's the difference between hydration in React 16 vs React 18?** React 16 hydration was all-or-nothing. React 18 supports selective hydration, where interactive parts can hydrate independently from static content, improving perceived performance.
 - **How does Next.js's App Router improve upon the Pages Router for SSR?** App Router uses React Server Components by default, enables nested layouts with individual loading states, supports parallel data fetching, and provides better error boundaries.
 - **What are hydration mismatches and how can they be prevented?** Mismatches occur when server-rendered HTML differs from client-rendered HTML. Prevention: Avoid browser-specific APIs during render, use useEffect for side effects, and ensure consistent data between server and client.
@@ -2326,7 +2332,7 @@ Vue uses an HTML-based template syntax that allows you to declaratively bind the
 
 #### Definition
 
-Reactivity is the core feature of Vue that automatically updates the DOM when the application state changes. Vue 3's reactivity system is built on JavaScript Proxies, a modern language feature that enables fine-grained dependency tracking and efficient updates. The primary APIs for creating reactive data are ref() and reactive(), which are part of the Composition API.
+Reactivity is the core feature of Vue that automatically updates the DOM when the application state changes. Vue 3's reactivity system is built on JavaScript Proxies, a modern language feature that enables fine-grained dependency tracking and efficient updates. The primary APIs for creating reactive data are ref() and reactive(), which are part of the Composition API. Vue 3.4 improved reactivity performance, especially for large reactive graphs.
 #### Common Interview Questions
 
 - **What is the fundamental difference between ref() and reactive()?** ref() is used for creating a reactive reference to a single value (primitive or object) and requires accessing the value via the .value property in JavaScript. reactive() is used for creating a reactive object and provides direct property access without the need for .value.
@@ -2352,6 +2358,7 @@ Computed properties and watchers are two reactive composition utilities that res
 - **How do you define a computed property in the Composition API versus the Options API?** In the Options API: computed: { fullName() { return this.first + ' ' + this.last } }. In the Composition API: const fullName = computed(() => firstName.value + ' ' + lastName.value).
 - **What are the performance implications of computed properties versus methods?** Computed properties are cached based on their dependencies, so they're more efficient than methods when the same value is accessed multiple times without dependency changes. Methods run fresh on every invocation.
 - **How can you watch multiple sources simultaneously with the watch function?** You can pass an array of reactive sources as the first argument: watch([source1, source2], ([newVal1, newVal2], [oldVal1, oldVal2]) => { /* handler */ }).
+- **What does the once option do in watch()?** It automatically stops the watcher after the first trigger, which is useful for one-time reactions like initial fetches based on a reactive value.
 - **When should you use the immediate and deep options with watchers?** Use immediate: true to trigger the callback immediately after watcher creation. Use deep: true to watch nested properties of objects, forcing the watcher to traverse deep into the object structure for changes.
 - **What is a common pitfall when watching reactive objects without the deep option?** Without deep: true, the watcher only triggers when the object reference itself changes, not when its nested properties are modified. This can lead to missing important state changes in complex objects.
 
@@ -2516,17 +2523,18 @@ The Composition API is a set of function-based APIs introduced in Vue 3 that all
 - **What is the role of the context parameter in the setup() function?** The context parameter provides access to component features not available as props: attrs (fallthrough attributes), slots (slot content), and emit (function to emit custom events).
 - **How do you access component instance properties like $emit in the Composition API?** In the Composition API, you don't use this. Instead, you access emit through the context parameter in setup(): setup(props, { emit }) { emit('event') }.
 - **What is the mental model shift from Options API to Composition API?** The shift moves from organizing code by options type (data, methods, computed) to organizing code by feature/concern, colocating all logic related to a specific feature within the same scope in the setup() function.
-### Compiler Macros (defineProps, defineEmits in `<script setup>`)
+### Compiler Macros (defineProps, defineEmits, defineModel in `<script setup>`)
 
 #### Definition
 
-Compiler macros are special functions that are processed at compile time rather than runtime when using Vue's `<script setup>` syntax. They provide a declarative way to define component props, emits, and other metadata directly within the script setup block. These macros are stripped away during compilation and replaced with appropriate runtime code, offering better TypeScript integration and more concise component definition compared to the Options API.
+Compiler macros are special functions that are processed at compile time rather than runtime when using Vue's `<script setup>` syntax. They provide a declarative way to define component props, emits, and model bindings directly within the script setup block. These macros are stripped away during compilation and replaced with appropriate runtime code, offering better TypeScript integration and more concise component definition compared to the Options API.
 #### Common Interview Questions
 
 - **What are compiler macros and how do they differ from regular JavaScript functions?** Compiler macros are special functions that are processed and removed during Vue's compilation process, unlike regular functions that execute at runtime. They provide hints to the Vue compiler about component structure and are replaced with actual JavaScript code in the final output.
 - **What is the purpose of defineProps and how does it compare to the Options API props definition?** defineProps is used to declare component props within `<script setup>`. It's more concise than the Options API and provides better TypeScript support. Unlike the Options API where props are defined in a separate object, defineProps is called directly in the setup context and returns a reactive props object.
 - **How do you define prop types and defaults using defineProps?** You can pass a type-based definition with `defineProps<{ title: string; count?: number }>()` for TypeScript, or a runtime declaration with `defineProps({ title: { type: String, required: true }, count: { type: Number, default: 0 } })`. For TypeScript with runtime defaults, use the `withDefaults` helper.
 - **What is the role of defineEmits and how do you type emitted events?** defineEmits declares the events a component can emit. With TypeScript, you can use a type-based declaration: `defineEmits<{ (e: 'update', value: string): void; (e: 'submit'): void }>()`. This provides full type checking for event names and payloads.
+- **What does defineModel do and when would you use it?** defineModel creates a typed `v-model` binding in `<script setup>` with optional defaults and modifiers. Use it when you want a concise, type-safe two-way binding API for a component.
 - **How do you access the props and emits defined with macros in your component logic?** defineProps() returns a reactive object containing the props, which you can use directly in your template and logic. defineEmits() returns an emit function that you can call to trigger events: const emit = defineEmits(); emit('update', value).
 - **What are the advantages of using compiler macros over the Options API?** Advantages include: better TypeScript integration with full type inference, reduced boilerplate, colocation of related logic, improved IDE support with autocompletion, and better tree-shaking since unused features can be eliminated at compile time.
 - **Can you use defineProps and defineEmits with both TypeScript and JavaScript?** Yes, both work with JavaScript and TypeScript. However, TypeScript users get additional benefits like type checking, autocompletion, and the ability to use pure type-based definitions without runtime overhead.
@@ -2620,7 +2628,7 @@ The errorCaptured hook is a lifecycle hook that allows a component to catch erro
 
 #### Definition
 
-Render functions provide an alternative to templates by allowing you to programmatically create your component's VNode tree using JavaScript. Instead of using HTML-based templates, you use JavaScript's full programming power to describe the component's render output. JSX is a syntax extension that can be used with Vue's render functions, offering a more familiar, XML-like syntax similar to React's JSX. This approach is useful for highly dynamic components where the template structure needs to be determined programmatically.
+Render functions provide an alternative to templates by allowing you to programmatically create your component's VNode tree using JavaScript. Instead of using HTML-based templates, you use JavaScript's full programming power to describe the component's render output. JSX is a syntax extension that can be used with Vue's render functions, offering a more familiar, XML-like syntax similar to React's JSX. This approach is useful for highly dynamic components where the template structure needs to be determined programmatically. As of Vue 3.4, the global JSX namespace is no longer registered; set `jsxImportSource: "vue"` or import `vue/jsx` for TSX support.
 #### Common Interview Questions
 
 - **When would you choose render functions over templates in Vue?** Render functions are preferable when you need full programmatic control over the component's output, such as when creating highly dynamic components where the template structure is determined at runtime, when building component libraries that require maximum flexibility, or when working with complex functional components that need optimization beyond what templates can provide.
@@ -2770,7 +2778,7 @@ Vue provides several built-in optimization techniques to improve rendering perfo
 - **What are the common pitfalls when implementing virtual scrolling?** Common pitfalls include incorrect item height calculations, poor handling of dynamic content sizes, inadequate buffer zones causing flickering, and accessibility issues with screen readers and keyboard navigation.
 
 ## Angular Deep Dive
-  Angular is a TypeScript‑based framework for building single‑page applications. It uses declarative templates, dependency injection and reactive programming (RxJS) to manage complex UIs.
+Angular is a TypeScript‑based framework for building single‑page applications. It uses declarative templates, dependency injection and reactive programming (RxJS) to manage complex UIs.
 
 ### Component vs Directive
 
@@ -2919,10 +2927,10 @@ Angular calls lifecycle hook methods at key points in a component's existence: f
 
 #### Definition
 
-Angular's change detection mechanism determines when and how to update the UI when your application's data changes. The default strategy checks every component on any async event (via Zone.js). The OnPush strategy limits checks to input reference changes, component events, or manual triggers. Signals (Angular 16+) enable fine-grained reactivity for optimal performance.
+Angular's change detection mechanism determines when and how to update the UI when your application's data changes. The default strategy checks every component on async events when Zone-based change detection is enabled (via provideZoneChangeDetection). The OnPush strategy limits checks to input reference changes, component events, or manual triggers. Signals (Angular 16+) enable fine-grained reactivity for optimal performance.
 #### Common Interview Questions
 
-- **What triggers change detection in Angular?** Events such as DOM events, HTTP responses, timers, Promise resolutions, or Observable emissions trigger change detection cycles via Zone.js.
+- **What triggers change detection in Angular?** When Zone-based change detection is enabled, DOM events, HTTP responses, timers, Promise resolutions, or Observable emissions trigger change detection cycles via Zone.js.
 - **How do you manually trigger change detection?** Inject ChangeDetectorRef and call detectChanges() for immediate check or markForCheck() to schedule check in next cycle.
 - **Why can mutating an array fail to update an OnPush component?** OnPush checks reference equality. Mutation keeps the same reference; create new reference: this.items = [...this.items, newItem].
 - **How do Signals change Angular change detection?** Signals provide fine-grained reactivity - Angular knows exactly which components depend on which signals, enabling more efficient updates without Zone.js in future versions.
@@ -3051,6 +3059,7 @@ Angular provides a comprehensive set of patterns for component communication, le
    - Step 2: Inject ActivatedRoute and subscribe to params: this.route.params.subscribe().
    - Step 3: Use parameter values to load component data.
    - Note: Use paramMap for better TypeScript support and snapshot for one-time access.
+   - Note: Router state APIs increasingly use signals (e.g., lastSuccessfulNavigation), so invoke them when required.
 
 ### Forms & Validation
 
@@ -3207,6 +3216,8 @@ Deferrable views are a performance optimization feature introduced in Angular 17
 #### Definition
 
 Server-Side Rendering (SSR) generates HTML on the server and sends it to the client, improving initial load performance, SEO, and social media previews. Hydration is the process where Angular reuses the server-rendered DOM on the client side, attaching event listeners and making the application interactive. Angular's modern SSR (introduced in Angular 16+) features non-destructive hydration that prevents content flickering.
+
+As of Angular 21, server bootstrap accepts a `BootstrapContext`, and `getPlatform()`/`destroyPlatform()` are no-ops on the server.
 #### Common Interview Questions
 
 - **What are the benefits of SSR over client-side rendering?** SSR improves SEO (search engines can crawl content), performance (faster First Contentful Paint), social media sharing (proper meta tags), and accessibility (content available without JavaScript).
