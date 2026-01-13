@@ -1310,26 +1310,19 @@ Promises – represent a value that will be available in the future and allow ch
 async / await – syntactic sugar over Promises that enables writing asynchronous code in a synchronous style using try / catch for error handling.
 #### Example
 
-Callback style:
-
-```
+```js
+// Callback style:
 fs.readFile('data.txt', (err, data) => {
   if (err) return console.error(err);
   console.log(data.toString());
 });
-```
 
-Promise style:
+// Promise style:
 fs.promises.readFile('data.txt')
-
-```
   .then(data => console.log(data.toString()))
   .catch(console.error);
-```
 
-async / await:
-
-```
+// async / await:
 async function read() {
   try {
     const data = await fs.promises.readFile('data.txt');
@@ -1361,29 +1354,21 @@ Promise-based (fs/promises) – non-blocking operations that return Promises and
 All three ultimately perform the same underlying I/O work, but differ in how they affect the event loop and how results are consumed.
 #### Example
 
-Synchronous (blocking):
-
-```
+```js
+// Synchronous (blocking):
 const fs = require('fs');
 const data = fs.readFileSync('file.txt', 'utf8');
 console.log(data);
-```
 
-Asynchronous with callback:
-
-```
+// Asynchronous with callback:
 const fs = require('fs');
 fs.readFile('file.txt', 'utf8', (err, data) => {
   if (err) throw err;
   console.log(data);
 });
-```
 
-Promise-based:
-
-```
+// Promise-based:
 const fs = require('fs/promises');
-
 async function read() {
   const data = await fs.readFile('file.txt', 'utf8');
   console.log(data);
@@ -1412,19 +1397,15 @@ Promise rejections – handled with .catch() or try/catch in async/await.
 Process-level events – uncaughtException, unhandledRejection, and OS signals for last-resort handling and graceful shutdown.
 #### Example
 
-Synchronous:
-
-```
+```js
+// Synchronous:
 try {
   JSON.parse('invalid');
 } catch (err) {
   console.error('Parse failed:', err.message);
 }
-```
 
-Async / Promise:
-
-```
+// Async / Promise:
 async function load() {
   try {
     const data = await fs.promises.readFile('missing.txt');
@@ -1432,11 +1413,8 @@ async function load() {
     console.error('File error:', err.code);
   }
 }
-```
 
-Process-level safety net:
-
-```
+// Process-level safety net:
 process.on('unhandledRejection', (reason) => {
   console.error('Unhandled rejection:', reason);
 });
@@ -1470,36 +1448,24 @@ execFile – like exec, but runs a binary directly without a shell.
 fork – a special case of spawn for launching another Node.js process with a built-in IPC (inter-process communication) channel.
 #### Example
 
-Running a shell command:
-
-```
+```js
+// Running a shell command:
 const { exec } = require('child_process');
-
 exec('ls -l', (err, stdout, stderr) => {
   if (err) return console.error(err);
   console.log(stdout);
 });
-```
 
-Spawning a long-running process with streams:
-
-```
+// Spawning a long-running process with streams:
 const { spawn } = require('child_process');
-
 const ping = spawn('ping', ['google.com']);
-
 ping.stdout.on('data', data => {
   console.log(`Output: ${data}`);
 });
-```
 
-Forking another Node.js process:
-
-```
+// Forking another Node.js process:
 const { fork } = require('child_process');
-
 const worker = fork('./worker.js');
-
 worker.send({ task: 'start' });
 worker.on('message', msg => console.log('From worker:', msg));
 ```
@@ -1563,30 +1529,21 @@ Worker Threads provide a way to run JavaScript in parallel across multiple threa
 Workers communicate with the main thread via message passing (postMessage) and can optionally share memory using SharedArrayBuffer and Atomics. This makes Worker Threads suitable for CPU-intensive tasks such as image processing, encryption, data compression, or complex calculations that would otherwise block the event loop.
 #### Example
 
-Main thread:
-
-```
+```js
+// Main thread:
 const { Worker } = require('worker_threads');
-
 const worker = new Worker('./worker.js');
-
 worker.postMessage(10);
-
 worker.on('message', result => {
   console.log('Result from worker:', result);
 });
-```
 
-Worker file (worker.js):
-
-```
+// Worker file (worker.js):
 const { parentPort } = require('worker_threads');
-
 parentPort.on('message', (n) => {
   const result = fib(n); // CPU-intensive
   parentPort.postMessage(result);
 });
-
 function fib(n) {
   return n < 2 ? n : fib(n - 1) + fib(n - 2);
 }
@@ -1608,32 +1565,24 @@ The http and https modules are Node.js’s low-level APIs for building web serve
 These modules operate on top of streams: incoming requests are readable streams, and responses are writable streams. This design enables efficient handling of large payloads, backpressure, and real-time data transfer.
 #### Example
 
-Basic HTTP server:
-
-```
+```js
+// Basic HTTP server:
 const http = require('http');
-
 const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' });
   res.end('Hello from Node\n');
 });
-
 server.listen(3000, () => {
   console.log('Server running on http://localhost:3000');
 });
-```
 
-HTTPS server:
-
-```
+// HTTPS server:
 const https = require('https');
 const fs = require('fs');
-
 const options = {
   key: fs.readFileSync('key.pem'),
   cert: fs.readFileSync('cert.pem')
 };
-
 https.createServer(options, (req, res) => {
   res.end('Secure response');
 }).listen(443);
@@ -1710,6 +1659,7 @@ Key fields that are commonly discussed:
 Package managers are tools that install, resolve, and manage JavaScript dependencies based on package.json and a lockfile. In the Node.js ecosystem, the three dominant managers are npm, yarn, and pnpm. By 2026, all three are mature, stable, and production-ready, but they differ in architecture, performance, disk usage, and ecosystem conventions.
 #### Example
 
+```sh
 Basic commands (conceptually equivalent):
 npm install
 yarn install
@@ -1717,8 +1667,8 @@ pnpm install
 
 All produce:
 node_modules/
-
-### a lockfile (package-lock.json, yarn.lock, pnpm-lock.yaml)
+a lockfile (package-lock.json, yarn.lock, pnpm-lock.yaml)
+```
 
 #### Common Interview Questions
 
@@ -3534,6 +3484,7 @@ REST is an architectural style that uses HTTP verbs to operate on resources iden
 The WebSocket protocol provides full-duplex, bidirectional communication over a single, long-lived TCP connection. Unlike HTTP's request-response model, a WebSocket connection allows the server to push data to the client at any time without the client first making a request. This is ideal for real-time applications like chat, live feeds, collaborative tools, and gaming. Libraries like SignalR (ASP.NET) and Socket.IO (Node.js) build on this protocol, offering additional features like automatic reconnection, fallback transports, and higher-level abstractions like hubs and rooms.
 ## Example (Native WebSocket API)
 
+```js
 const socket = new WebSocket('wss://echo.websocket.org');
 socket.onopen = (event) => {
   socket.send('Hello Server!');
@@ -3547,6 +3498,7 @@ socket.onerror = (error) => {
 socket.onclose = (event) => {
   console.log('Connection closed:', event.code, event.reason);
 };
+```
 #### Common Interview Questions
 
 - **How do WebSockets differ from HTTP polling, long polling, or Server-Sent Events (SSE)?** HTTP Polling: Client repeatedly requests new data at regular intervals. Inefficient due to constant empty responses and header overhead.
