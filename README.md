@@ -3798,45 +3798,17 @@ Canvas and SVG are two distinct web technologies for creating graphics in the br
 #### Definition
 
 SOLID is an acronym for five key principles in object-oriented design aimed at creating software that's easier to maintain, extend, and understand. These principles help developers write code that's flexible, scalable, and less prone to bugs. They were introduced by Robert C. Martin (Uncle Bob) and are widely applied in JavaScript frameworks like React and Angular, especially in large-scale applications.
-## Principle Overview
+#### Principle Overview
 
-## Principle
+| Principle | In Simple Terms | Frontend Benefit |
+| --- | --- | --- |
+| Single Responsibility (SRP) | One job per component | Easier testing & maintenance |
+| Open/Closed (OCP) | Extend without modifying | Safe feature additions |
+| Liskov Substitution (LSP) | Substitutes work as expected | Predictable components |
+| Interface Segregation (ISP) | Don't force unused features | Cleaner dependencies |
+| Dependency Inversion (DIP) | Depend on abstractions | Flexible & testable code |
 
-## In Simple Terms
-
-## Frontend Benefit
-
-## Single Responsibility (SRP)
-
-## One job per component
-
-## Easier testing & maintenance
-
-## Open/Closed (OCP)
-
-## Extend without modifying
-
-## Safe feature additions
-
-## Liskov Substitution (LSP)
-
-## Substitutes work as expected
-
-## Predictable components
-
-## Interface Segregation (ISP)
-
-## Don't force unused features
-
-## Cleaner dependencies
-
-## Dependency Inversion (DIP)
-
-## Depend on abstractions
-
-## Flexible & testable code
-
-## Detailed Breakdown
+#### Detailed Breakdown
 
 Single Responsibility Principle (SRP): Every class, module, or function should have only one job. For example, a React component should either display data OR handle business logic, but not both. This isolation makes changes safer and testing simpler.
 Open/Closed Principle (OCP): Code should be open for extension but closed for modification. Like adding new rooms to a house without tearing down walls - you can add PayPal support to a payment system without rewriting the core credit card logic.
