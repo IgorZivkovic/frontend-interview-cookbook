@@ -1,4 +1,33 @@
-# JavaScript Fundamentals
+# Frontend Interview Cookbook
+
+## Table of Contents
+
+- [JavaScript Fundamentals](#javascript-fundamentals)
+- [Markup (HTML5+)](#markup-html5)
+- [Styling](#styling)
+- [Node.js Fundamentals](#nodejs-fundamentals)
+- [React Deep Dive](#react-deep-dive)
+- [Vue Deep Dive](#vue-deep-dive)
+- [Angular Deep Dive](#angular-deep-dive)
+- [ES6 Deep Dive](#es6-deep-dive)
+- [Bundlers & Compilers](#bundlers--compilers)
+- [Threading & Data Streams](#threading--data-streams)
+- [Networking & Processing](#networking--processing)
+- [Libraries & State Management](#libraries--state-management)
+- [Tools & Testing](#tools--testing)
+- [Architecture & Patterns](#architecture--patterns)
+- [Git](#git)
+- [Agile, Kanban & Scrum](#agile-kanban--scrum)
+- [SEO & Accessibility](#seo--accessibility)
+- [Internationalization (i18n) & Theming](#internationalization-i18n--theming)
+- [Performance Optimization & Proxying](#performance-optimization--proxying)
+- [Angular vs React vs Vue Cheat Sheet](#angular-vs-react-vs-vue-cheat-sheet)
+- [Bonus](#bonus)
+- [Changelog](#changelog)
+- [Author](#author)
+- [License](#license)
+
+## JavaScript Fundamentals
 
 ### Type system
 
@@ -714,7 +743,8 @@ DOM manipulation is the act of reading or changing the browser’s Document Obje
 - **What are data attributes?** Data attributes (data-) allow storing custom data on standard HTML elements. They can be accessed in JavaScript via element.dataset..
 - **What is the difference between the nodeValue and textContent properties?** nodeValue: For text nodes, it returns the text content. For element nodes, it returns null.
   textContent: Returns the concatenated text of all descendants, including `<script>` and `<style>` content. It is more performant than innerText as it doesn't require layout calculations.
-  Markup (HTML5+)
+
+## Markup (HTML5+)
 
 #### Definition
 
@@ -821,7 +851,8 @@ console.log(avgAge); // 30
 - **What benefit does _.chain provide, and when should you call .value()?** _.chain(obj) wraps the value to enable fluent chaining. Each method call returns the wrapper. You call .value() at the end to unwrap the final result.
   Compare _.debounce and _.throttle; give a use-case for each.
   _.debounce(fn, wait) delays execution until no calls happen for wait ms - ideal for search-as-you-type. _.throttle(fn, wait) ensures fn runs at most once per wait ms - useful for scroll listeners.
-  Styling
+
+## Styling
   This section summarizes modern styling techniques and frameworks, including CSS3+, preprocessors, Bootstrap and Material Design.
   CSS3+
 
@@ -904,7 +935,8 @@ Material Design is Google’s opinionated design system that defines visual, mot
 - **How does MUI’s theming system differ from plain CSS variables or Sass themes?** MUI’s createTheme() builds a JS object consumed by every styled component via React context - changes propagate automatically, and you can access the theme in JS (useTheme) for dynamic styling or logic. CSS variables/Sass themes operate at the stylesheet layer and don’t provide runtime access in JavaScript.
   Explain the pros and cons of MUI’s “styled API” (@mui/styled-engine) compared to the sx prop. styled() generates re-usable, themed components with full CSS-in-JS power; great for design-system atoms but heavier in bundle size. The sx prop is terse, tree-shakable, evaluated at runtime, and ideal for one-off overrides, but mixing too many sx styles in JSX can hurt readability.
 - **What accessibility features are built into MUI components, and how would you audit them?** Components ship with proper ARIA roles/attributes (e.g., role="button" on IconButton, aria-label support). Keyboard navigation and focus rings follow WCAG. Audit with Lighthouse, axe-core, or @testing-library/jest-dom to ensure props like aria-label, color contrast, and focus order remain valid after customization.
-  Node.js Fundamentals
+
+## Node.js Fundamentals
 
 ### Node.js Single-Threaded Nature & Concurrency Model
 
@@ -1022,15 +1054,11 @@ setTimeout runs in the Timers phase (if its delay has elapsed).
 
 libuv is the C library that underpins Node.js’s asynchronous I/O and event loop. It provides a cross-platform abstraction over operating system facilities such as epoll (Linux), kqueue (macOS), IOCP (Windows), and implements the event loop, timers, networking, and file system operations.
 While JavaScript execution runs on a single main thread, libuv maintains an internal thread pool (default size: 4 threads) to offload operations that cannot be performed in a truly non-blocking way by the OS. These include:
-## File system operations (fs)
-
-## DNS lookups (some cases)
-
-## Cryptographic operations (crypto, TLS)
-
-## Compression (zlib)
-
-### Certain user-defined native addons
+- File system operations (fs)
+- DNS lookups (some cases)
+- Cryptographic operations (crypto, TLS)
+- Compression (zlib)
+- Certain user-defined native addons
 
 When such a task is scheduled, Node.js submits it to the libuv thread pool. Once a worker thread completes the task, the result is queued back to the event loop, and the corresponding callback or Promise resolution is executed on the main thread.
 This architecture allows Node.js to remain responsive while performing expensive or blocking work in parallel.
@@ -1119,7 +1147,7 @@ First order only
 
 #### Definition
 
-Streams are an abstraction in Node.js for working with streaming data — data that is read or written sequentially over time instead of being loaded entirely into memory at once. They are built on top of the EventEmitter pattern and are fundamental for handling I/O efficiently, especially for large files, network sockets, and real-time data processing.
+Streams are an abstraction in Node.js for working with streaming data - data that is read or written sequentially over time instead of being loaded entirely into memory at once. They are built on top of the EventEmitter pattern and are fundamental for handling I/O efficiently, especially for large files, network sockets, and real-time data processing.
 Node.js defines four main stream types:
 Readable – source of data (fs.createReadStream, HTTP request)
 Writable – destination for data (fs.createWriteStream, HTTP response)
@@ -1259,17 +1287,12 @@ const mod = await import('./math.mjs');
 
 In Node.js, the global execution environment provides a set of objects that are available in every module without importing them. The most important is the process object, which represents the currently running Node.js process and exposes information and control over its environment, lifecycle, and resources. Unlike browsers, where the global object is window, Node.js uses global, and many platform-specific APIs (Buffer, setTimeout, clearImmediate, etc.) are attached to it.
 The process object is an instance of EventEmitter and provides access to:
-## Environment variables (process.env)
-
-## Command-line arguments (process.argv)
-
-## Process ID and parent process (process.pid, process.ppid)
-
-## Exit codes and termination (process.exit)
-
-## Current working directory (process.cwd)
-
-Runtime events (exit, uncaughtException, unhandledRejection, SIGINT, …)
+- Environment variables (process.env)
+- Command-line arguments (process.argv)
+- Process ID and parent process (process.pid, process.ppid)
+- Exit codes and termination (process.exit)
+- Current working directory (process.cwd)
+- Runtime events (exit, uncaughtException, unhandledRejection, SIGINT, ...)
 #### Example
 
 ```
@@ -1603,19 +1626,13 @@ https.createServer(options, (req, res) => {
 
 package.json is the manifest file of a Node.js project. It describes metadata, dependencies, entry points, scripts, and runtime constraints. In interviews, focus is usually on the fields that affect module resolution, execution, packaging, and environment compatibility rather than on descriptive metadata.
 Key fields that are commonly discussed:
-## name, version
-
-## main, module, exports
-
-## type
-
-## scripts
-
-## dependencies, devDependencies, peerDependencies, optionalDependencies
-
-## engines
-
-### bin
+- name, version
+- main, module, exports
+- type
+- scripts
+- dependencies, devDependencies, peerDependencies, optionalDependencies
+- engines
+- bin
 
 #### Example
 
@@ -1715,7 +1732,8 @@ AsyncLocalStorage (async_hooks) – per-request context storage across async bou
   Garbage collection profiling
   Custom APM instrumentation
   Bottleneck detection in async pipelines
-  React Deep Dive
+
+## React Deep Dive
   This section explores advanced React concepts beyond basic hooks and components.
 
 ### State vs Props
@@ -1723,17 +1741,17 @@ AsyncLocalStorage (async_hooks) – per-request context storage across async bou
 #### Definition
 
 State and props are the two fundamental data sources for React components, but their relationship and usage patterns have evolved significantly across React versions, particularly with the introduction of hooks and modern state management patterns.
-## Evolution of State Management
+#### Evolution of State Management
 
-React 0.14-16.7: State only available in class components via this.state and this.setState()
-React 16.8 (2019): useState hook brings state to functional components
-React 18 (2022): Automatic batching, concurrent state updates with startTransition
-React 19 (2024): Enhanced state patterns with useOptimistic and form state hooks
-## Props Evolution
+- React 0.14-16.7: State only available in class components via this.state and this.setState()
+- React 16.8 (2019): useState hook brings state to functional components
+- React 18 (2022): Automatic batching, concurrent state updates with startTransition
+- React 19 (2024): Enhanced state patterns with useOptimistic and form state hooks
+#### Props Evolution
 
-Early React: Props primarily for parent-child communication
-React 16.3 (2018): New Context API enables prop drilling avoidance
-Modern React: Props combined with composition patterns and state management libraries
+- Early React: Props primarily for parent-child communication
+- React 16.3 (2018): New Context API enables prop drilling avoidance
+- Modern React: Props combined with composition patterns and state management libraries
 
 #### Common Interview Questions
 
@@ -1798,17 +1816,17 @@ React emphasizes unidirectional data flow and explicit communication patterns. C
    - Step 2: Create slices/stores with state and actions.
    - Step 3: Components use hooks to access state and dispatch actions.
    - Note: Redux Toolkit is recommended for Redux; Zustand is simpler for most use cases.
-  Built‑in hooks
+### Built-in hooks
 
 #### Definition
 
 Hooks are functions that enable functional components to use React features like state, lifecycle, and context that were previously only available in class components. Introduced in React 16.8, hooks represent a fundamental shift in React's architecture towards functional programming patterns.
-## Version Evolution Timeline
+#### Version Evolution Timeline
 
-React 16.8 (2019): Basic Hooks - useState, useEffect, useContext, useReducer, useCallback, useMemo, useRef, useImperativeHandle, useLayoutEffect
-React 18 (2022): Concurrent Hooks - useId, useSyncExternalStore, useTransition, useDeferredValue
-React 19 (2024): Action Hooks - use hook, useOptimistic, useFormState, useFormStatus
-Note on React 19 features: While these hooks are documented in React RFCs and available in Canary releases, production adoption may vary. Always check the official React documentation for stable release status and consider progressive adoption strategies for mission-critical applications.
+- React 16.8 (2019): Basic Hooks - useState, useEffect, useContext, useReducer, useCallback, useMemo, useRef, useImperativeHandle, useLayoutEffect
+- React 18 (2022): Concurrent Hooks - useId, useSyncExternalStore, useTransition, useDeferredValue
+- React 19 (2024): Action Hooks - use hook, useOptimistic, useFormState, useFormStatus
+- Note on React 19 features: While these hooks are documented in React RFCs and available in Canary releases, production adoption may vary. Always check the official React documentation for stable release status and consider progressive adoption strategies for mission-critical applications.
 #### Common Interview Questions
 
 - **How did hooks change React development patterns since their introduction in 16.8?** Hooks enabled functional components to fully replace class components, introduced better code reuse through custom hooks, simplified complex component logic, and paved the way for concurrent features.
@@ -1837,15 +1855,12 @@ Note on React 19 features: While these hooks are documented in React RFCs and av
 #### Definition
 
 The React component lifecycle refers to the series of phases a component goes through from creation to removal from the DOM. In functional components, lifecycle management is handled primarily through useEffect and other hooks, replacing the class component lifecycle methods (componentDidMount, componentDidUpdate, componentWillUnmount). Understanding lifecycle phases is crucial for proper resource management, performance optimization, and preventing memory leaks.
-## Lifecycle Phases
+#### Lifecycle Phases
 
-## Mounting - Component is created and inserted into DOM
-
-## Updating - Component re-renders due to state or prop changes
-
-## Unmounting - Component is removed from DOM
-
-### Error Handling - Catching errors in child components
+- **Mounting** - Component is created and inserted into DOM
+- **Updating** - Component re-renders due to state or prop changes
+- **Unmounting** - Component is removed from DOM
+- **Error Handling** - Catching errors in child components
 
 #### Common Interview Questions
 
@@ -1862,13 +1877,13 @@ The React component lifecycle refers to the series of phases a component goes th
 #### Definition
 
 Context provides a way to pass data through the component tree without having to pass props down manually at every level. The Context API has undergone significant evolution, from an experimental feature to a core React pattern for state distribution.
-## Version Evolution Timeline
+#### Version Evolution Timeline
 
-React 0.14 (2015): Experimental context (unstable, undocumented)
-React 16.3 (2018): New Context API - stable, documented API with createContext, Provider, Consumer
-React 16.8 (2019): useContext hook simplifies context consumption
-React 18 (2022): Concurrent rendering compatibility
-React 19 (2024): use hook can consume context, better performance patterns
+- React 0.14 (2015): Experimental context (unstable, undocumented)
+- React 16.3 (2018): New Context API - stable, documented API with createContext, Provider, Consumer
+- React 16.8 (2019): useContext hook simplifies context consumption
+- React 18 (2022): Concurrent rendering compatibility
+- React 19 (2024): use hook can consume context, better performance patterns
 #### Common Interview Questions
 
 - **How has the Context API evolved from its experimental beginnings to the current stable API?** The API moved from an unstable, type-unsafe pattern using contextTypes to a first-class, type-safe API with createContext, explicit Providers, and multiple consumption methods (Consumer render prop, useContext hook).
@@ -1886,12 +1901,12 @@ React 19 (2024): use hook can consume context, better performance patterns
 #### Definition
 
 Error Boundaries are React components that catch JavaScript errors anywhere in their child component tree, log those errors, and display a fallback UI instead of the component tree that crashed. This concept has evolved from a class-component-only feature to more flexible modern patterns.
-## Version Evolution Timeline
+#### Version Evolution Timeline
 
-React 16 (2017): Error Boundaries introduced as class components with componentDidCatch
-React 16.2+: Community libraries emerge for functional component error boundaries
-React 18 (2022): Improved error recovery and development error overlay
-React 19 (2024): Continued class-component requirement but better error messaging
+- React 16 (2017): Error Boundaries introduced as class components with componentDidCatch
+- React 16.2+: Community libraries emerge for functional component error boundaries
+- React 18 (2022): Improved error recovery and development error overlay
+- React 19 (2024): Continued class-component requirement but better error messaging
 #### Common Interview Questions
 
 - **Why are Error Boundaries still implemented as class components in modern React?** Error Boundaries require lifecycle methods (componentDidCatch) that hook into React's internal error handling mechanism. As of React 19, there's no hook equivalent because error catching needs to happen during the render phase lifecycle.
@@ -1907,13 +1922,13 @@ React 19 (2024): Continued class-component requirement but better error messagin
 #### Definition
 
 These were the primary composition patterns before hooks revolutionized React component reuse. Understanding their evolution shows how React's composition model progressed from complex patterns to simpler hook-based solutions.
-## Version Evolution Timeline
+#### Version Evolution Timeline
 
-React 0.14-15 (2015-2016): HOCs dominate - the primary reuse pattern (influenced by React-Redux connect)
-React 16+ (2017): Render Props gain popularity as an alternative to HOCs
-React 16.3 (2018): Context API enables compound components without prop drilling
-React 16.8 (2019): Custom hooks largely replace both HOCs and render props for logic reuse
-React 18+ (2022): Patterns coexist with hooks, each serving specific use cases
+- React 0.14-15 (2015-2016): HOCs dominate - the primary reuse pattern (influenced by React-Redux connect)
+- React 16+ (2017): Render Props gain popularity as an alternative to HOCs
+- React 16.3 (2018): Context API enables compound components without prop drilling
+- React 16.8 (2019): Custom hooks largely replace both HOCs and render props for logic reuse
+- React 18+ (2022): Patterns coexist with hooks, each serving specific use cases
 #### Common Interview Questions
 
 - **How did the introduction of hooks change the prevalence of HOCs and render props?** Hooks provided a simpler, more direct way to reuse stateful logic, making complex HOC chains and render prop nesting largely unnecessary for logic reuse. However, each pattern still has specific use cases.
@@ -1929,13 +1944,13 @@ React 18+ (2022): Patterns coexist with hooks, each serving specific use cases
 #### Definition
 
 React Hook Form emerged as a performance-focused alternative to existing form libraries, leveraging uncontrolled inputs and native HTML validation to minimize re-renders. Its evolution reflects the React ecosystem's shift toward performance optimization and developer experience.
-## Version Evolution Timeline
+#### Version Evolution Timeline
 
-v6 (2019-2020): Initial release focusing on performance with uncontrolled inputs
-v7 (2021): TypeScript rewrite, improved TypeScript support, better DX
-v7.20+ (2022): useFieldArray improvements, useFormContext enhancements
-v7.30+ (2023): Strictly typed formState, better validation integration
-v7.40+ (2024): React 19 compatibility, enhanced useFormState integration
+- v6 (2019-2020): Initial release focusing on performance with uncontrolled inputs
+- v7 (2021): TypeScript rewrite, improved TypeScript support, better DX
+- v7.20+ (2022): useFieldArray improvements, useFormContext enhancements
+- v7.30+ (2023): Strictly typed formState, better validation integration
+- v7.40+ (2024): React 19 compatibility, enhanced useFormState integration
 #### Common Interview Questions
 
 - **How has React Hook Form's performance story evolved across versions?** Early versions focused heavily on uncontrolled inputs for minimal re-renders. Recent versions maintain performance while adding features like real-time validation, without sacrificing the core performance benefits.
@@ -1952,13 +1967,13 @@ v7.40+ (2024): React 19 compatibility, enhanced useFormState integration
 #### Definition
 
 Formik was one of the first comprehensive form libraries for React, pioneering the controlled component approach to form management. Its evolution reflects the React ecosystem's journey from class-based forms to hooks, and eventually to more performance-focused alternatives.
-## Version Evolution Timeline
+#### Version Evolution Timeline
 
-v1 (2017): Initial release with render props and HOC patterns
-v2 (2019): Hook support added with useFormik, TypeScript improvements
-v2.1+ (2020): useField hook, better TypeScript support
-Maintenance Mode (2021+): Development slows as React Hook Form gains popularity
-Current State: Stable but largely in maintenance, with React Hook Form as the modern alternative
+- v1 (2017): Initial release with render props and HOC patterns
+- v2 (2019): Hook support added with useFormik, TypeScript improvements
+- v2.1+ (2020): useField hook, better TypeScript support
+- Maintenance Mode (2021+): Development slows as React Hook Form gains popularity
+- Current State: Stable but largely in maintenance, with React Hook Form as the modern alternative
 #### Common Interview Questions
 
 - **How did Formik's architecture evolve from render props to hooks?** Formik started with a render props pattern (v1) which was familiar to React developers at the time. With the introduction of hooks in React 16.8, Formik added useFormik and useField hooks (v2) to provide a more modern API while maintaining backward compatibility.
@@ -1975,15 +1990,15 @@ Current State: Stable but largely in maintenance, with React Hook Form as the mo
 #### Definition
 
 React Router has been the standard routing solution for React applications since the early days of the ecosystem. Its evolution mirrors React's own journey from class components to hooks, and from simple SPA routing to full-stack application patterns.
-## Version Evolution Timeline
+#### Version Evolution Timeline
 
-v1-2 (2015-2016): Early versions with basic routing, mixin-based patterns
-v3 (2016): Stable API with configuration-based routing
-v4 (2017): Declarative routing revolution - components as routes
-v5 (2019): Stability release with hooks support
-v6 (2021): Modern rewrite with data APIs, improved nested routing
-v6.4+ (2022): Data routers, loaders, actions (Remix-inspired patterns)
-v6.8+ (2023): Future flags for v7 features, better TypeScript
+- v1-2 (2015-2016): Early versions with basic routing, mixin-based patterns
+- v3 (2016): Stable API with configuration-based routing
+- v4 (2017): Declarative routing revolution - components as routes
+- v5 (2019): Stability release with hooks support
+- v6 (2021): Modern rewrite with data APIs, improved nested routing
+- v6.4+ (2022): Data routers, loaders, actions (Remix-inspired patterns)
+- v6.8+ (2023): Future flags for v7 features, better TypeScript
 #### Common Interview Questions
 
 - **How did React Router's architecture change from v3 to v4?** v3 used a configuration-based approach with a central route config. v4 introduced a declarative, component-based approach where routes are components that render based on the current location, enabling more dynamic routing patterns.
@@ -2000,14 +2015,14 @@ v6.8+ (2023): Future flags for v7 features, better TypeScript
 #### Definition
 
 TanStack Query (formerly React Query) revolutionized server state management in React applications by introducing sophisticated caching, background synchronization, and mutation handling. Its evolution reflects the React ecosystem's shift from client-state-centric solutions (like Redux) to specialized server-state management.
-## Version Evolution Timeline
+#### Version Evolution Timeline
 
-v1 (2019): Initial release with basic query caching and mutations
-v2 (2020): Improved TypeScript support, infinite queries, focus on DX
-v3 (2021): Major API overhaul - better defaults, infinite query improvements
-v4 (2022): Renamed to TanStack Query, framework-agnostic core
-v5 (2023): Modernized API - removed deprecated features, better error handling
-v5.8+ (2024): Suspense integration, streaming support
+- v1 (2019): Initial release with basic query caching and mutations
+- v2 (2020): Improved TypeScript support, infinite queries, focus on DX
+- v3 (2021): Major API overhaul - better defaults, infinite query improvements
+- v4 (2022): Renamed to TanStack Query, framework-agnostic core
+- v5 (2023): Modernized API - removed deprecated features, better error handling
+- v5.8+ (2024): Suspense integration, streaming support
 #### Common Interview Questions
 
 - **How has TanStack Query's caching strategy evolved across versions?** Early versions used simple cache keys. v3+ introduced hierarchical cache keys with arrays, enabling more precise cache management. v5 added background synchronization improvements and smarter cache invalidation.
@@ -2024,14 +2039,14 @@ v5.8+ (2024): Suspense integration, streaming support
 #### Definition
 
 Server-Side Rendering has evolved from basic string rendering to sophisticated hybrid approaches that balance performance, SEO, and developer experience. The hydration process has similarly advanced from simple DOM adoption to intelligent partial and progressive hydration strategies.
-## SSR Evolution Timeline
+#### SSR Evolution Timeline
 
-React 0.14 (2015): Basic ReactDOMServer.renderToString() introduced
-React 15-16 (2016-2017): ReactDOM.hydrate() replaces render() for SSR
-Next.js 1-8 (2016-2019): Framework-level SSR abstractions
-React 18 (2022): Streaming SSR with renderToPipeableStream()
-Next.js 13+ (2022): App Router, React Server Components, partial hydration
-Modern Era (2023+): Islands architecture, resumability, fine-grained hydration
+- React 0.14 (2015): Basic ReactDOMServer.renderToString() introduced
+- React 15-16 (2016-2017): ReactDOM.hydrate() replaces render() for SSR
+- Next.js 1-8 (2016-2019): Framework-level SSR abstractions
+- React 18 (2022): Streaming SSR with renderToPipeableStream()
+- Next.js 13+ (2022): App Router, React Server Components, partial hydration
+- Modern Era (2023+): Islands architecture, resumability, fine-grained hydration
 #### Common Interview Questions
 
 - **How has SSR evolved from basic string rendering to modern streaming approaches?** Early SSR blocked until entire page was ready. Modern streaming SSR sends the shell immediately and streams components as they resolve, significantly improving Time to First Byte (TTFB) and perceived performance.
@@ -2048,15 +2063,15 @@ Modern Era (2023+): Islands architecture, resumability, fine-grained hydration
 #### Definition
 
 The React ecosystem has evolved from library-only solutions to full-stack frameworks that provide opinionated, production-ready architectures. Next.js and Remix represent two different philosophical approaches to solving the same problems: performance, SEO, developer experience, and production readiness.
-## Framework Evolution Timeline
+#### Framework Evolution Timeline
 
-Pre-Framework Era (2015-2016): Manual React + Router + Webpack setups
-Next.js 1-3 (2016-2018): SSR-focused framework emerges
-Gatsby Era (2018-2020): SSG-focused alternative gains popularity
-Next.js 9-12 (2019-2021): API routes, incremental static regeneration
-Remix Launch (2021): Web standards-focused framework
-Next.js 13+ (2022): App Router, React Server Components
-Modern Era (2023+): Full-stack React dominance, meta-frameworks
+- Pre-Framework Era (2015-2016): Manual React + Router + Webpack setups
+- Next.js 1-3 (2016-2018): SSR-focused framework emerges
+- Gatsby Era (2018-2020): SSG-focused alternative gains popularity
+- Next.js 9-12 (2019-2021): API routes, incremental static regeneration
+- Remix Launch (2021): Web standards-focused framework
+- Next.js 13+ (2022): App Router, React Server Components
+- Modern Era (2023+): Full-stack React dominance, meta-frameworks
 #### Common Interview Questions
 
 - **How has the React ecosystem evolved from library to framework approach?** Early React required assembling many pieces manually. Modern frameworks provide integrated solutions for routing, data fetching, rendering, and deployment, reducing configuration complexity.
@@ -2073,13 +2088,13 @@ Modern Era (2023+): Full-stack React dominance, meta-frameworks
 #### Definition
 
 The evolution of data fetching in React applications mirrors the broader JavaScript ecosystem's journey from XMLHttpRequest to modern fetch API and specialized HTTP clients. Axios emerged as a feature-rich alternative to native fetch, while recent trends show a move toward simpler, more integrated solutions.
-## Data Fetching Evolution Timeline
+#### Data Fetching Evolution Timeline
 
-jQuery Era (2010-2015): $.ajax() dominated frontend HTTP requests
-Native Fetch API (2015): Standards-based alternative to XMLHttpRequest
-Axios Rise (2016-2018): Feature-rich HTTP client gaining popularity
-React Query Era (2019+): Specialized server state management reduces Axios usage
-Modern Patterns (2022+): Framework-integrated fetching (Next.js, Remix), React Server Components
+- jQuery Era (2010-2015): $.ajax() dominated frontend HTTP requests
+- Native Fetch API (2015): Standards-based alternative to XMLHttpRequest
+- Axios Rise (2016-2018): Feature-rich HTTP client gaining popularity
+- React Query Era (2019+): Specialized server state management reduces Axios usage
+- Modern Patterns (2022+): Framework-integrated fetching (Next.js, Remix), React Server Components
 #### Common Interview Questions
 
 - **How has data fetching evolved from jQuery AJAX to modern patterns?** jQuery provided a unified API but was heavy. Native fetch emerged as a standards-based solution. Axios added convenience features. Modern patterns integrate fetching with state management and framework routing.
@@ -2096,13 +2111,13 @@ Modern Patterns (2022+): Framework-integrated fetching (Next.js, Remix), React S
 #### Definition
 
 Custom hooks represent one of the most significant evolutionary steps in React's composition model. They emerged as the primary pattern for logic reuse after the introduction of hooks in React 16.8, fundamentally changing how developers share functionality across components.
-## Evolution Timeline
+#### Evolution Timeline
 
-Pre-Hooks Era (2015-2018): Logic reuse via HOCs, render props, mixins (deprecated)
-React 16.8 (2019): Hooks introduced - custom hooks become possible
-Early Adoption (2019-2020): Community discovers custom hook patterns
-Maturity (2021-2022): Best practices emerge, hook libraries proliferate
-Modern Era (2023+): Custom hooks as standard practice, framework-integrated hooks
+- Pre-Hooks Era (2015-2018): Logic reuse via HOCs, render props, mixins (deprecated)
+- React 16.8 (2019): Hooks introduced - custom hooks become possible
+- Early Adoption (2019-2020): Community discovers custom hook patterns
+- Maturity (2021-2022): Best practices emerge, hook libraries proliferate
+- Modern Era (2023+): Custom hooks as standard practice, framework-integrated hooks
 #### Common Interview Questions
 
 - **How did custom hooks solve problems that HOCs and render props couldn't?** Custom hooks avoid wrapper hell, provide better TypeScript support, enable easier composition, and don't interfere with the component hierarchy. They're just functions, not components.
@@ -2119,7 +2134,7 @@ Modern Era (2023+): Custom hooks as standard practice, framework-integrated hook
 #### Definition
 
 The Virtual DOM is React's abstraction layer that sits between component updates and actual browser DOM manipulations. Its implementation has evolved significantly across React versions, from a simple performance optimization to a sophisticated reconciliation engine enabling advanced features like concurrent rendering.
-## Virtual DOM Evolution Timeline
+#### Virtual DOM Evolution Timeline
 
 React 0.3 (2013): Initial VDOM implementation - basic tree diffing
 React 15 (2016): Stack Reconciler - recursive tree traversal
@@ -2142,7 +2157,7 @@ Future: Compiler optimizations - potentially reducing VDOM overhead
 #### Definition
 
 Code splitting has evolved from manual script management to sophisticated framework-integrated patterns that automatically optimize bundle delivery. This evolution reflects the JavaScript ecosystem's growing complexity and the need for performance optimization in modern web applications.
-## Code Splitting Evolution Timeline
+#### Code Splitting Evolution Timeline
 
 Early Web (2000s): Manual script tags with dependency management
 Require.js Era (2010-2014): AMD modules with runtime loading
@@ -2166,12 +2181,12 @@ Modern Era (2020+): Framework-level splitting (Next.js, Vite), React Server Comp
 #### Definition
 
 A functional component is a JavaScript function that returns JSX. The evolution of functional components mirrors React's shift from class-based to function-based architecture, with each major version adding significant capabilities.
-## Version Evolution Timeline
+#### Version Evolution Timeline
 
-React 0.14 (2015): Functional components introduced as "stateless functional components" - could only receive props and return JSX, no state or lifecycle.
-React 16.8 (2019): Hooks introduced - functional components gained full capability to manage state, side effects, and lifecycle via useState, useEffect, etc.
-React 18 (2022): Concurrent Features - functional components work seamlessly with concurrent rendering, transitions, and Suspense.
-React 19 (2024): Actions and Optimistic Updates - new hooks like useOptimistic and useFormState further enhance functional components.
+- React 0.14 (2015): Functional components introduced as "stateless functional components" - could only receive props and return JSX, no state or lifecycle.
+- React 16.8 (2019): Hooks introduced - functional components gained full capability to manage state, side effects, and lifecycle via useState, useEffect, etc.
+- React 18 (2022): Concurrent Features - functional components work seamlessly with concurrent rendering, transitions, and Suspense.
+- React 19 (2024): Actions and Optimistic Updates - new hooks like useOptimistic and useFormState further enhance functional components.
 #### Common Interview Questions
 
 - **How has the role of functional components evolved across React versions?** Functional components progressed from simple presentational components (pre-16.8) to fully-featured components with hooks (16.8+), and now to advanced patterns with concurrent features and new APIs (18+).
@@ -2187,13 +2202,13 @@ React 19 (2024): Actions and Optimistic Updates - new hooks like useOptimistic a
 #### Definition
 
 The debate between controlled and uncontrolled components represents a fundamental design decision in React forms that has evolved with the ecosystem's growing sophistication. This choice reflects the balance between React's declarative philosophy and practical performance considerations.
-## Evolution Timeline
+#### Evolution Timeline
 
-React 0.14 (2015): Controlled components introduced as React's declarative approach
-Early React: Uncontrolled components common for simple forms and file inputs
-React 16.8 (2019): Hooks make controlled components more ergonomic
-Form Library Era (2019+): React Hook Form popularizes uncontrolled approach for performance
-Modern Era (2022+): Hybrid approaches, framework-integrated solutions
+- React 0.14 (2015): Controlled components introduced as React's declarative approach
+- Early React: Uncontrolled components common for simple forms and file inputs
+- React 16.8 (2019): Hooks make controlled components more ergonomic
+- Form Library Era (2019+): React Hook Form popularizes uncontrolled approach for performance
+- Modern Era (2022+): Hybrid approaches, framework-integrated solutions
 #### Common Interview Questions
 
 - **How has the controlled vs uncontrolled debate evolved with React's maturity?** Early React strongly favored controlled components for their declarative nature. As applications grew more complex, uncontrolled components gained popularity for performance. Modern libraries like React Hook Form show that both approaches have their place.
@@ -2210,17 +2225,17 @@ Modern Era (2022+): Hybrid approaches, framework-integrated solutions
 #### Definition
 
 A class component is an ES6 class that extends React.Component (or React.PureComponent) and implements a render() method returning JSX. Before React 16.8, class components were the only way to use local state, lifecycle methods, error boundaries, and refs.
-## Evolution Context
+#### Evolution Context
 
-React 0.13 (2015): Class components introduced as primary component type
-React 16.8 (2019): Hooks introduced - functional components gained parity
-React 18+ (2022+): Functional components become recommended approach
-Current Status: Class components are legacy patterns primarily used for maintaining existing codebases
-## Modern Usage Perspective
+- React 0.13 (2015): Class components introduced as primary component type
+- React 16.8 (2019): Hooks introduced - functional components gained parity
+- React 18+ (2022+): Functional components become recommended approach
+- Current Status: Class components are legacy patterns primarily used for maintaining existing codebases
+#### Modern Usage Perspective
 
-While class components are no longer the recommended approach for new development, understanding them remains valuable for:
-Maintaining legacy codebases (many enterprise applications still use class components)
-## Understanding React's evolution and architectural decisions
+- While class components are no longer the recommended approach for new development, understanding them remains valuable for:
+- Maintaining legacy codebases (many enterprise applications still use class components)
+#### Understanding React's evolution and architectural decisions
 
 Interview contexts where knowledge of lifecycle methods and historical patterns is tested
 #### Common Interview Questions
@@ -2237,13 +2252,13 @@ Interview contexts where knowledge of lifecycle methods and historical patterns 
 #### Definition
 
 React Portals enable rendering React components into DOM nodes outside their parent hierarchy while preserving React's component relationships. This feature has evolved from a solution for specific UI challenges to a fundamental tool for building accessible, well-structured applications.
-## Evolution Timeline
+#### Evolution Timeline
 
-React 16 (2017): Portals introduced as stable API with ReactDOM.createPortal()
-Early Use Cases: Primarily for modals, tooltips, and overlays
-React 17 (2020): Event delegation changes improve portal behavior
-Modern Era (2022+): Portals for microfrontends, accessibility, and complex layouts
-React 19 (2024): Potential portal enhancements with new features
+- React 16 (2017): Portals introduced as stable API with ReactDOM.createPortal()
+- Early Use Cases: Primarily for modals, tooltips, and overlays
+- React 17 (2020): Event delegation changes improve portal behavior
+- Modern Era (2022+): Portals for microfrontends, accessibility, and complex layouts
+- React 19 (2024): Potential portal enhancements with new features
 #### Common Interview Questions
 
 - **How have portals evolved from React 16 to modern versions?** Portals started as a basic escape hatch for DOM rendering. Modern usage includes accessibility patterns, microfrontend integration, SSR compatibility, and complex event handling scenarios.
@@ -2254,7 +2269,8 @@ React 19 (2024): Potential portal enhancements with new features
 - **What are modern use cases for portals beyond modals and tooltips?** Microfrontend integration, third-party widget embedding, notification systems, complex layout management, and rendering into iframes or shadow DOM.
 - **How can portals be used in microfrontend architectures?** Portals allow microfrontends to render components into designated slots in the host application while maintaining their own state management and lifecycle.
 - **What performance considerations should be made when using portals?** Portal creation/cleanup overhead, memory leaks from improper cleanup, excessive re-renders affecting portal content, and impact on React's reconciliation process.
-  Vue Deep Dive
+
+## Vue Deep Dive
   Vue 2 vs Vue 3: The Composition API Revolution
 
 #### Definition
@@ -2754,7 +2770,8 @@ Vue provides several built-in optimization techniques to improve rendering perfo
 - **What performance metrics improve when using these optimization techniques?** These optimizations improve Interaction to Next Paint (INP), reduce Cumulative Layout Shift (CLS), decrease JavaScript execution time, and reduce main thread blocking by minimizing unnecessary DOM operations.
 - **How does v-memo interact with Vue's reactivity system?** v-memo creates a conditional reactivity boundary. The component only re-renders when the memoized dependencies change, bypassing the normal reactive update triggers for that subtree.
 - **What are the common pitfalls when implementing virtual scrolling?** Common pitfalls include incorrect item height calculations, poor handling of dynamic content sizes, inadequate buffer zones causing flickering, and accessibility issues with screen readers and keyboard navigation.
-  Angular Deep Dive
+
+## Angular Deep Dive
   Angular is a TypeScript‑based framework for building single‑page applications. It uses declarative templates, dependency injection and reactive programming (RxJS) to manage complex UIs.
 
 ### Component vs Directive
@@ -2762,12 +2779,12 @@ Vue provides several built-in optimization techniques to improve rendering perfo
 #### Definition
 
 A Component is a special type of directive that has a template and is the primary UI building block in Angular. Components manage a view (HTML template), contain business logic in their class, and can receive data via @Input() and emit events via @Output(). A Directive is a class that adds custom behavior to existing DOM elements or components. There are three types of directives: Components (directives with templates), Structural Directives (alter DOM layout by adding/removing elements, e.g., *ngIf, *ngFor), and Attribute Directives (change appearance/behavior of elements, e.g., NgClass, NgStyle).
-## Evolution Timeline
+#### Evolution Timeline
 
-Angular 2+ (2016): Introduced components as the primary building blocks alongside directives
-Angular 14 (2022): Standalone components introduced as developer preview
-Angular 15 (2022): Standalone components became stable
-Angular 17 (2023): Standalone components became default for new projects
+- Angular 2+ (2016): Introduced components as the primary building blocks alongside directives
+- Angular 14 (2022): Standalone components introduced as developer preview
+- Angular 15 (2022): Standalone components became stable
+- Angular 17 (2023): Standalone components became default for new projects
 #### Common Interview Questions
 
 - **What is the key difference between a component and a directive?** A component always has a template and represents a UI section, while a directive enhances existing DOM elements or components without introducing new templates.
@@ -2861,11 +2878,11 @@ Dependency Injection is a design pattern where classes receive their dependencie
 #### Definition
 
 Angular calls lifecycle hook methods at key points in a component's existence: from creation to destruction. These hooks allow you to run code at specific moments during a component's lifecycle, such as initialization, change detection, content projection, view rendering, and cleanup.
-## Evolution Timeline
+#### Evolution Timeline
 
-Angular 2 (2016): Original lifecycle hooks introduced (ngOnInit, ngOnChanges, etc.)
-Angular 16 (2023): New hooks added for signals and better SSR support (afterNextRender, afterRender)
-Angular 17 (2023): Enhanced hooks for improved performance and developer experience
+- Angular 2 (2016): Original lifecycle hooks introduced (ngOnInit, ngOnChanges, etc.)
+- Angular 16 (2023): New hooks added for signals and better SSR support (afterNextRender, afterRender)
+- Angular 17 (2023): Enhanced hooks for improved performance and developer experience
 #### Common Interview Questions
 
 - **Which hook is safest for DOM query logic (ViewChild) and why?** ngAfterViewInit - the view and its child components are fully initialized at this point. Earlier hooks like ngOnInit may try to access DOM elements that don't exist yet.
@@ -2918,11 +2935,11 @@ Angular's change detection mechanism determines when and how to update the UI wh
 #### Definition
 
 A signal is a reactivity primitive that holds a value and notifies interested consumers (called "effects") when that value changes. Signals provide granular tracking of how state is used and updated, enabling frameworks to optimize rendering and ensure data flow is always consistent and efficient. While most associated with Angular, the pattern is also used in other frameworks like Preact, Solid.js, and Vue (via libraries).
-## Evolution Timeline
+#### Evolution Timeline
 
-Angular 16 (2023): Signals introduced as developer preview
-Angular 17 (2023): Signals became stable, integrated with templates
-Future: Planned to become the default reactivity model, potentially reducing Zone.js dependency
+- Angular 16 (2023): Signals introduced as developer preview
+- Angular 17 (2023): Signals became stable, integrated with templates
+- Future: Planned to become the default reactivity model, potentially reducing Zone.js dependency
 #### Common Interview Questions
 
 - **What problem do Signals solve in Angular?** Signals provide a simpler, more granular, and more performant reactivity model compared to the traditional Zone.js-based change detection. They allow Angular to know exactly which parts of the template depend on which pieces of state, eliminating the need for unnecessary checks and enabling future optimizations like fine-grained re-rendering.
@@ -3059,11 +3076,11 @@ Angular provides a comprehensive set of patterns for component communication, le
 #### Definition
 
 Angular provides two approaches for handling forms: template-driven forms (declarative, using directives like ngModel) and reactive forms (imperative, using FormGroup, FormControl, FormArray). Reactive forms offer more control, better testing, and complex validation scenarios. Both approaches support synchronous and asynchronous validation.
-## Evolution Timeline
+#### Evolution Timeline
 
-Angular 2 (2016): Both template-driven and reactive forms introduced
-Angular 14 (2022): Typed forms introduced for better type safety
-Angular 15+: Improved standalone component support for forms
+- Angular 2 (2016): Both template-driven and reactive forms introduced
+- Angular 14 (2022): Typed forms introduced for better type safety
+- Angular 15+: Improved standalone component support for forms
 #### Common Interview Questions
 
 - **What are the key differences between template-driven and reactive forms?** Template-driven forms are declarative and simpler for basic scenarios. Reactive forms are imperative, provide better type safety, easier testing, and more control for complex scenarios like dynamic forms or cross-field validation.
@@ -3123,13 +3140,13 @@ HTTP Interceptors are classes that implement the HttpInterceptor interface. They
 #### Definition
 
 NgModules are containers that group related Angular artifacts (components, directives, pipes, services) and define their compilation context. The @NgModule decorator specifies what belongs to the module and how it interacts with other modules. Lazy Loading is an optimization technique where features are loaded on-demand when the user navigates to their associated routes.
-## Evolution Timeline
+#### Evolution Timeline
 
-Angular 2 (2016): Introduced NgModules as the primary organizing structure
-Angular 8 (2019): Ivy renderer introduced, paving the way for standalone components
-Angular 14 (2022): Standalone components introduced, beginning the shift away from NgModules
-Angular 16 (2023): Standalone APIs for bootstrapping and routing became stable
-Angular 17 (2023): Standalone became default, NgModules now considered "legacy" for new projects
+- Angular 2 (2016): Introduced NgModules as the primary organizing structure
+- Angular 8 (2019): Ivy renderer introduced, paving the way for standalone components
+- Angular 14 (2022): Standalone components introduced, beginning the shift away from NgModules
+- Angular 16 (2023): Standalone APIs for bootstrapping and routing became stable
+- Angular 17 (2023): Standalone became default, NgModules now considered "legacy" for new projects
 #### Common Interview Questions
 
 - **What is the difference between NgModule-based and standalone approaches?** NgModules require declaring components in modules and importing dependencies at module level. Standalone components manage their own dependencies and don't require NgModule wrappers.
@@ -3228,7 +3245,8 @@ Server-Side Rendering (SSR) generates HTML on the server and sends it to the cli
   Use TransferState to avoid duplicate API calls
   Optimize bundle size with lazy loading
   Use CDN for static assets
-  ES6 Deep Dive
+
+## ES6 Deep Dive
   While the ES6/ES6+ section earlier listed major features, this deep dive explores specific language constructs.
 
 ### Default Parameters & Rest/Spread
@@ -3482,7 +3500,7 @@ REST is an architectural style that uses HTTP verbs to operate on resources iden
 #### Definition
 
 The WebSocket protocol provides full-duplex, bidirectional communication over a single, long-lived TCP connection. Unlike HTTP's request-response model, a WebSocket connection allows the server to push data to the client at any time without the client first making a request. This is ideal for real-time applications like chat, live feeds, collaborative tools, and gaming. Libraries like SignalR (ASP.NET) and Socket.IO (Node.js) build on this protocol, offering additional features like automatic reconnection, fallback transports, and higher-level abstractions like hubs and rooms.
-## Example (Native WebSocket API)
+#### Example (Native WebSocket API)
 
 ```js
 const socket = new WebSocket('wss://echo.websocket.org');
@@ -3622,7 +3640,8 @@ const getTokenSecurely = async () => {
 - **What's the recommended approach for production applications?** For maximum security, use a backend-for-frontend (BFF) pattern where your frontend talks to your own backend API, which handles MSAL authentication and returns HttpOnly cookies. For simpler apps, sessionStorage provides a reasonable balance.
 - **How does MSAL's cache location affect single sign-on (SSO) experience?** localStorage enables seamless SSO across tabs and browser sessions. sessionStorage maintains SSO within a single tab session. memoryStorage requires fresh login on every page reload.
 - **What enterprise security features does MSAL provide regardless of storage choice?** MSAL enforces PKCE, validates token signatures, supports conditional access policies, and provides automatic token refresh with secure replay protection.
-  Libraries & State Management
+
+## Libraries & State Management
 
 ### Redux & Flux
 
@@ -3679,7 +3698,8 @@ GraphQL is a query language and runtime that lets clients specify exactly what d
 - **How does Apollo Client cache work?** Apollo normalizes query responses by IDs and fields, allowing efficient updates and refetches. Cache policies determine how results are stored and merged.
 - **What is the difference between queries and mutations in GraphQL?** Queries read data; mutations modify data and can have side effects. Both accept variables and return a defined data shape.
 - **How do subscriptions work in GraphQL?** Subscriptions use WebSockets to push real‑time updates from the server to clients; Apollo Client exposes useSubscription to manage them.
-  Tools & Testing
+
+## Tools & Testing
 
 ### Linters & Formatters
 
@@ -3810,7 +3830,8 @@ DevOps integrates development and operations to automate software delivery. Cont
 - **Why use Docker in front‑end development?** Docker packages the application and its dependencies into containers, ensuring consistent environments across development and production.
 - **What are the benefits of CI/CD pipelines?** Automated builds and tests catch issues early, shorten feedback loops, ensure reproducible builds and enable fast, reliable deployments.
 - **How do npm, Yarn and pnpm fit into CI workflows?** These package managers install dependencies and run scripts (e.g., build, test) within CI; lockfiles ensure deterministic builds across environments.
-  Git
+
+## Git
   Explain the difference between git merge and git rebase.
   git merge integrates changes from one branch into another by creating a new merge commit, preserving the full history of both branches.
   git rebase moves a branch to begin on the tip of another branch, rewriting history by creating new commits. It results in a cleaner linear history. Golden rule: rebase local branches; merge when integrating into main.
@@ -3836,9 +3857,7 @@ DevOps integrates development and operations to automate software delivery. Cont
   Saving Work: Rescuing a specific, well-defined change from a messy or abandoned feature branch.
   Partial Feature Integration: Moving a single, self-contained feature or commit from one long-running branch to another without merging everything.
 
-## Other Topics
-
-### Agile, Kanban & Scrum
+## Agile, Kanban & Scrum
 
 #### Definition
 
@@ -3902,7 +3921,7 @@ const kanbanBoard = {
 - **What metrics would you track to improve team performance in each framework?** Scrum: Velocity (forecasting), Sprint Burndown (daily progress), Burnup Chart (scope changes)
   Kanban: Cycle Time (lead time optimization), Throughput (work completion rate), Cumulative Flow Diagram (bottleneck identification)
 
-### SEO & Accessibility
+## SEO & Accessibility
 
 #### Definition
 
@@ -3956,7 +3975,7 @@ Search Engine Optimization (SEO) is the practice of improving website visibility
 - **What are the four WCAG principles (POUR)?** Perceivable (available to senses), Operable (usable via various input methods), Understandable (clear and predictable), and Robust (compatible with current and future tools).
 - **How would you make a complex data table accessible?** Use proper `<table>` structure with `<caption>`, `<th>` headers with scope attributes, and associate data cells with headers using headers attribute or aria-describedby.
 
-### Internationalization (i18n) & Theming
+## Internationalization (i18n) & Theming
 
 #### Definition
 
@@ -4023,7 +4042,7 @@ export const ThemeProvider = ({ children }) => {
 - **How would you structure translation files for a large application?** Use namespaced JSON files grouped by feature/page, implement lazy loading of locale data, and consider using a professional i18n library like react-i18next, i18next, or FormatJS.
 - **What are design tokens and how do they relate to theming?** Design tokens are platform-agnostic variables storing visual attributes (colors, spacing, typography). They serve as the single source of truth that can be transformed for different platforms (CSS, iOS, Android) and themes.
 
-### Performance Optimization & Proxying
+## Performance Optimization & Proxying
 
 #### Definition
 
