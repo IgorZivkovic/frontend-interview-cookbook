@@ -358,6 +358,7 @@ console.log(counter()); // 2
 - **What practical problem do closures solve?** Give one real-world use-case. Closures enable data privacy and stateful functions. Example: a module that exposes increment and get methods but hides the internal count variable, preventing external tampering.
   Contrast var, let, and const in terms of scope. var is function-scoped and hoisted; let and const are block-scoped (limited to {}) and are not initialized until their declaration is evaluated (temporal dead zone). This makes let/const safer for loops/closures because each iteration can capture a unique binding.
 - **How can poorly managed closures cause memory leaks, and how do you prevent them?** If a closure holds references to large objects (e.g., DOM nodes) that are no longer needed, the garbage collector cannot reclaim them until the closure is released. Mitigation: null out unused references, remove event listeners, or structure code so closures don’t outlive their useful scope.
+- **How do closures behave in loops with var vs let?** With var, closures share the same binding and often read the final value; with let, each iteration gets a new binding. Use let or an IIFE to capture the current value.
 
 ### Callbacks
 
@@ -2823,6 +2824,7 @@ Pipes transform data in templates. Angular provides built‑in pipes like date, 
 
 - **What is the difference between pure and impure pipes?** Pure pipes run only when their inputs change; impure pipes run on every change detection cycle. Impure pipes can be expensive and should be used sparingly.
 - **How do you create a parameterized custom pipe?** Add parameters after the value in the template (value | myPipe:param1:param2) and declare corresponding arguments in the transform method.
+- **When should you use the async pipe?** Use it to render Observables or Promises in templates and let Angular manage subscriptions and cleanup.
 
 ### Structural Directives
 
@@ -2845,6 +2847,7 @@ Attribute directives change the appearance or behaviour of elements. Examples in
 
 - **How do attribute directives differ from structural directives?** Attribute directives modify existing elements (e.g., add styles) without changing the DOM structure, while structural directives add or remove elements.
 - **How can you respond to DOM events in a directive?** Use the @HostListener decorator to listen to events on the host element and execute logic inside the directive.
+- **How do you bind host classes or styles in a directive?** Use @HostBinding or Renderer2 to update host properties in a safe, Angular-friendly way.
 
 ### Dependency Injection (DI)
 
@@ -3255,6 +3258,7 @@ Functions can specify default parameter values (function foo(x = 10) {…}); res
 
 - **What happens when a default parameter depends on a previous parameter?** You can define a parameter as a function of earlier parameters: function greet(name, greeting = ‘Hello’ + name) {…}; the default value is evaluated at call time.
 - **How does the rest operator differ from the spread operator?** The rest operator collects multiple arguments into a single array parameter, while spread expands an array or object into individual elements when passed to functions or array/object literals.
+- **Do default parameters apply when the argument is null or undefined?** Only undefined triggers the default; null is treated as an explicit value.
 
 ### Modules
 
@@ -3308,6 +3312,7 @@ let and const declare block‑scoped variables; const prevents reassignment. var
 
 - **Why is it generally better to use const or let instead of var?** They avoid accidental global variables, respect block scope and help catch errors during compilation.
 - **Can a const array be mutated?** Yes - const prevents reassignment of the binding, but the contents of objects and arrays can still be modified.
+- **What is the temporal dead zone (TDZ)?** It is the period before a let/const declaration is initialized; accessing the binding then throws a ReferenceError.
 
 ### Arrow Functions
 
@@ -3318,6 +3323,7 @@ Arrow functions provide concise syntax and lexical this binding. They cannot be 
 
 - **How does this behave in arrow functions versus regular functions?** Arrow functions capture this from the enclosing scope; regular functions have their own this depending on how they are called.
 - **Why can’t you use an arrow function as a constructor?** Arrow functions lack an internal [[Construct]] method; attempting to use new with them throws a TypeError.
+- **Do arrow functions have their own arguments object?** No. They capture arguments from the outer scope; use rest parameters when needed.
 
 ### Maps, Sets & Weak Collections
 
@@ -3328,6 +3334,7 @@ Map stores key–value pairs with any data type as keys; Set stores unique value
 
 - **When would you use a Map over an object?** When you need non‑string keys, maintain insertion order or frequently add/remove entries; objects are best for static structured data.
 - **Why might a WeakMap be useful?** A WeakMap allows objects to be garbage‑collected when there are no other references, useful for caching associated data without risking memory leaks.
+- **Why can't WeakMap keys be primitives?** WeakMap keys must be objects so they can be garbage collected when there are no other references.
 
 ### Promises & Async/Await
 
@@ -3357,6 +3364,7 @@ ES6+ introduced many built‑in methods such as Object.assign, Object.values, Ob
 
 - **What does Object.assign do?** It shallowly copies enumerable own properties from source objects into a target object and returns the target.
 - **How is Array.from different from Array.of?** Array.from converts array‑like or iterable objects into arrays (optionally mapping each element), while Array.of creates a new array from a list of arguments.
+- **What is the difference between Object.keys, Object.values, and Object.entries?** keys returns property names, values returns property values, and entries returns [key, value] pairs for own enumerable properties.
 
 ### Template Literals & Destructuring
 
@@ -3402,6 +3410,7 @@ Rollup is a module bundler optimised for library development. It uses ES modules
 
 - **How does Rollup differ from Webpack?** Rollup focuses on bundling libraries and yields smaller, tree‑shaken outputs; Webpack targets full applications with features like a dev server and code splitting. Rollup requires fewer configuration options.
 - **What are Rollup plugins and how are they used?** Plugins extend Rollup’s capabilities (e.g., @rollup/plugin-node-resolve resolves node modules; @rollup/plugin-commonjs converts CommonJS modules to ES modules; rollup-plugin-terser minifies output). They are configured in rollup.config.js.
+- **How do you mark dependencies as external in Rollup?** Use the external option in rollup.config.js so the dependency is not bundled.
 
 ### Snowpack & Vite
 
@@ -3412,6 +3421,7 @@ Snowpack and Vite are modern build tools that serve ES modules in development an
 
 - **Why are Vite and Snowpack faster in development than Webpack?** They avoid bundling during development by serving source files as ES modules and leverage native browser support; Vite prebundles dependencies with Esbuild, leading to faster startup and updates.
 - **Can you still perform code splitting and production optimisation with Vite?** Yes - Vite uses Rollup under the hood for production builds, supporting code splitting, minification and other optimizations.
+- **What is hot module replacement (HMR) and how does Vite handle it?** HMR swaps updated modules via the dev server and WebSocket without a full page reload.
 
 ### TypeScript
 
@@ -3433,6 +3443,7 @@ Babel is a JavaScript compiler that transforms newer ECMAScript syntax into back
 
 - **How does Babel differ from TypeScript?** Babel transpiles syntax but does not perform type checking; TypeScript compiles code and enforces types. You can use Babel with TypeScript to compile TS without type checks or combine both for full type safety and modern syntax.
 - **What is a Babel plugin vs. preset?** A plugin transforms specific syntax (e.g., class fields); a preset is a collection of plugins bundled for convenience (e.g., @babel/preset-env targets ES features based on browser support).
+- **How does @babel/preset-env decide what to transform?** It uses target environments (browserslist) and can add polyfills with core-js via useBuiltIns.
 
 ### Node Package Managers & Publishing
 
@@ -3458,6 +3469,7 @@ A service worker is a script running in the background separate from web pages. 
 
 - **What are the lifecycle phases of a service worker?** Installation, activation and fetch. During install, you pre‑cache assets; activation cleans up old caches; fetch intercepts requests to serve cached responses or fall back to the network.
 - **How does a service worker enable offline experiences?** By caching assets and API responses in the Cache storage; when offline, the service worker serves responses from the cache instead of the network.
+- **What controls a service worker's scope?** The registration path and optional scope setting; it can only control pages under that scope.
 
 ### Web Workers
 
@@ -3468,6 +3480,8 @@ Web Workers run JavaScript in a background thread, allowing you to offload CPU�
 
 - **When would you use a web worker?** For heavy computations, data processing or parsing large files, ensuring the UI remains responsive.
 - **How do you communicate between a web worker and the main thread?** Use worker.postMessage(data) to send data and listen for message events via worker.onmessage.
+- **What limitations do web workers have compared to the main thread?** They cannot access the DOM directly and communicate via message passing with a limited API surface.
+
 ### Server-Sent Events (SSE)
 
 #### Definition
@@ -3477,11 +3491,19 @@ Server-Sent Events provide a one-way push mechanism where a server streams text 
 
 - **How do SSE differ from WebSockets?** SSE is unidirectional (server to client) and built on top of HTTP; WebSockets are bidirectional and work over a persistent TCP connection.
 - **What are typical use‑cases for SSE?** Live news feeds, notifications and other scenarios where the server needs to push updates to many clients with minimal overhead.
+- **How do SSE clients handle reconnects?** EventSource auto-reconnects; servers can set retry and use Last-Event-ID to resume streams.
+
 ## Networking & Processing
 
 ### Same-Origin Policy (SOP) & CORS
 
-Explain the Same-Origin Policy (SOP) and CORS. SOP prevents a script from one origin from interacting with resources from another origin (protocol + domain + port). CORS is a mechanism that relaxes SOP via HTTP headers like Access-Control-Allow-Origin, letting servers whitelist other origins.
+#### Common Interview Questions
+
+- **Explain the Same-Origin Policy (SOP) and CORS.** SOP prevents a script from one origin from interacting with resources from another origin (protocol + domain + port). CORS is a mechanism that relaxes SOP via HTTP headers like Access-Control-Allow-Origin, letting servers whitelist other origins.
+- **What is a CORS preflight request and when does it occur?** The browser sends an OPTIONS request before certain cross-origin requests (non-simple methods, custom headers, or JSON content type) to check if the server allows it.
+- **What makes a request "simple" under CORS rules?** Simple requests use GET/HEAD/POST with only simple headers and Content-Type of text/plain, application/x-www-form-urlencoded, or multipart/form-data; these skip preflight.
+- **What does the Access-Control-Allow-Credentials header do?** It allows cookies or auth headers to be sent on cross-origin requests, and it requires a specific origin (not "*") in Access-Control-Allow-Origin.
+- **How do CORS errors show up in the browser?** The request may succeed on the network, but the browser blocks access to the response and logs a CORS error in the console.
 
 ### REST vs GraphQL vs WebSockets
 
@@ -3808,7 +3830,7 @@ Clean Architecture emphasizes separation of concerns: domain/business logic is i
 
 - **What problem does Clean Architecture solve?** It decouples business rules from implementation details, making code more testable and adaptable to changes in frameworks or infrastructure.
 - **How does MVVM differ from MVC?** MVVM introduces a ViewModel that exposes observables to the view, improving data binding and separation; MVC uses a controller to manage interactions.
-  Give an example of the Observer pattern in web development. DOM events are an example: event listeners subscribe to changes and react when events occur.
+- **Give an example of the Observer pattern in web development?** DOM events are an example: event listeners subscribe to changes and react when events occur.
 
 ### DevOps & CI/CD
 
