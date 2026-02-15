@@ -1,8 +1,24 @@
 # Frontend Interview Cookbook
 
+[![Stars](https://img.shields.io/github/stars/IgorZivkovic/frontend-interview-cookbook?style=flat-square)](https://github.com/IgorZivkovic/frontend-interview-cookbook/stargazers)
+[![Forks](https://img.shields.io/github/forks/IgorZivkovic/frontend-interview-cookbook?style=flat-square)](https://github.com/IgorZivkovic/frontend-interview-cookbook/network/members)
+[![Issues](https://img.shields.io/github/issues/IgorZivkovic/frontend-interview-cookbook?style=flat-square)](https://github.com/IgorZivkovic/frontend-interview-cookbook/issues)
+[![Last Commit](https://img.shields.io/github/last-commit/IgorZivkovic/frontend-interview-cookbook?style=flat-square)](https://github.com/IgorZivkovic/frontend-interview-cookbook/commits/main)
+[![License](https://img.shields.io/github/license/IgorZivkovic/frontend-interview-cookbook?style=flat-square)](https://github.com/IgorZivkovic/frontend-interview-cookbook/blob/main/LICENSE)
+
+
 ## Frontend Interview Questions (Q&A)
 
-A practical frontend interview cookbook for anyone preparing for a frontend interview, from early-career to senior refreshers. It includes frontend interview questions and concise answers across JavaScript, React, Angular, Vue, HTML, and CSS for real-world prep.
+> **The same core questions keep showing up in frontend interviews.**
+> **This is the cheat sheet for answering them well.**
+
+**What makes this different:**
+- Answers at **interview depth** (not too shallow, not academic)
+- Practical examples where they add interview value
+- Common **pitfalls and red flags** interviewers look for
+- Covers **JS, React, Node, Vue, Angular, HTML, CSS**
+
+**No fluff. Just what helps you pass the interview.**
 
 ## Table of Contents
 
