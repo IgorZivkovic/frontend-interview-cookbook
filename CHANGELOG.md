@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.0] - 2026-04-25
+
+### Changed
+- Updated framework coverage for React 19.2 and Angular 20/21.
+- Refreshed Node.js, Vue/Pinia, build tooling, Core Web Vitals, and legacy ecosystem guidance.
+- Updated the bonus walkthrough to use modern SSR, build tooling, and Angular reactivity terminology.
+
 ## [1.7.1] - 2026-01-13
 
 ### Added

@@ -1208,7 +1208,7 @@ process.stdin.pipe(upper).pipe(process.stdout);
 
 - **Why are streams preferred over reading an entire file with fs.readFile for large data?** Streams process data incrementally, keeping memory usage low and enabling processing to start before the entire payload is available. fs.readFile loads the full content into memory, which is inefficient and risky for large files.
 - **What is backpressure and why is it important?** Backpressure is the mechanism by which a writable stream signals that its internal buffer is full and the readable stream should slow down. It prevents memory overflow and keeps producer and consumer speeds balanced.
-- **What does pipe() do internally?** pipe() connects a readable stream to a writable stream, forwarding data events, managing backpressure, and automatically handling end and error propagation.
+- **What does pipe() do internally?** pipe() connects a readable stream to a writable stream, forwards chunks, manages backpressure, and ends the destination by default when the source ends. It does not provide complete error propagation and cleanup across every stream in a chain; for production pipelines, prefer stream.pipeline() or its promise-based API so failures close the whole pipeline consistently.
 - **What is the difference between a Duplex and a Transform stream?** Both are readable and writable. A Duplex stream treats input and output as independent (e.g., a TCP socket). A Transform stream modifies the data, so its output is a transformed version of its input (e.g., gzip, encryption, JSON parsing).
 - **Are streams synchronous or asynchronous?** Stream events and callbacks are asynchronous and integrated with the event loop. However, individual chunk processing inside a transform can block if heavy CPU work is done synchronously.
 - **How are streams related to Event Emitters?** All streams inherit from EventEmitter and use events such as data, end, error, finish, and close to signal state changes and data availability.
@@ -1300,7 +1300,7 @@ const mod = await import('./math.mjs');
 
 - **What are the main differences between CommonJS and ES Modules?** CommonJS uses synchronous require and module.exports, is resolved at runtime, and is the traditional Node.js format. ES Modules use static import/export, are resolved before execution, support tree-shaking, top-level await, and are the standard across browsers and Node.
 - **How does Node.js decide whether a file is treated as CommonJS or ESM?** By file extension (.cjs → CommonJS, .mjs → ESM) or by the "type" field in package.json ("module" means .js files are ESM; "commonjs" or absence means CJS).
-- **Can you import a CommonJS module from an ES Module and vice versa?** Yes, but with interop rules. ESM can import CJS via default import (import pkg from 'pkg'). CJS can load ESM only via dynamic import(), not require().
+- **Can you import a CommonJS module from an ES Module and vice versa?** Yes, but with interop rules. ESM can import CJS via default import (import pkg from 'pkg') or named exports when Node can statically detect them. Modern Node can require() synchronous ES modules that do not use top-level await, while dynamic import() works from CommonJS for all ESM cases and remains the safest universal option.
 - **Why are ES Modules considered better for tooling and optimization?** Because their static structure allows bundlers and runtimes to perform tree-shaking, dead-code elimination, and dependency analysis at build time.
 - **What is the difference between module.exports and exports?** exports is initially a reference to module.exports. Reassigning exports breaks that link; only module.exports is actually returned by require().
 - **Why do ES Modules require explicit file extensions in Node.js imports?** Because ESM resolution follows URL semantics, not CommonJS’s extension-guessing algorithm, making resolution deterministic and compatible with browser module loading.
@@ -1849,15 +1849,16 @@ Hooks are functions that enable functional components to use React features like
 
 - React 16.8 (2019): Basic Hooks - useState, useEffect, useContext, useReducer, useCallback, useMemo, useRef, useImperativeHandle, useLayoutEffect
 - React 18 (2022): Concurrent Hooks - useId, useSyncExternalStore, useTransition, useDeferredValue
-- React 19 (2024): Action Hooks - use hook, useOptimistic, useFormState, useFormStatus
-- React 19.2 (2025): useEffectEvent for separating event logic from effects
-- Note on React 19 features: While these hooks are documented in React RFCs and available in Canary releases, production adoption may vary. Always check the official React documentation for stable release status and consider progressive adoption strategies for mission-critical applications.
+- React 19 (2024): Action Hooks - use hook, useOptimistic, useActionState, and react-dom's useFormStatus
+- React 19.2 (2025): Latest stable 19.2.x line - useEffectEvent, `<Activity>`, cacheSignal for React Server Components, Performance Tracks, and partial prerendering APIs
+- React 19.x APIs listed above are stable in the React 19 line; `<ViewTransition>` and addTransitionType remain Canary APIs and should not be described as stable.
 #### Common Interview Questions
 
 - **How did hooks change React development patterns since their introduction in 16.8?** Hooks enabled functional components to fully replace class components, introduced better code reuse through custom hooks, simplified complex component logic, and paved the way for concurrent features.
 - **What problem do concurrent hooks (useTransition, useDeferredValue) solve in React 18?** They enable non-blocking user interfaces by allowing React to interrupt rendering, prioritize urgent updates (like typing), and defer non-urgent updates (like rendering large lists), improving perceived performance.
 - **How does the use hook in React 19 differ from traditional async patterns?** The use hook allows components to consume Promises and Context directly in render, simplifying data fetching patterns and enabling more natural async/await syntax in components.
 - **What does useEffectEvent solve?** It lets you move event-like logic out of effects while still reading the latest props/state, reducing stale-closure bugs without re-running the effect.
+- **What changed in React 19.2 and what remains Canary?** React 19.2 stabilizes `<Activity>`, useEffectEvent, cacheSignal, Performance Tracks, and partial prerendering support. `<ViewTransition>` and addTransitionType remain Canary-only APIs.
 - **When would you choose useLayoutEffect over useEffect?** useLayoutEffect runs synchronously after DOM mutations but before paint, making it suitable for measurements or DOM manipulations that must happen before the browser repaints. useEffect runs asynchronously after paint.
 - **How do you run code when a component mounts and unmounts?** Use the dependency array for mount timing and return a cleanup function for unmount. Empty array [] runs once after mount; return function handles unmount cleanup.
 - **What common operations require cleanup on unmount?** Timers/Intervals  -  clearTimeout, clearInterval
@@ -1868,7 +1869,7 @@ Hooks are functions that enable functional components to use React features like
 - **What's the difference between empty dependency array and no dependency array in useEffect?** Empty array [] runs once after mount. No array runs after every render. Missing dependency array is a common source of infinite loops.
 - **When would you need to use useRef with useEffect?** When you need to access the latest state/value in a cleanup function without causing re-renders.
 - **What's the difference between useMemo and useCallback, and when should each be used?** useMemo memoizes computed values to avoid expensive recalculations. useCallback memoizes function references to prevent unnecessary re-renders in child components. Use useMemo for expensive computations, useCallback for function props passed to optimized children.
-- **How have hooks evolved to handle common patterns like forms and optimistic updates?** React 19 introduced useFormState, useFormStatus, and useOptimistic to provide built-in solutions for patterns that previously required external libraries or complex custom hook implementations.
+- **How have hooks evolved to handle common patterns like forms and optimistic updates?** React 19 introduced useActionState, react-dom's useFormStatus, and useOptimistic to provide built-in solutions for patterns that previously required external libraries or complex custom hook implementations. useFormStatus must be called from a component rendered inside the relevant form.
 - **What are the Rules of Hooks and why are they necessary?** Hooks must be called at the top level (not in loops/conditions) and only from React functions. These rules ensure hooks are called in the same order each render, which is essential for React to correctly preserve state between re-renders.
   Key Lifecycle Patterns:
   Mount  -  useEffect(fn, [])
@@ -1892,7 +1893,7 @@ The React component lifecycle refers to the series of phases a component goes th
 
 - **What happens during component mount and unmount?** Mount Phase  -  DOM elements created and inserted, initial state established, useEffect with empty dependency array runs. Common operations: API calls, analytics, subscriptions.
   Unmount Phase  -  Component removed from DOM, cleanup functions run, state and effects destroyed. Common operations: cleanup, resource disposal.
-- **How do you temporarily hide UI without unmounting it?** Use `<Activity>` (React 19.2+) to hide and restore a subtree while preserving its internal state, useful for tabs and transitions.
+- **How do you temporarily hide UI without losing state?** Use `<Activity>` (React 19.2+) with `mode="visible"` or `mode="hidden"`. Hidden activities visually hide the subtree, unmount effects, defer updates until React has idle work time, and preserve component state for faster return navigation.
 - **How do you prevent memory leaks in React components?** Always clean up intervals and timeouts
   Cancel ongoing API requests with AbortController
   Remove event listeners properly
@@ -1977,7 +1978,7 @@ React Hook Form emerged as a performance-focused alternative to existing form li
 - v7 (2021): TypeScript rewrite, improved TypeScript support, better DX
 - v7.20+ (2022): useFieldArray improvements, useFormContext enhancements
 - v7.30+ (2023): Strictly typed formState, better validation integration
-- v7.40+ (2024): React 19 compatibility, enhanced useFormState integration
+- v7.40+ (2024): React 19 compatibility and form-state integration improvements
 #### Common Interview Questions
 
 - **How has React Hook Form's performance story evolved across versions?** Early versions focused heavily on uncontrolled inputs for minimal re-renders. Recent versions maintain performance while adding features like real-time validation, without sacrificing the core performance benefits.
@@ -2079,9 +2080,9 @@ Server-Side Rendering has evolved from basic string rendering to sophisticated h
 
 - **How has SSR evolved from basic string rendering to modern streaming approaches?** Early SSR blocked until entire page was ready. Modern streaming SSR sends the shell immediately and streams components as they resolve, significantly improving Time to First Byte (TTFB) and perceived performance.
 - **What problem does React 18's streaming SSR solve?** It eliminates the "waterfall" problem where servers wait for all data before sending HTML. Now, the shell can be sent immediately while dynamic content streams in later.
-- **What do the React 19.2 resume/prerender APIs enable?** They let you pause a prerender and later resume it to a stream (`resume*`), which supports partial prerendering and more flexible streaming/hydration workflows on both Web Streams and Node streams.
+- **What do the React 19.2 resume/prerender APIs enable?** They let frameworks pause a prerender and later resume it to a stream (`resume*`), which supports partial prerendering and more flexible streaming/hydration workflows on both Web Streams and Node streams. Most app components should treat these as framework/server integration APIs, not everyday client component APIs.
 - **How do React Server Components change the SSR landscape?** RSCs execute on the server only, producing zero client JavaScript. They enable finer-grained loading states, reduce bundle size, and allow direct data access without API endpoints.
-- **What is cacheSignal in React Server Components?** It's a signal that lets RSCs detect when a cache lifetime ends, helping frameworks coordinate cache invalidation and refresh behavior.
+- **What is cacheSignal in React Server Components?** It's an RSC-only signal that lets server-side cached work detect when a cache lifetime ends, helping frameworks coordinate cache invalidation and refresh behavior. It is not a client component state primitive.
 - **What's the difference between hydration in React 16 vs React 18?** React 16 hydration was all-or-nothing. React 18 supports selective hydration, where interactive parts can hydrate independently from static content, improving perceived performance.
 - **How does Next.js's App Router improve upon the Pages Router for SSR?** App Router uses React Server Components by default, enables nested layouts with individual loading states, supports parallel data fetching, and provides better error boundaries.
 - **What are hydration mismatches and how can they be prevented?** Mismatches occur when server-rendered HTML differs from client-rendered HTML. Prevention: Avoid browser-specific APIs during render, use useEffect for side effects, and ensure consistent data between server and client.
@@ -2170,7 +2171,7 @@ React 0.3 (2013): Initial VDOM implementation - basic tree diffing
 React 15 (2016): Stack Reconciler - recursive tree traversal
 React 16 (2017): Fiber Architecture - incremental rendering, time slicing
 React 18 (2022): Concurrent Features - interruptible rendering, priorities
-Future: Compiler optimizations - potentially reducing VDOM overhead
+React Compiler v1.0 (2025): Stable production-ready build-time auto-memoization that reduces manual React.memo/useMemo/useCallback boilerplate
 #### Common Interview Questions
 
 - **How has the Virtual DOM's role evolved from React's early versions to today?** Initially, VDOM was primarily a performance optimization to batch DOM updates. Today, it's a sophisticated scheduling system that enables concurrent rendering, suspense, and priority-based updates.
@@ -2178,7 +2179,8 @@ Future: Compiler optimizations - potentially reducing VDOM overhead
 - **How do React 18's concurrent features change the VDOM reconciliation process?** Concurrent features introduce priority levels to updates. High-priority work (like user input) can interrupt low-priority work (like rendering offscreen content), making the UI more responsive.
 - **How does React's Virtual DOM implementation differ from that of other frameworks, like Vue?** While both use a virtual DOM, the key difference is in the reconciliation algorithm. React's Fiber architecture, introduced in v16, enables features like concurrent rendering and interruptible updates. Vue's reactivity system is more fine-grained by default, allowing it to more precisely know which components need to re-render without a full tree comparison in many cases.
 - **What's the significance of the key prop in VDOM diffing, and how has its importance evolved?** Keys help React identify which items have changed, been added, or removed. Their importance increased with dynamic lists and reordering capabilities. Modern React uses keys for more efficient reconciliation and state preservation.
-- **How might future React versions reduce or eliminate VDOM overhead?** Through compiler optimizations like React Forget (auto-memoization), improved tree diffing algorithms, and potentially more compile-time optimizations that reduce runtime work.
+- **What does React Compiler v1.0 change about performance optimization?** React Compiler is a stable build-time optimizer that automatically memoizes components and hooks when code follows the Rules of React. It supports incremental adoption and compiler-powered lint rules, but it does not remove the Virtual DOM or replace the need to understand rendering costs.
+- **How do React 19.2 Performance Tracks help debugging?** They add React-specific Scheduler and Components tracks to Chrome DevTools performance profiles, making it easier to connect browser work with React rendering and scheduling behavior.
 - **What's the difference between VDOM reconciliation and actual DOM manipulation performance?** VDOM reconciliation is JavaScript execution (generally fast). DOM manipulation is browser-native (potentially slow). The VDOM optimizes by minimizing expensive DOM operations through batching and diffing.
 - **How does Suspense integrate with the VDOM and reconciliation process?** Suspense allows React to "pause" rendering of components that are waiting for data, showing fallback UI instead. The VDOM tracks which parts of the tree are suspended and resumes them when data is ready.
 
@@ -2216,13 +2218,13 @@ A functional component is a JavaScript function that returns JSX. The evolution 
 - React 0.14 (2015): Functional components introduced as "stateless functional components" - could only receive props and return JSX, no state or lifecycle.
 - React 16.8 (2019): Hooks introduced - functional components gained full capability to manage state, side effects, and lifecycle via useState, useEffect, etc.
 - React 18 (2022): Concurrent Features - functional components work seamlessly with concurrent rendering, transitions, and Suspense.
-- React 19 (2024): Actions and Optimistic Updates - new hooks like useOptimistic and useFormState further enhance functional components.
+- React 19 (2024): Actions and Optimistic Updates - new hooks like useOptimistic and useActionState further enhance functional components.
 #### Common Interview Questions
 
 - **How has the role of functional components evolved across React versions?** Functional components progressed from simple presentational components (pre-16.8) to fully-featured components with hooks (16.8+), and now to advanced patterns with concurrent features and new APIs (18+).
 - **What capabilities were added to functional components in React 16.8 vs React 18 vs React 19?** 16.8: State (useState), effects (useEffect), context (useContext), refs (useRef)
   18: Concurrent features (useTransition, useDeferredValue), useId, useSyncExternalStore
-  19: use hook, useOptimistic, useFormState, better Suspense integration
+  19: use hook, useOptimistic, useActionState, better Suspense integration
 - **Why did React shift from class components to functional components as the preferred approach?** Functional components with hooks provide simpler code structure, better composition, avoidance of this binding issues, improved tree-shaking, and better alignment with React's future direction including concurrent rendering.
 - **Can functional components handle all use cases that class components could?** Yes, since React 16.8. The only exception was error boundaries, but community solutions and patterns now cover this gap. Functional components are now considered the modern standard.
 - **How do functional components work with React's concurrent features?** Functional components seamlessly integrate with concurrent rendering through hooks like useTransition and useDeferredValue, allowing non-blocking state updates and improved user experience during heavy rendering.
@@ -2306,7 +2308,7 @@ React Portals enable rendering React components into DOM nodes outside their par
 
 #### Definition
 
-Vue 3 represents a significant evolution from Vue 2, introducing a new, flexible paradigm for organizing component logic while maintaining full backwards compatibility. The most transformative addition is the Composition API, a set of additive, function-based APIs that allow logic to be defined and reused more effectively than the Options API of Vue 2. Vue 3 is built from the ground up with better performance, first-class TypeScript support with stronger typing and inference, and a smaller core runtime.
+Vue 3 represents a significant evolution from Vue 2, introducing a new, flexible paradigm for organizing component logic while preserving familiar concepts instead of promising compatibility without breaking changes. It includes breaking changes from Vue 2, with official migration paths and a migration build for incremental upgrades. The most transformative addition is the Composition API, a set of additive, function-based APIs that allow logic to be defined and reused more effectively than the Options API of Vue 2. Vue 2 reached end of life on 2023-12-31, so Vue 3 is the current baseline for new applications.
 #### Common Interview Questions
 
 - **What are the primary advantages of Vue 3 over Vue 2?** Key advantages include: the Composition API for better logic reuse and organization, superior performance through a new reactivity system (using Proxies) and a more efficient virtual DOM, first-class TypeScript support with stronger typing and inference, and a smaller core runtime with improved tree-shaking. (Note: The overall bundle size of a full application using Vue Router and Pinia may be comparable to Vue 2, but the core is more optimized.)
@@ -2627,7 +2629,7 @@ Vue provides several built-in components that solve common architectural pattern
 - **Can you conditionally disable `<Teleport>` and how?** Yes, use the disabled prop to conditionally disable teleportation. When disabled is true, the content renders in its original position instead of the target location.
 - **What problem does `<Suspense>` solve in Vue applications?** `<Suspense>` provides a declarative way to handle async component dependencies and display fallback content while waiting for async operations to complete, simplifying loading state management.
 - **What are the two types of async dependencies that `<Suspense>` can wait for?** `<Suspense>` can wait for: 1) Components with async setup() functions, and 2) Components with Async Components (dynamic imports with loading states).
-- **What are the limitations of `<Suspense>` in its current implementation?** `<Suspense>` is still considered experimental in Vue 3, has limited nesting support, and doesn't work with Server-Side Rendering (SSR). It's primarily designed for component-level async dependencies rather than application-level data fetching.
+- **What are the limitations of `<Suspense>` in its current implementation?** `<Suspense>` is still considered experimental in Vue 3 and has edge cases around nesting and SSR integration. Treat it as a component-level async dependency tool that should be tested in the rendering mode you use, not as a general app-level data fetching primitive.
 
 ### Error Handling with errorCaptured Hook
 
@@ -2711,7 +2713,7 @@ State management in Vue provides a centralized store for managing application-le
 - **How does TypeScript support differ between Pinia and Vuex?** Pinia offers excellent TypeScript support with full type inference out of the box. Vuex requires more manual type definitions and has limited type inference, especially with modules and dynamic registration.
 - **What are the benefits of Pinia's Composition API integration?** Pinia stores can be used directly in setup() functions with full reactivity, and you can compose store logic using composable patterns. This provides a more natural developer experience in Vue 3 applications.
 - **How do you handle asynchronous operations in Pinia versus Vuex?** Both use actions for async operations, but Pinia actions are simpler and can be regular async functions. Vuex actions require context parameter and committing mutations for state changes.
-- **Is Pinia compatible with Vue 2 and what are the migration considerations?** Yes, Pinia works with both Vue 2 and Vue 3. Migration from Vuex involves converting modules to separate stores, removing mutations, and updating the API calls to use Pinia's simpler syntax.
+- **Is Pinia compatible with Vue 2 and what are the migration considerations?** Pinia v3 targets Vue 3 only. Vue 2 projects should stay on Pinia v2 or migrate to Vue 3 before adopting Pinia v3. Migration from Vuex involves converting modules to separate stores, removing mutations, and updating the API calls to use Pinia's simpler syntax.
 - **What are the performance implications of using multiple stores in Pinia?** Pinia's multiple stores approach has minimal performance overhead and can actually improve performance through better code splitting and lazy loading compared to Vuex's single store with all modules bundled together.
 
 ### Routing with Vue Router
@@ -2800,7 +2802,7 @@ Vue provides several built-in optimization techniques to improve rendering perfo
 - **What are the common pitfalls when implementing virtual scrolling?** Common pitfalls include incorrect item height calculations, poor handling of dynamic content sizes, inadequate buffer zones causing flickering, and accessibility issues with screen readers and keyboard navigation.
 
 ## Angular Deep Dive
-Angular is a TypeScript‑based framework for building single‑page applications. It uses declarative templates, dependency injection and reactive programming (RxJS) to manage complex UIs.
+Angular is a TypeScript‑based framework for building single‑page applications. It uses declarative templates, dependency injection and reactive programming (RxJS) to manage complex UIs. As of April 2026, Angular 21.2.x is the active stable line and Angular 20 is in LTS; Angular 21 requires Node.js `^20.19.0 || ^22.12.0 || ^24.0.0` and TypeScript `>=5.9.0 <6.0.0`.
 
 ### Component vs Directive
 
@@ -2911,8 +2913,9 @@ Angular calls lifecycle hook methods at key points in a component's existence: f
 #### Evolution Timeline
 
 - Angular 2 (2016): Original lifecycle hooks introduced (ngOnInit, ngOnChanges, etc.)
-- Angular 16 (2023): New hooks added for signals and better SSR support (afterNextRender, afterRender)
+- Angular 16 (2023): Application-level render callbacks added for browser-only DOM work (afterNextRender, afterRender)
 - Angular 17 (2023): Enhanced hooks for improved performance and developer experience
+- Angular 20 (2025): afterRender was renamed/reframed as afterEveryRender; use afterRender in Angular 16-19 codebases and afterEveryRender in Angular 20+ codebases.
 #### Common Interview Questions
 
 - **Which hook is safest for DOM query logic (ViewChild) and why?** ngAfterViewInit - the view and its child components are fully initialized at this point. Earlier hooks like ngOnInit may try to access DOM elements that don't exist yet.
@@ -2930,9 +2933,10 @@ Angular calls lifecycle hook methods at key points in a component's existence: f
   ngOnDestroy() {
   this.subscription.unsubscribe();
   }
-- **What are the new lifecycle hooks introduced in Angular 16+ and when are they useful?** afterNextRender: Runs once after the next change detection cycle. Useful for one-time DOM operations.
-  afterRender: Runs after every render cycle. Useful for analytics or DOM measurements.
+- **What are the new render callbacks introduced in Angular 16+ and when are they useful?** afterNextRender: Runs once after the next application render. Useful for one-time DOM operations.
+  afterRender / afterEveryRender: Runs after every application render. The name is afterRender in Angular 16-19 and afterEveryRender in Angular 20+. Useful for analytics or DOM measurements.
   Use case: Accessing browser APIs safely without causing ExpressionChangedAfterItHasBeenChecked errors.
+  These are application-level render callbacks, not component-scoped lifecycle methods, although they are usually registered from an injection context such as a component constructor.
 - **What is the execution order of the main lifecycle hooks?** constructor() (Component instantiation)
   ngOnChanges() (If inputs exist)
   ngOnInit() (One-time initialization)
@@ -2944,17 +2948,18 @@ Angular calls lifecycle hook methods at key points in a component's existence: f
   ngOnDestroy() (Cleanup)
 - **When would you use ngAfterContentInit vs ngAfterViewInit?** ngAfterContentInit: When you need to work with projected content (`<ng-content>`)
   ngAfterViewInit: When you need to access the component's own view and children (@ViewChild)
-- **How do the new afterRender hooks help with SSR (Server-Side Rendering)?** The new hooksare skipped during server rendering, preventing errors from browser-specific APIs.
+- **How do the new afterRender / afterEveryRender callbacks help with SSR (Server-Side Rendering)?** The render callbacks are skipped during server rendering and build-time prerendering, preventing errors from browser-specific APIs.
   This makes it safer to write code that works in both server and client environments.
 
 ### Change Detection
 
 #### Definition
 
-Angular's change detection mechanism determines when and how to update the UI when your application's data changes. The default strategy checks every component on async events when Zone-based change detection is enabled (via provideZoneChangeDetection). The OnPush strategy limits checks to input reference changes, component events, or manual triggers. Signals (Angular 16+) enable fine-grained reactivity for optimal performance.
+Angular's change detection mechanism determines when and how to update the UI when your application's data changes. Angular 21 new projects are zoneless by default and do not need an extra provider; Angular 20.2+ can opt in with stable provideZonelessChangeDetection(), while Angular 20.0-20.1 exposed it as developer preview. Zone-based change detection is still available via provideZoneChangeDetection. The OnPush strategy limits checks to input reference changes, component events, or manual triggers. Signals (Angular 16+) enable fine-grained reactivity for optimal performance.
 #### Common Interview Questions
 
 - **What triggers change detection in Angular?** When Zone-based change detection is enabled, DOM events, HTTP responses, timers, Promise resolutions, or Observable emissions trigger change detection cycles via Zone.js.
+- **What changes in Angular 21 zoneless applications?** New Angular 21 projects are zoneless by default. Updates need to notify Angular explicitly through signals read in templates, AsyncPipe, ChangeDetectorRef.markForCheck(), ComponentRef.setInput(), or host/template event listeners instead of relying on Zone.js to patch every async task.
 - **How do you manually trigger change detection?** Inject ChangeDetectorRef and call detectChanges() for immediate check or markForCheck() to schedule check in next cycle.
 - **Why can mutating an array fail to update an OnPush component?** OnPush checks reference equality. Mutation keeps the same reference; create new reference: this.items = [...this.items, newItem].
 - **How do Signals change Angular change detection?** Signals provide fine-grained reactivity - Angular knows exactly which components depend on which signals, enabling more efficient updates without Zone.js in future versions.
@@ -2969,7 +2974,9 @@ A signal is a reactivity primitive that holds a value and notifies interested co
 
 - Angular 16 (2023): Signals introduced as developer preview
 - Angular 17 (2023): Signals became stable, integrated with templates
-- Future: Planned to become the default reactivity model, potentially reducing Zone.js dependency
+- Angular 20 (2025): effect() and linkedSignal() became stable
+- Angular 21 (2025): Zoneless new projects make signals the primary change notification mechanism
+- Experimental: resource() and httpResource() model async signal-based reads but remain experimental and should not be treated as production-default APIs.
 #### Common Interview Questions
 
 - **What problem do Signals solve in Angular?** Signals provide a simpler, more granular, and more performant reactivity model compared to the traditional Zone.js-based change detection. They allow Angular to know exactly which parts of the template depend on which pieces of state, eliminating the need for unnecessary checks and enabling future optimizations like fine-grained re-rendering.
@@ -2977,6 +2984,7 @@ A signal is a reactivity primitive that holds a value and notifies interested co
   - `signal()`: A writable signal that holds a value. You can update it with .set() or .update().
   - `computed()`: A read-only signal that derives its value from other signals. Its value is cached and recalculated only when its dependencies change.
   - `effect()`: A side effect that runs whenever any signal value it depends on changes. It's used for operations like logging, DOM manipulation outside the template, or syncing with external libraries.
+- **What are linkedSignal(), resource(), and httpResource()?** linkedSignal() is a stable Angular 20 API for writable state that resets from a reactive source. resource() and httpResource() expose async reads as signals, but both remain experimental, so prefer stable HttpClient/RxJS or established data layers for production-critical flows.
 - **How do Signals differ from RxJS Observables in Angular?**
   | Feature | Signals | RxJS Observables |
   | --- | --- | --- |
@@ -3095,9 +3103,11 @@ Angular provides two approaches for handling forms: template-driven forms (decla
 - Angular 2 (2016): Both template-driven and reactive forms introduced
 - Angular 14 (2022): Typed forms introduced for better type safety
 - Angular 15+: Improved standalone component support for forms
+- Angular 21 (2025): Signal Forms introduced as an experimental API in `@angular/forms/signals`
 #### Common Interview Questions
 
 - **What are the key differences between template-driven and reactive forms?** Template-driven forms are declarative and simpler for basic scenarios. Reactive forms are imperative, provide better type safety, easier testing, and more control for complex scenarios like dynamic forms or cross-field validation.
+- **What are Signal Forms in Angular 21?** Signal Forms are an experimental Angular 21+ API from `@angular/forms/signals` that models form state with signals, type-safe field access, and schema-based validation. Use them for exploration or carefully controlled adoption; reactive forms remain the stable production default.
 - **How do you trigger validation manually in reactive forms?** Call form.markAllAsTouched() to mark all controls as touched, or control.updateValueAndValidity() to re-run validation on a specific control.
 - **Why prefer async validators for uniqueness checks?** Async validators return Observable/Promise, allowing Angular to manage pending state and automatically handle HTTP debouncing and cancellation. They're ideal for server-side validation like username/email uniqueness.
 - **What are typed forms (Angular 14+) and why use them?** Typed forms provide TypeScript type safety for form values. Instead of `FormControl<any>`, use `FormControl<string>` to get compile-time type checking and better IDE support.
@@ -3170,7 +3180,7 @@ NgModules are containers that group related Angular artifacts (components, direc
   Easier component reuse and testing
   Gradual migration path from NgModules
 - **Can you still use NgModules with standalone components?** Yes, through importProvidersFrom() function which allows importing providers from existing NgModules into standalone applications.
-- **How do you provide services in a standalone application?** Services can be provided in the bootstrapApplication providers array, using provideIn: 'root', or with the @Injectable({ providedIn: 'root' }) decorator.
+- **How do you provide services in a standalone application?** Services can be provided in the bootstrapApplication providers array, using providedIn: 'root', or with the @Injectable({ providedIn: 'root' }) decorator.
 - **What happened to AOT compilation with standalone components?** AOT compilation is still used and actually works better with standalone components since each component is more self-contained, enabling better optimization and tree-shaking.
 - **When would you choose NgModules over standalone components today?** Mainly when maintaining legacy applications or when using third-party libraries that haven't been updated to support standalone components. For new projects, standalone is recommended.
 
@@ -3193,7 +3203,7 @@ Lazy loading is an optimization technique where feature modules are loaded on-de
   canActivate: [AuthGuard]
   }
 - **What are common lazy loading pitfalls?** Circular dependencies between modules, over-splitting (too many small chunks), forgetting to use forChild() in feature modules, or not handling loading states in the UI.
-- **How does lazy loading affect SEO?** Search engines may not execute JavaScript to load lazy content. Use SSR (Angular Universal) or ensure critical content is in the initial bundle for SEO-sensitive pages.
+- **How does lazy loading affect SEO?** Search engines may not execute JavaScript to load lazy content. Use SSR with @angular/ssr (historically Angular Universal) or ensure critical content is in the initial bundle for SEO-sensitive pages.
 ### New Control Flow (@if, @for, @switch) - Angular 17+
 
 #### Definition
@@ -3252,7 +3262,7 @@ As of Angular 21, server bootstrap accepts a `BootstrapContext`, and `getPlatfor
   API calls: Ensure URLs are absolute and work in server environment
 - **How do you handle authentication in SSR applications?** Use HTTP-only cookies for authentication tokens since they're automatically sent with both server and client requests, unlike localStorage which is browser-only.
 - **What is the difference between prerender: true and SSR?** Prerendering generates static HTML at build time for known routes. SSR generates HTML on-demand for each request. Prerendering is faster but only works for static content.
-- **How does Angular Universal differ from the new Angular SSR?** Angular Universal was the original SSR solution. The new Angular SSR (v16+) is integrated into the framework, has better hydration, and uses the same application configuration as client-side rendering.
+- **How does Angular Universal differ from modern Angular SSR?** Angular Universal was the original SSR solution/name. Modern Angular SSR is centered on @angular/ssr, is integrated into the framework, has better hydration, and uses the same application configuration as client-side rendering.
 - **What are hydration errors and how do you avoid them?** Hydration errors occur when server-rendered HTML doesn't match client-rendered HTML. Avoid by:
   Not manipulating DOM directly in components
   Using isPlatformBrowser() for browser-specific code
@@ -3261,6 +3271,17 @@ As of Angular 21, server bootstrap accepts a `BootstrapContext`, and `getPlatfor
   Use TransferState to avoid duplicate API calls
   Optimize bundle size with lazy loading
   Use CDN for static assets
+- **What is incremental hydration in Angular?** Incremental hydration builds on SSR, hydration, and `@defer`. Enable it with provideClientHydration(withIncrementalHydration()), then use `@defer` hydrate triggers such as `hydrate on interaction`, `hydrate on viewport`, `hydrate when condition`, or `hydrate never` to delay hydration of selected subtrees.
+- **How does zoneless SSR know when async work is done?** Use PendingTasks for async work that must finish before server serialization. In zoneless apps, Angular cannot rely on Zone.js stability signals, so PendingTasks lets SSR wait for relevant data loading or rendering work.
+
+### Angular Aria (Developer Preview)
+
+#### Definition
+
+`@angular/aria` is a developer-preview Angular 21 package of low-level accessibility directives for common interaction patterns such as menus, listboxes, tabs, trees, toolbars, accordions, grids, and comboboxes. It helps teams build accessible custom components, but it is not a replacement for Angular Material's complete styled components.
+#### Common Interview Questions
+
+- **When would you use developer-preview @angular/aria instead of Angular Material?** Use `@angular/aria` when you need low-level accessible behavior while owning all rendering and styling yourself. Use Angular Material when you want complete, styled, supported UI components.
 
 ## ES6 Deep Dive
   While the ES6/ES6+ section earlier listed major features, this deep dive explores specific language constructs.
@@ -3295,7 +3316,7 @@ ES6 classes provide syntactic sugar over prototypes. Use class declarations with
 #### Common Interview Questions
 
 - **How do you create private properties in classes?** Use the # syntax (#privateField) or closures; private fields are only accessible within the class body.
-- **How can you respond to DOM events in a directive?** Fields define properties on each instance; methods are placed on the prototype and shared across instances.
+- **How do class fields differ from prototype methods?** Fields define properties on each instance; methods are placed on the prototype and shared across instances.
 - **How does method overriding work in subclasses?** A subclass can define a method with the same name as its parent; calling super.method() invokes the parent implementation.
 
 ### Loops & Iteration
@@ -3428,15 +3449,15 @@ Rollup is a module bundler optimised for library development. It uses ES modules
 - **What are Rollup plugins and how are they used?** Plugins extend Rollup’s capabilities (e.g., @rollup/plugin-node-resolve resolves node modules; @rollup/plugin-commonjs converts CommonJS modules to ES modules; rollup-plugin-terser minifies output). They are configured in rollup.config.js.
 - **How do you mark dependencies as external in Rollup?** Use the external option in rollup.config.js so the dependency is not bundled.
 
-### Snowpack & Vite
+### Vite & Legacy Snowpack
 
 #### Definition
 
-Snowpack and Vite are modern build tools that serve ES modules in development and bundle for production. Snowpack uses the browser’s native ESM support to deliver unbundled modules during development; Vite builds on Esbuild and Rollup, providing fast hot module replacement and pre‑bundling dependencies.
+Vite is a modern frontend build tool that serves ES modules in development and bundles for production. As of Vite 8, Rolldown is the single unified Rust-based bundler for development optimization and production builds, replacing the earlier split between esbuild and Rollup. Snowpack pioneered native-ESM development workflows, but it is no longer actively maintained and is legacy for new projects.
 #### Common Interview Questions
 
-- **Why are Vite and Snowpack faster in development than Webpack?** They avoid bundling during development by serving source files as ES modules and leverage native browser support; Vite prebundles dependencies with Esbuild, leading to faster startup and updates.
-- **Can you still perform code splitting and production optimisation with Vite?** Yes - Vite uses Rollup under the hood for production builds, supporting code splitting, minification and other optimizations.
+- **Why is Vite fast in development compared to traditional bundler-first workflows?** It serves source files as native ES modules, performs dependency optimization up front, and uses Rolldown's Rust-based pipeline in modern Vite versions for faster transforms and builds.
+- **Can you still perform code splitting and production optimization with Vite?** Yes - Vite supports production bundling, code splitting, minification, and plugin-based optimization through Rolldown in current versions.
 - **What is hot module replacement (HMR) and how does Vite handle it?** HMR swaps updated modules via the dev server and WebSocket without a full page reload.
 
 ### TypeScript
@@ -3697,7 +3718,7 @@ Flux is an architectural pattern enforcing a unidirectional data flow with actio
 
 #### Definition
 
-MobX is a reactive state management library that uses observables and automatic dependency tracking; Vuex is a state container for Vue.js with a single store, mutations and actions. Other libraries like Zustand and Recoil provide simplified or experimental state management for React.
+MobX is a reactive state management library that uses observables and automatic dependency tracking; Vuex is a state container for Vue.js with a single store, mutations and actions. Other libraries like Zustand and Jotai provide lightweight state management for React. Recoil is archived/legacy and should mainly be recognized for older codebases.
 #### Common Interview Questions
 
 - **How do MobX and Redux differ?** MobX uses mutable state and automatically tracks dependencies; changes are propagated reactively. Redux enforces immutable state and manual updates via reducers. MobX is easier to set up; Redux scales better for large apps.
@@ -3753,12 +3774,12 @@ Linters such as ESLint analyze code for potential errors and style violations. F
 
 #### Definition
 
-Jest, Mocha and Jasmine are testing frameworks; React Testing Library and Enzyme facilitate component testing; Cypress and Playwright enable end‑to‑end testing in the browser. Tests are categorized as unit, integration and end‑to‑end.
+Jest, Mocha, Jasmine and Vitest are testing frameworks; React Testing Library is the recommended default for React component tests; Cypress and Playwright enable end-to-end testing in the browser. Enzyme is legacy and has no official modern React 18/19 support. For Angular, new Angular 21 CLI projects use Vitest by default; Karma remains supported for existing projects and migration. Tests are categorized as unit, integration and end-to-end.
 #### Common Interview Questions
 
 - **What is the difference between unit and integration tests?** Unit tests focus on individual functions or components in isolation; integration tests verify interactions between modules; end‑to‑end tests validate the entire application flow.
 - **How do you mock HTTP requests in tests?** Use libraries like jest.mock, msw (Mock Service Worker) or Axios mock adapter to simulate network requests without hitting real endpoints.
-- **Why prefer React Testing Library over Enzyme?** React Testing Library encourages testing components through user interactions and the DOM rather than implementation details, leading to more maintainable tests.
+- **Why prefer React Testing Library over Enzyme for modern React?** React Testing Library encourages testing components through user interactions and the DOM rather than implementation details, leading to more maintainable tests. Enzyme is tied to older React internals and lacks official React 18/19 support.
 
 ### Storage APIs
 
@@ -4001,7 +4022,7 @@ Search Engine Optimization (SEO) is the practice of improving website visibility
 
 - **What are the three pillars of technical SEO?** Crawling (can search engines discover your content?), Indexing (can they understand and store it?), and Ranking (how relevant is your content to search queries?).
 - **What is the difference between ARIA labels and native HTML semantics?** Native HTML elements (`<button>`, `<nav>`) provide built-in accessibility. ARIA attributes (aria-label, role) should only be used when native semantics are insufficient, as they don't provide actual functionality.
-- **How does site performance affect SEO?** Performance is a direct ranking factor (Core Web Vitals: LCP, FID/INP, CLS). Slow sites have higher bounce rates, which indirectly affects rankings through user behavior signals.
+- **How does site performance affect SEO?** Performance is a direct ranking factor (Core Web Vitals: LCP, INP, CLS). Slow sites have higher bounce rates, which indirectly affects rankings through user behavior signals.
 - **What are the four WCAG principles (POUR)?** Perceivable (available to senses), Operable (usable via various input methods), Understandable (clear and predictable), and Robust (compatible with current and future tools).
 - **How would you make a complex data table accessible?** Use proper `<table>` structure with `<caption>`, `<th>` headers with scope attributes, and associate data cells with headers using headers attribute or aria-describedby.
 
@@ -4097,7 +4118,7 @@ The Critical Rendering Path is the sequence of steps browsers follow to convert 
 - **What's the difference between async and defer attributes?** async: Downloads in parallel, executes immediately after download (order not guaranteed)
   defer: Downloads in parallel, executes in order after HTML parsing completes
   Neither: Blocks parsing until script downloads and executes
-- **How do you identify performance bottlenecks?** Use Chrome DevTools Performance tab to record and analyze runtime performance, Lighthouse for audits, Core Web Vitals (LCP, FID, CLS) for user-centric metrics, and Bundle Analyzer for bundle size insights.
+- **How do you identify performance bottlenecks?** Use Chrome DevTools Performance tab to record and analyze runtime performance, Lighthouse for audits, Core Web Vitals (LCP, INP, CLS) for user-centric metrics, and Bundle Analyzer for bundle size insights.
 - **What are common techniques to reduce Cumulative Layout Shift (CLS)?** Specify width and height attributes on images/video, reserve space for dynamic content, avoid inserting content above existing content, and use transform animations instead of properties that trigger layout.
 - **When would you use a development proxy vs. configuring CORS on the server?** Use a proxy during development for convenience. In production, configure proper CORS headers on the server for security and performance (avoiding unnecessary hops).
 
@@ -4112,15 +4133,15 @@ The following comparisons summarize key differences between Angular, React, and 
 | Template Syntax | HTML templates with directives (`*ngIf`, `*ngFor`, `[(ngModel)]`) and pipes. | JSX (JavaScript + XML) with JavaScript expressions, ternaries, and curly braces. | HTML-based templates with directives (v-if, v-for, v-model); logic via template expressions. |
 | Loops & Conditionals | `*ngFor`, `*ngIf`, `*ngSwitch` modify the DOM. | Use array methods (map) and short-circuit or ternary expressions to conditionally render elements. | v-for, v-if, v-else-if, v-else, v-show directives. |
 | Styling & Classes | Binding syntax: [ngClass], [ngStyle]. | Use className, conditional expressions, or libraries like classnames. | Direct class/style binding, :class (object/array), :style (object/array) bindings. |
-| Local State & Reactivity | Signals, Change Detection (Zone.js or OnPush), RxJS in components. | useState, useReducer; updates trigger re-render. | ref(), reactive() (Composition API); data() (Options API). Automatic dependency tracking. |
-| Global State Management | Services + RxJS, NgRx (Redux), NgRx/ComponentStore, Akita. | Context API, Redux Toolkit, Zustand, Jotai, Recoil, MobX. | Pinia (official, modern), Vuex (legacy). Composables for shared stateful logic. |
+| Local State & Reactivity | Signals, zoneless change detection by default in Angular 21 new projects, RxJS in components. | useState, useReducer; updates trigger re-render. | ref(), reactive() (Composition API); data() (Options API). Automatic dependency tracking. |
+| Global State Management | Services + RxJS, NgRx (Redux), NgRx/ComponentStore, Akita. | Context API, Redux Toolkit, Zustand, Jotai, MobX; Recoil only in legacy codebases. | Pinia (official, modern), Vuex (legacy). Composables for shared stateful logic. |
 | DI & Services | Built-in hierarchical Dependency Injection system injects services. | Context API or external libraries for sharing data. | provide()/inject() for component-scoped dependency injection. |
 | Routing | @angular/router with declarative routes and guards. | React Router library with `<Routes>`, `<Route>` and components. | Vue Router (official library) with `<RouterLink>`, `<router-view>`. |
-| Forms | Template-driven and reactive forms with built-in validators. | Controlled/uncontrolled components; third-party libraries like React Hook Form and Formik. | v-model for two-way binding; built-in modifiers (.lazy, .number, .trim); Vuelidate/VeeValidate for complex validation. |
+| Forms | Template-driven and reactive forms with built-in validators; Signal Forms are Angular 21+ experimental. | Controlled/uncontrolled components; third-party libraries like React Hook Form and Formik. | v-model for two-way binding; built-in modifiers (.lazy, .number, .trim); Vuelidate/VeeValidate for complex validation. |
 | Lazy Loading | Built-in with loadChildren in routes (NgModule) or loadComponent (standalone). | Code splitting with React.lazy and Suspense. | Dynamic imports in Vue Router (component: () => import(...)). |
-| SSR & Hydration | Angular Universal renders on the server. | Next.js or frameworks like Remix handle server-side rendering. | Nuxt.js (full-stack framework) or Vite/SSR plugin. |
-| Testing | Angular CLI with Jasmine/Karma; TestBed for unit tests. | Jest, React Testing Library and Enzyme for component tests. | Jest/Vitest with Vue Test Utils for unit testing; Cypress/Playwright for E2E. |
-| CLI & Build | Angular CLI handles scaffolding, building, and testing. | Create React App (CRA), Vite or custom Webpack handle builds. | Vue CLI (legacy), Vite (modern, recommended) with official plugin. |
+| SSR & Hydration | @angular/ssr renders on the server; Angular Universal is the historical/original name. | Next.js or frameworks like Remix handle server-side rendering. | Nuxt.js (full-stack framework) or Vite/SSR plugin. |
+| Testing | Angular CLI uses Vitest by default for new Angular 21 projects; Karma is supported for existing projects; TestBed for unit tests. | Jest/Vitest and React Testing Library for component tests; Enzyme only in legacy suites. | Jest/Vitest with Vue Test Utils for unit testing; Cypress/Playwright for E2E. |
+| CLI & Build | Angular CLI handles scaffolding, building, and testing. | Frameworks are recommended for new apps; for custom setups use Vite, Parcel, Rsbuild, or custom Webpack. Create React App is unmaintained/not recommended for new apps. | Vue CLI (legacy), Vite (modern, recommended) with official plugin. |
 | i18n | Built-in i18n and locale support. | Libraries like react-intl or next-i18next. | Vue I18n (official library). |
 | Learning Curve | Steeper due to broad API surface and TypeScript-first nature. | Moderate; easy to start, mastery requires understanding of ecosystem. | Gentle; easy to learn from HTML/JS, with a gradual progression to advanced concepts. |
 | Microfrontends | Angular Elements or Module Federation. | Module Federation, Single-SPA or Webpack 5 for integrating React apps. | Module Federation (via Vite or Webpack). |

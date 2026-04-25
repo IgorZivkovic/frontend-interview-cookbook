@@ -5,12 +5,12 @@ This is a high-level walkthrough of how a modern web app typically works end-to-
 ## 1) Initial load and bundles
 
 - The browser requests `index.html` and downloads CSS and JavaScript bundles.
-- Build tools (Vite/Webpack) split and optimize code (tree-shaking, minification).
+- Build tools (Vite/Rolldown, Webpack, or Rsbuild) split and optimize code (tree-shaking, minification).
 - Only critical code loads first; the rest is lazy-loaded when needed.
 
 ## 2) Rendering strategy
 
-- For faster first paint and SEO, apps often use SSR or SSG (Next.js, Nuxt, Angular Universal).
+- For faster first paint and SEO, apps often use SSR or SSG (Next.js, Nuxt, @angular/ssr; historically Angular Universal).
 - Hydration attaches interactivity after the initial HTML is delivered.
 
 ## 3) Auth check and routing
@@ -31,7 +31,7 @@ This is a high-level walkthrough of how a modern web app typically works end-to-
 ## 6) Data fetching and async models
 
 - API requests include auth headers or cookies via an interceptor.
-- React/Vue often use Promises; Angular often uses Observables.
+- React/Vue often use Promises; Angular often uses Observables and Signals.
 - The UI shows loading and error states while requests are in flight.
 
 ## 7) Real-time and error handling
