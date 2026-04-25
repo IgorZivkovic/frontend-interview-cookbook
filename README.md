@@ -31,6 +31,7 @@
 - [Vue Deep Dive](#vue-deep-dive)
 - [Angular Deep Dive](#angular-deep-dive)
 - [ES6 Deep Dive](#es6-deep-dive)
+- [TypeScript Deep Dive](#typescript-deep-dive)
 - [Bundlers & Compilers](#bundlers--compilers)
 - [Threading & Data Streams](#threading--data-streams)
 - [Networking & Processing](#networking--processing)
@@ -3422,6 +3423,68 @@ Template literals (${placeholders}) support string interpolation and multi‑lin
   ```
 - **How do you provide default values in destructuring?** Specify = value in the destructuring pattern (e.g., const { title = ‘N/A’ } = obj) to fall back when the property is undefined.
 - **How can you rename variables during destructuring?** Use property: newName syntax (e.g., const { id: userId } = user).
+
+## TypeScript Deep Dive
+
+#### Definition
+
+TypeScript is a statically typed superset of JavaScript. It checks types at build time, improves editor tooling, and then erases type syntax so the emitted JavaScript runs normally in browsers and Node.js. Its type system is structural: compatibility is based on object shape, not class or interface names.
+
+As of April 2026, TypeScript 6.x is the current general line. TypeScript 6 is a bridge release and the last JavaScript-based compiler line; TypeScript 7 uses a Go-based compiler and is in preview/beta. TypeScript 6 also changed important defaults and compatibility assumptions: `strict` is default for new TS 6 configurations, `module` defaults to `esnext`, `target` defaults to `ES2025`, ES5 target is deprecated with ES2015 as the lowest target, AMD/UMD/SystemJS module output is no longer supported, and legacy module resolution modes should be migrated toward `nodenext` or `bundler`. Angular 21 is an important exception: it supports TypeScript `>=5.9.0 <6.0.0`, so Angular 21 projects should not move to TS 6 until Angular expands compatibility.
+
+#### Example
+
+```ts
+type Role = "admin" | "user";
+
+interface ApiUser {
+  id: string;
+  role: Role;
+  email?: string;
+}
+
+function isApiUser(value: unknown): value is ApiUser {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "id" in value &&
+    "role" in value
+  );
+}
+
+const routes = {
+  home: "/",
+  user: "/users/:id",
+} as const satisfies Record<string, string>;
+
+type RouteName = keyof typeof routes; // "home" | "user"
+```
+
+#### Common Interview Questions
+
+- **What problem does TypeScript solve in frontend applications?** It catches many shape and API contract mistakes before runtime, improves refactoring safety, and gives better editor feedback for props, events, forms, API responses, and state. It does not make JavaScript runtime-safe by itself.
+- **What does it mean that TypeScript types are erased?** Types are used by the compiler and tooling, then removed from emitted JavaScript. Runtime checks still need JavaScript logic or schema validators such as Zod or Valibot.
+- **What is structural typing?** TypeScript compares object shapes. If a value has the required properties with compatible types, it can be assigned even if it does not explicitly implement an interface.
+- **When should you rely on inference versus explicit annotations?** Let TypeScript infer local variables and simple return values. Add annotations at public boundaries: exported functions, component props, API DTOs, event payloads, and places where widening would hide intent.
+- **What is the difference between type and interface?** Both can describe object shapes. Interfaces support declaration merging and are natural for public object contracts. Type aliases can express unions, tuples, primitives, mapped types, conditional types, and more complex compositions.
+- **How do unions and intersections differ?** A union (`A | B`) means a value can be one of several alternatives. An intersection (`A & B`) combines requirements, so a value must satisfy all intersected types.
+- **What is a discriminated union and why is it useful?** It is a union where every variant has a shared literal field such as `kind` or `status`. TypeScript can narrow by that field, making state machines, async states, and reducer actions safer.
+- **How does narrowing work?** TypeScript narrows broad types using runtime checks such as `typeof`, `instanceof`, `in`, equality checks, discriminants, custom type guards (`value is T`), and assertion functions (`asserts value is T`).
+- **How do any, unknown, never, and void differ?** `any` disables type checking. `unknown` accepts any value but requires narrowing before use. `never` represents impossible values and is useful for exhaustiveness checks. `void` means a function's return value should not be used.
+- **How should null and undefined be handled?** With `strictNullChecks`, nullable values must be represented explicitly (`string | null`) and narrowed before use. This is part of strict mode; in TS 6, strict is the default for new configs, while legacy projects may still need to enable it explicitly.
+- **What are generics and when should you use constraints?** Generics let functions and types preserve relationships between inputs and outputs. Constraints (`T extends { id: string }`) restrict what callers can pass while keeping useful inference.
+- **How do keyof and indexed access types work?** `keyof T` produces the allowed property names of `T`. `T[K]` retrieves the type of a property. Together they let you write safe helpers for picking, mapping, and updating object fields.
+- **What are mapped types and conditional types?** Mapped types transform keys (`{ [K in keyof T]: ... }`). Conditional types choose a type based on another type (`T extends Promise<infer U> ? U : T`). They power many utility types.
+- **What are template literal types used for?** They build string literal unions from other types, useful for event names, route names, CSS variable names, or typed API keys.
+- **Which utility types should a frontend engineer know?** `Partial`, `Required`, `Readonly`, `Pick`, `Omit`, `Record`, `ReturnType`, `Parameters`, `Awaited`, `NonNullable`, and `Extract`/`Exclude` are common in app and library code.
+- **What do as const, satisfies, and const type parameters solve?** `as const` preserves literal types and readonly structure. `satisfies` checks that a value matches a type without widening away its precise inferred type. Const type parameters preserve literal inference inside generic APIs.
+- **When should you avoid enums?** Regular enums emit runtime JavaScript and can add bundle/runtime complexity. For many frontend cases, literal unions or `as const` objects are simpler. Enums can still be useful for interop with existing APIs or generated code.
+- **What TypeScript 6 tsconfig changes matter in interviews?** TS 6 defaults are more modern: `strict` is default, `module` defaults to `esnext`, and `target` defaults to `ES2025`. ES5 target is deprecated, AMD/UMD/SystemJS module output is no longer supported, and old CommonJS projects should revisit `moduleResolution`, so legacy configs may need migration.
+- **Which tsconfig options are still worth discussing explicitly?** For TS 6 projects, do not present `strict: true` as a required manual setting; it is already the default. For legacy projects without it, enabling it explicitly is recommended. Interview-relevant options outside the strict set include `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, and `verbatimModuleSyntax`. `target`, `module`, and `moduleResolution` remain important compatibility/build decisions.
+- **How should moduleResolution be chosen?** Use `nodenext` when code runs directly in modern Node.js and follows Node's ESM/CJS rules. Use `bundler` for Vite, Webpack, Rollup, Rsbuild, and similar tools that resolve imports during bundling.
+- **How does TypeScript relate to runtime validation?** TypeScript only checks code at compile time. Data from APIs, localStorage, URL params, forms, or third-party scripts is still unknown at runtime; validate it with schemas or guards before trusting it.
+- **How is TypeScript used differently in React, Angular, and Vue?** React commonly types props, hooks, events, refs, and server/client boundaries. Angular is TypeScript-first and uses types heavily in DI, typed forms, signals, and services. Vue uses TypeScript through SFC macros like defineProps/defineEmits, template refs, and typed composables.
+
 ## Bundlers & Compilers
 
 This section covers modern tools that transform and bundle JavaScript applications.
@@ -3459,17 +3522,6 @@ Vite is a modern frontend build tool that serves ES modules in development and b
 - **Why is Vite fast in development compared to traditional bundler-first workflows?** It serves source files as native ES modules, performs dependency optimization up front, and uses Rolldown's Rust-based pipeline in modern Vite versions for faster transforms and builds.
 - **Can you still perform code splitting and production optimization with Vite?** Yes - Vite supports production bundling, code splitting, minification, and plugin-based optimization through Rolldown in current versions.
 - **What is hot module replacement (HMR) and how does Vite handle it?** HMR swaps updated modules via the dev server and WebSocket without a full page reload.
-
-### TypeScript
-
-#### Definition
-
-TypeScript is a typed superset of JavaScript that compiles to plain JS. It adds optional static typing, interfaces, enums, generics and access modifiers. The compiler checks types at build time, enabling earlier error detection and improved tooling.
-#### Common Interview Questions
-
-- **What is the difference between interface and type?** Both define shape aliases, but interface can be extended and merged, whereas type can alias primitives, unions and tuples. Use interface for objects and classes; use type for complex unions or mapped types.
-- **What are generics and when would you use them?** Generics allow functions and classes to operate on variable types while maintaining type safety (e.g., function identity(value: T): T). They are used for reusable data structures and APIs.
-- **How does the unknown type differ from any?** unknown is a type‑safe counterpart of any; values of type unknown cannot be used unless narrowed, while any disables type checking.
 
 ### Babel
 

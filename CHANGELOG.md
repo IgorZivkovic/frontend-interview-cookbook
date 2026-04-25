@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - Updated framework coverage for React 19.2 and Angular 20/21.
+- Added a dedicated TypeScript Deep Dive section.
 - Refreshed Node.js, Vue/Pinia, build tooling, Core Web Vitals, and legacy ecosystem guidance.
 - Updated the bonus walkthrough to use modern SSR, build tooling, and Angular reactivity terminology.
 
