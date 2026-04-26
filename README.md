@@ -1759,7 +1759,7 @@ AsyncLocalStorage (async_hooks) – per-request context storage across async bou
   Bottleneck detection in async pipelines
 
 ## React Deep Dive
-This section explores advanced React concepts beyond basic hooks and components.
+This section explores advanced React concepts beyond basic hooks and components. As of April 2026, React 19.2.x is the current stable line; npm's latest stable patch is 19.2.5. React Server Components and Server Functions should use patched 19.2.4+ or latest 19.2.x packages because earlier 19.x RSC packages had security fixes backported.
 
 ### State vs Props
 
@@ -1800,6 +1800,7 @@ React emphasizes unidirectional data flow and explicit communication patterns. C
 - **What is the difference between lifting state up and using Context API?** Lifting state up moves shared state to the nearest common ancestor, making data flow explicit but potentially causing prop drilling. Context API allows components to access state directly without passing props through every level, but can make data flow less transparent.
 - **How do custom hooks help with component communication?** Custom hooks encapsulate and share stateful logic between components, allowing multiple components to use the same logic without sharing the actual state instance. Each component gets its own isolated state from the hook.
 - **When should you upgrade from local state to a state management library?** Move to state management when: multiple unrelated components need the same data, you need time-travel debugging, state logic becomes complex and hard to test, or when prop drilling and context become unmanageable.
+- **What changed about refs in React 19?** React 19 supports ref as a prop for function components, so new components usually do not need `forwardRef`. It also supports callback ref cleanup functions that React calls when the DOM node is removed. `forwardRef` remains supported and common in existing code.
 #### Communication Patterns Reference
 1. Props (Parent -> Child)
    - Step 1: Parent passes data to child via props: `<Child data={value} />`.
@@ -1831,11 +1832,11 @@ React emphasizes unidirectional data flow and explicit communication patterns. C
    - Step 2: Multiple components use the same custom hook.
    - Step 3: Each component gets isolated state instance from the hook.
    - Note: Hooks share logic but not state. For shared state, combine with Context or state management.
-7. Forward Refs (Parent accessing Child)
-   - Step 1: Wrap child component with forwardRef().
-   - Step 2: Child accepts ref as second parameter and attaches to DOM element.
+7. Refs as props / forwardRef (Parent accessing Child)
+   - Step 1: In React 19+ code, let the child accept `ref` as a prop: `function Child({ ref }) { ... }`.
+   - Step 2: Attach the ref to a DOM element or expose a limited imperative API with `useImperativeHandle`.
    - Step 3: Parent creates ref and passes to child: `<Child ref={childRef} />`.
-   - Note: Use sparingly as it breaks component encapsulation. Prefer declarative props when possible.
+   - Note: `forwardRef()` is still supported for compatibility and pre-React 19 patterns. Use refs sparingly as they break component encapsulation; prefer declarative props when possible.
 8. State Management Libraries (Global)
    - Step 1: Choose library (Redux Toolkit, Zustand, Jotai) and set up store.
    - Step 2: Create slices/stores with state and actions.
@@ -1857,7 +1858,7 @@ Hooks are functions that enable functional components to use React features like
 
 - **How did hooks change React development patterns since their introduction in 16.8?** Hooks enabled functional components to fully replace class components, introduced better code reuse through custom hooks, simplified complex component logic, and paved the way for concurrent features.
 - **What problem do concurrent hooks (useTransition, useDeferredValue) solve in React 18?** They enable non-blocking user interfaces by allowing React to interrupt rendering, prioritize urgent updates (like typing), and defer non-urgent updates (like rendering large lists), improving perceived performance.
-- **How does the use hook in React 19 differ from traditional async patterns?** The use hook allows components to consume Promises and Context directly in render, simplifying data fetching patterns and enabling more natural async/await syntax in components.
+- **How does the use hook in React 19 differ from traditional async patterns?** The `use()` API can read Promises and Context directly during render, and unlike normal hooks it can be called conditionally. Do not create an uncached promise directly in render; pass Promises from a framework, cache, or Suspense-compatible data source. Treat `use()` as a rendering primitive, not as a replacement for TanStack Query, React Router loaders, or framework data APIs in everyday client data fetching.
 - **What does useEffectEvent solve?** It lets you move event-like logic out of effects while still reading the latest props/state, reducing stale-closure bugs without re-running the effect.
 - **What changed in React 19.2 and what remains Canary?** React 19.2 stabilizes `<Activity>`, useEffectEvent, cacheSignal, Performance Tracks, and partial prerendering support. `<ViewTransition>` and addTransitionType remain Canary-only APIs.
 - **When would you choose useLayoutEffect over useEffect?** useLayoutEffect runs synchronously after DOM mutations but before paint, making it suitable for measurements or DOM manipulations that must happen before the browser repaints. useEffect runs asynchronously after paint.
@@ -1871,6 +1872,7 @@ Hooks are functions that enable functional components to use React features like
 - **When would you need to use useRef with useEffect?** When you need to access the latest state/value in a cleanup function without causing re-renders.
 - **What's the difference between useMemo and useCallback, and when should each be used?** useMemo memoizes computed values to avoid expensive recalculations. useCallback memoizes function references to prevent unnecessary re-renders in child components. Use useMemo for expensive computations, useCallback for function props passed to optimized children.
 - **How have hooks evolved to handle common patterns like forms and optimistic updates?** React 19 introduced useActionState, react-dom's useFormStatus, and useOptimistic to provide built-in solutions for patterns that previously required external libraries or complex custom hook implementations. useFormStatus must be called from a component rendered inside the relevant form.
+- **When would you use useOptimistic?** Use `useOptimistic` to show instant UI feedback while a client action, form action, or server action confirms a mutation. It pairs well with `useActionState` and form actions, but the optimistic value must be reconciled with the real action result and rolled back or corrected on errors.
 - **What are the Rules of Hooks and why are they necessary?** Hooks must be called at the top level (not in loops/conditions) and only from React functions. These rules ensure hooks are called in the same order each render, which is essential for React to correctly preserve state between re-renders.
   Key Lifecycle Patterns:
   Mount  -  useEffect(fn, [])
@@ -1894,7 +1896,8 @@ The React component lifecycle refers to the series of phases a component goes th
 
 - **What happens during component mount and unmount?** Mount Phase  -  DOM elements created and inserted, initial state established, useEffect with empty dependency array runs. Common operations: API calls, analytics, subscriptions.
   Unmount Phase  -  Component removed from DOM, cleanup functions run, state and effects destroyed. Common operations: cleanup, resource disposal.
-- **How do you temporarily hide UI without losing state?** Use `<Activity>` (React 19.2+) with `mode="visible"` or `mode="hidden"`. Hidden activities visually hide the subtree, unmount effects, defer updates until React has idle work time, and preserve component state for faster return navigation.
+- **How do you temporarily hide UI without losing state?** Use `<Activity>` (React 19.2+) with `mode="visible"` or `mode="hidden"`. Hidden activities visually hide the subtree, clean up effects, process hidden updates at lower priority, and preserve component state for faster return navigation.
+- **What caveat does Activity introduce for DOM side effects?** Hidden Activity subtrees keep DOM nodes around while cleaning up effects. Elements with their own browser side effects, such as `video`, `audio`, and `iframe`, may need explicit effect cleanup so playback, subscriptions, or embedded work stop while hidden.
 - **How do you prevent memory leaks in React components?** Always clean up intervals and timeouts
   Cancel ongoing API requests with AbortController
   Remove event listeners properly
@@ -1912,10 +1915,11 @@ Context provides a way to pass data through the component tree without having to
 - React 16.3 (2018): New Context API - stable, documented API with createContext, Provider, Consumer
 - React 16.8 (2019): useContext hook simplifies context consumption
 - React 18 (2022): Concurrent rendering compatibility
-- React 19 (2024): use hook can consume context, better performance patterns
+- React 19 (2024): use hook can consume context; `<Context value={...}>` can be used as a provider shorthand
 #### Common Interview Questions
 
 - **How has the Context API evolved from its experimental beginnings to the current stable API?** The API moved from an unstable, type-unsafe pattern using contextTypes to a first-class, type-safe API with createContext, explicit Providers, and multiple consumption methods (Consumer render prop, useContext hook).
+- **What changed for Context providers in React 19?** New code can render the context object directly as a provider, for example `<ThemeContext value={theme}>...</ThemeContext>`. `<ThemeContext.Provider>` remains supported and common in existing codebases.
 - **What performance improvements were introduced in React 16.3+ context compared to the legacy context?** The new Context API uses reference identity for value propagation, enabling better optimizations and more predictable re-render behavior compared to the legacy context's experimental implementation.
 - **How does the useContext hook (16.8+) improve upon the Consumer render prop pattern?** useContext provides a more ergonomic, hook-based consumption method that avoids nested render props, improves code readability, and works better with TypeScript and custom hooks.
 - **What are common performance pitfalls with Context, and how have modern patterns addressed them?** Pitfall: Providing a new object value on every render causes all consumers to re-render. Solutions: useMemo for object stabilization, splitting context into state/dispatch, using selectors with libraries like use-context-selector.
@@ -1935,14 +1939,15 @@ Error Boundaries are React components that catch JavaScript errors anywhere in t
 - React 16 (2017): Error Boundaries introduced as class components with componentDidCatch
 - React 16.2+: Community libraries emerge for functional component error boundaries
 - React 18 (2022): Improved error recovery and development error overlay
-- React 19 (2024): Continued class-component requirement but better error messaging
+- React 19 (2024): Continued class-component requirement for Error Boundary fallback UI, plus root error logging options
 #### Common Interview Questions
 
 - **Why are Error Boundaries still implemented as class components in modern React?** Error Boundaries require lifecycle methods (componentDidCatch) that hook into React's internal error handling mechanism. As of React 19, there's no hook equivalent because error catching needs to happen during the render phase lifecycle.
 - **How has error handling evolved with community solutions despite the class component requirement?** Libraries like react-error-boundary provide functional-style APIs that wrap the class component implementation, offering better developer experience with features like error resetting, recovery callbacks, and more flexible fallback UIs.
 - **What types of errors do Error Boundaries catch versus what they miss?** Caught: Errors during render, in lifecycle methods, in constructors of child components. Not Caught: Event handlers, asynchronous code (setTimeout, promises), server-side rendering errors, errors in the error boundary itself.
 - **How do you handle errors that Error Boundaries can't catch?** Use window.onerror for global errors, window.addEventListener('unhandledrejection') for promise rejections, and try/catch blocks in event handlers and async operations.
-- **What improvements did React 18 bring to error handling?** Better error messages in development, improved component stacks for debugging, and more resilient error recovery in concurrent rendering mode.
+- **What root-level error options did React 19 add?** `createRoot()` and `hydrateRoot()` support `onCaughtError` for errors caught by Error Boundaries, `onUncaughtError` for errors not caught by an Error Boundary, and `onRecoverableError` for errors React can automatically recover from. These are for production logging/reporting and do not replace Error Boundary fallback UI.
+- **What improvements did React 18 and 19 bring to error handling?** React 18 improved component stacks and recovery in concurrent rendering. React 19 improved error logging and added root-level reporting hooks for caught, uncaught, and recoverable errors.
 - **How would you implement error boundaries for a large application?** Use a hierarchical approach: a top-level boundary for critical errors, feature-level boundaries for sections of the app, and component-level boundaries for isolated features. Each level can have different fallback strategies.
 - **What's the difference between getDerivedStateFromError and componentDidCatch?** getDerivedStateFromError is static and used to render a fallback UI. componentDidCatch is for side effects like logging. Both are called during the "commit" phase when the error is detected.
 
@@ -2027,17 +2032,21 @@ React Router has been the standard routing solution for React applications since
 - v5 (2019): Stability release with hooks support
 - v6 (2021): Modern rewrite with data APIs, improved nested routing
 - v6.4+ (2022): Data routers, loaders, actions (Remix-inspired patterns)
-- v6.8+ (2023): Future flags for v7 features, better TypeScript
+- v7 (2024): Stable release with Declarative, Data, and Framework modes; Remix v2 path converges into React Router
+- v7.5+ (2025): More granular Data Mode route.lazy support for loading route properties separately
+- v7.9+ (2025): React Server Components support remains preview/unstable
 #### Common Interview Questions
 
 - **How did React Router's architecture change from v3 to v4?** v3 used a configuration-based approach with a central route config. v4 introduced a declarative, component-based approach where routes are components that render based on the current location, enabling more dynamic routing patterns.
 - **What are the key differences between React Router v5 and v6?** v6 uses element prop instead of component, Routes instead of Switch, relative paths by default, required Outlet for nested routes, and new hooks like useNavigate instead of useHistory.
-- **How do data routers (v6.4+) change the way we think about routing?** Data routers move routing configuration outside components, enable data loading before navigation, provide built-in form handling with actions, and support error boundaries at the route level - similar to Remix's approach.
+- **What are React Router v7's main modes?** Declarative Mode is the familiar SPA router with `<BrowserRouter>`, `<Routes>`, `<Link>`, and hooks. Data Mode adds route objects, loaders, actions, pending UI, and `RouterProvider`. Framework Mode adds the Vite-powered full-stack layer with typegen, route modules, SSR/SSG options, and code splitting.
+- **How do data routers (v6.4+ and v7 Data Mode) change the way we think about routing?** Data routers move routing configuration outside components, enable data loading before navigation, provide built-in form handling with actions, and support error boundaries at the route level - similar to Remix's approach.
 - **What problem do loaders and actions solve in modern React Router?** Loaders enable data fetching before a component renders, eliminating loading states within components. Actions handle form submissions at the route level, providing a more integrated approach to data mutations.
-- **How has React Router's approach to code splitting evolved?** Early versions required manual code splitting. v6+ integrates well with React.lazy and Suspense, and data routers can automatically handle loading states during lazy route transitions.
+- **How has React Router's approach to code splitting evolved?** Early versions required manual code splitting. v6+ integrates with React.lazy and Suspense, Framework Mode handles route module splitting, and v7.5+ Data Mode supports granular `route.lazy` objects so loaders, actions, Components, and hydrate fallbacks can be loaded separately.
 - **What's the difference between useNavigate and the old useHistory?** useNavigate returns a function that can be called with a path or numerical delta, while useHistory returned an object with methods like push, replace, and goBack. useNavigate is more concise and consistent.
-- **How does React Router handle authentication and protected routes in v6?** Through loader functions that can redirect or throw errors for unauthorized access, combined with route-level error boundaries to handle authentication failures gracefully.
-- **What are the performance implications of React Router's evolution?** v6's relative paths and improved matching algorithm provide better performance. Data routers can reduce client-side JavaScript by loading data more efficiently and enabling better server integration patterns.
+- **How does React Router handle authentication and protected routes in modern versions?** Through loader functions that can redirect or throw errors for unauthorized access, combined with route-level error boundaries to handle authentication failures gracefully.
+- **What is the status of React Router's RSC support?** React Router v7 has preview/unstable React Server Components support in Data and Framework modes. It is important to describe it as unstable, not as the default stable routing model.
+- **What are the performance implications of React Router's evolution?** v6's relative paths and improved matching algorithm improved routing performance. v7 Data and Framework modes reduce waterfalls by loading route data before render, splitting route modules, and enabling stronger server integration patterns.
 
 ### React Query
 
@@ -2067,7 +2076,7 @@ TanStack Query (formerly React Query) revolutionized server state management in 
 
 #### Definition
 
-Server-Side Rendering has evolved from basic string rendering to sophisticated hybrid approaches that balance performance, SEO, and developer experience. The hydration process has similarly advanced from simple DOM adoption to intelligent partial and progressive hydration strategies.
+Server-Side Rendering has evolved from basic string rendering to sophisticated hybrid approaches that balance performance, SEO, and developer experience. React core now provides streaming SSR, selective hydration, Server Components integration points, and framework-facing prerender/resume APIs, while higher-level routing and rendering strategies are usually handled by frameworks.
 #### SSR Evolution Timeline
 
 - React 0.14 (2015): Basic ReactDOMServer.renderToString() introduced
@@ -2075,26 +2084,28 @@ Server-Side Rendering has evolved from basic string rendering to sophisticated h
 - Next.js 1-8 (2016-2019): Framework-level SSR abstractions
 - React 18 (2022): Streaming SSR with renderToPipeableStream()
 - React 19.2 (2025): Resume/prerender APIs for partial prerendering and Node Web Streams support
-- Next.js 13+ (2022): App Router, React Server Components, partial hydration
-- Modern Era (2023+): Islands architecture, resumability, fine-grained hydration
+- Next.js 13+ (2022): App Router, React Server Components, nested layouts, and streaming-first data boundaries
+- Next.js 16 (2025): Cache Components and Partial Prerendering as framework-level patterns
+- Modern Era (2023+): Streaming SSR, selective hydration, RSC, partial prerendering, and framework-managed client/server boundaries
 #### Common Interview Questions
 
 - **How has SSR evolved from basic string rendering to modern streaming approaches?** Early SSR blocked until entire page was ready. Modern streaming SSR sends the shell immediately and streams components as they resolve, significantly improving Time to First Byte (TTFB) and perceived performance.
 - **What problem does React 18's streaming SSR solve?** It eliminates the "waterfall" problem where servers wait for all data before sending HTML. Now, the shell can be sent immediately while dynamic content streams in later.
 - **What do the React 19.2 resume/prerender APIs enable?** They let frameworks pause a prerender and later resume it to a stream (`resume*`), which supports partial prerendering and more flexible streaming/hydration workflows on both Web Streams and Node streams. Most app components should treat these as framework/server integration APIs, not everyday client component APIs.
-- **How do React Server Components change the SSR landscape?** RSCs execute on the server only, producing zero client JavaScript. They enable finer-grained loading states, reduce bundle size, and allow direct data access without API endpoints.
+- **How do React Server Components change the SSR landscape?** RSCs execute on the server only, producing zero client JavaScript for those components. They enable finer-grained loading states, reduce bundle size, and allow direct data access without API endpoints when supported by a framework or bundler.
+- **What security context matters for React Server Components?** RSC and Server Functions depend on framework/bundler integration. Apps using RSC-capable frameworks or packages should stay on patched React Server Components packages, such as 19.2.4+ or latest 19.2.x releases, because older 19.x RSC packages had critical security fixes.
 - **What is cacheSignal in React Server Components?** It's an RSC-only signal that lets server-side cached work detect when a cache lifetime ends, helping frameworks coordinate cache invalidation and refresh behavior. It is not a client component state primitive.
 - **What's the difference between hydration in React 16 vs React 18?** React 16 hydration was all-or-nothing. React 18 supports selective hydration, where interactive parts can hydrate independently from static content, improving perceived performance.
-- **How does Next.js's App Router improve upon the Pages Router for SSR?** App Router uses React Server Components by default, enables nested layouts with individual loading states, supports parallel data fetching, and provides better error boundaries.
+- **How does Next.js's App Router improve upon the Pages Router for SSR?** App Router uses React Server Components by default, enables nested layouts with individual loading states, supports parallel data fetching, and provides better error boundaries. Pages Router is still supported, but App Router is the modern path for React's latest server features.
 - **What are hydration mismatches and how can they be prevented?** Mismatches occur when server-rendered HTML differs from client-rendered HTML. Prevention: Avoid browser-specific APIs during render, use useEffect for side effects, and ensure consistent data between server and client.
-- **What is "islands architecture" and how does it relate to hydration?** Islands architecture hydrates only interactive "islands" in a sea of static HTML. This reduces JavaScript payload and improves performance by avoiding full-page hydration.
-- **How do modern frameworks handle the transition from SSR to SPA?** They use hybrid approaches: SSR for initial load, then client-side navigation (SPA) for subsequent page changes, providing both SEO benefits and smooth user experience.
+- **What React 19 DOM APIs matter for SSR performance?** React 19 improved document metadata handling, stylesheet/script coordination, and resource loading APIs such as `preload`, `preinit`, `preconnect`, and `prefetchDNS`. These help frameworks and apps coordinate critical resources without hand-writing head management in every route.
+- **How do modern frameworks handle the transition from SSR to SPA-like navigation?** They use hybrid approaches: SSR or prerendering for initial load, then client-side navigation for subsequent page changes, providing both SEO benefits and smooth user experience.
 
-### React Ecosystem Frameworks (Next.js, Remix)
+### React Ecosystem Frameworks (Next.js, React Router/Remix)
 
 #### Definition
 
-The React ecosystem has evolved from library-only solutions to full-stack frameworks that provide opinionated, production-ready architectures. Next.js and Remix represent two different philosophical approaches to solving the same problems: performance, SEO, developer experience, and production readiness.
+The React ecosystem has evolved from library-only solutions to full-stack frameworks that provide opinionated, production-ready architectures. Next.js and React Router Framework Mode represent two common approaches to solving production concerns such as routing, data loading, rendering, deployment, performance, SEO, and developer experience.
 #### Framework Evolution Timeline
 
 - Pre-Framework Era (2015-2016): Manual React + Router + Webpack setups
@@ -2103,17 +2114,20 @@ The React ecosystem has evolved from library-only solutions to full-stack framew
 - Next.js 9-12 (2019-2021): API routes, incremental static regeneration
 - Remix Launch (2021): Web standards-focused framework
 - Next.js 13+ (2022): App Router, React Server Components
-- Modern Era (2023+): Full-stack React dominance, meta-frameworks
+- React Router v7 (2024): Framework Mode absorbs Remix-style full-stack routing into React Router
+- Next.js 16 (2025): Turbopack stable by default, React Compiler integration, Cache Components / PPR direction
+- Modern Era (2023+): Full-stack React dominance, meta-frameworks, RSC-capable routing and rendering
 #### Common Interview Questions
 
 - **How has the React ecosystem evolved from library to framework approach?** Early React required assembling many pieces manually. Modern frameworks provide integrated solutions for routing, data fetching, rendering, and deployment, reducing configuration complexity.
-- **What are the key philosophical differences between Next.js and Remix?** Next.js focuses on incremental adoption and rendering flexibility. Remix emphasizes web standards, progressive enhancement, and nested routing. Both are converging on similar patterns.
-- **How does the App Router in Next.js 13+ differ from the Pages Router?** App Router uses React Server Components by default, enables nested layouts, supports parallel data fetching, and provides more fine-grained loading states through the file system.
+- **What are the key philosophical differences between Next.js and Remix/React Router Framework Mode?** Next.js focuses on integrated full-stack React with App Router, RSC, caching, and deployment optimizations. Remix's ideas now live primarily in React Router v7 Framework Mode, emphasizing web standards, progressive enhancement, nested routing, loaders, and actions.
+- **How does the App Router in Next.js 13+ differ from the Pages Router?** App Router uses React Server Components by default, enables nested layouts, supports parallel data fetching, and provides more fine-grained loading states through the file system. Pages Router is still supported but is no longer the path for React's latest server features.
 - **What problem do meta-frameworks solve that vanilla React doesn't?** They provide production-ready solutions for SSR/SSG, image optimization, font loading, performance monitoring, and deployment that would require significant manual configuration.
-- **How has data fetching evolved across React frameworks?** From manual useEffect calls to getServerSideProps/getStaticProps in Next.js Pages Router, to Server Components and Server Actions in App Router, to loaders/actions in Remix.
-- **What's the future of React frameworks with React Server Components?** RSCs enable zero-bundle-size components, finer-grained loading states, and direct database access from components, fundamentally changing how we think about React architecture.
+- **How has data fetching evolved across React frameworks?** From manual useEffect calls to getServerSideProps/getStaticProps in Next.js Pages Router, to Server Components and Server Actions in App Router, to loaders/actions in React Router/Remix.
+- **What's the current framework direction with React Server Components?** RSCs enable zero-bundle-size server components, finer-grained loading states, and direct server data access. In practice, adoption is framework-driven: Next.js App Router is the mainstream stable path, while React Router RSC support is still preview/unstable.
+- **What changed in Next.js 16?** Next.js 16 made Turbopack the default stable bundler, added stable React Compiler integration, and introduced Cache Components / Partial Prerendering as a framework-level caching and rendering model.
 - **When would you choose a meta-framework vs vanilla React + Vite?** Meta-frameworks for production applications needing SEO, performance, and complex features. Vanilla React + Vite for SPAs, internal tools, or when you need maximum control.
-- **How do modern frameworks handle the trade-offs between developer experience and performance?** They use compiler optimizations, intelligent bundling, and runtime analysis to provide great DX without sacrificing performance, through features like automatic code splitting and image optimization.
+- **How do modern frameworks handle the trade-offs between developer experience and performance?** They use compiler optimizations, intelligent bundling, route-level data APIs, resource preloading, and runtime/server analysis to provide good DX without sacrificing performance.
 
 ### Axios & Data Fetching
 
@@ -2126,15 +2140,15 @@ The evolution of data fetching in React applications mirrors the broader JavaScr
 - Native Fetch API (2015): Standards-based alternative to XMLHttpRequest
 - Axios Rise (2016-2018): Feature-rich HTTP client gaining popularity
 - React Query Era (2019+): Specialized server state management reduces Axios usage
-- Modern Patterns (2022+): Framework-integrated fetching (Next.js, Remix), React Server Components
+- Modern Patterns (2022+): Framework-integrated fetching (Next.js, React Router/Remix), React Server Components
 #### Common Interview Questions
 
 - **How has data fetching evolved from jQuery AJAX to modern patterns?** jQuery provided a unified API but was heavy. Native fetch emerged as a standards-based solution. Axios added convenience features. Modern patterns integrate fetching with state management and framework routing.
 - **What are the key differences between Axios and native fetch?** Axios has automatic JSON transformation, request/response interceptors, timeout configuration, request cancellation, and better error handling. Fetch is more lightweight but requires more boilerplate.
 - **How did AbortController change request cancellation in modern JavaScript?** AbortController provided a standards-based way to cancel requests, replacing library-specific solutions like Axios CancelToken. It works consistently across fetch and Axios.
 - **What role does Axios play in modern React applications with tools like React Query?** Axios serves as the HTTP transport layer, while React Query handles caching, background updates, and state management. They complement each other rather than compete.
-- **How do framework-integrated data fetching solutions (Next.js, Remix) change the game?** They move data fetching closer to the component, enable server-side rendering with data, provide built-in loading states, and reduce client-side JavaScript through Server Components.
-- **What are the performance implications of different data fetching strategies?** Client-side fetching increases Time to Interactive but provides better subsequent navigation. Server-side fetching improves initial load and SEO but requires server resources. Hybrid approaches provide the best balance.
+- **How do framework-integrated data fetching solutions (Next.js, React Router/Remix) change the game?** They move data fetching closer to routes or components, enable server-side rendering with data, provide built-in loading states, and reduce client-side JavaScript through Server Components where supported.
+- **What are the performance implications of different data fetching strategies?** Client-side fetching can delay useful content and add JavaScript work that affects responsiveness, but it can make subsequent navigation flexible. Server-side fetching improves initial HTML and SEO but requires server resources. Hybrid approaches balance LCP, INP, cacheability, and freshness.
 - **How has error handling evolved across data fetching approaches?** From jQuery's success/error callbacks to promise-based try/catch, to React Query's built-in error states, to framework-level error boundaries and Suspense fallbacks.
 - **What's the current recommended approach for data fetching in new React projects?** For SPAs: React Query/TanStack Query with Axios/fetch. For full-stack: Next.js App Router with Server Components. The choice depends on project requirements and team preferences.
 
@@ -2153,7 +2167,7 @@ Custom hooks represent one of the most significant evolutionary steps in React's
 #### Common Interview Questions
 
 - **How did custom hooks solve problems that HOCs and render props couldn't?** Custom hooks avoid wrapper hell, provide better TypeScript support, enable easier composition, and don't interfere with the component hierarchy. They're just functions, not components.
-- **What's the evolution of custom hook testing practices?** Early testing required wrapper components. Modern testing uses @testing-library/react-hooks which provides renderHook and act utilities specifically for testing hooks in isolation.
+- **What's the evolution of custom hook testing practices?** Early testing required wrapper components, and older projects used a separate hooks-testing package. For React 18+ and modern Testing Library, import `renderHook` from `@testing-library/react`; the separate hooks package is no longer the default.
 - **How do custom hooks work with React's rules of hooks?** Custom hooks must follow the same rules: only call hooks at the top level, not conditionally. The linter can verify this because custom hooks must start with "use".
 - **What's the difference between a custom hook and a regular utility function?** Custom hooks can use other hooks, have access to React's lifecycle, and can cause re-renders. Utility functions are pure and don't interact with React's internals.
 - **How has TypeScript support for custom hooks evolved?** Early hook typing was basic. Modern TypeScript provides excellent inference for hook return types, generic constraints, and proper typing of complex hook patterns.
@@ -2198,6 +2212,7 @@ Code splitting has evolved from manual script management to sophisticated framew
 - Webpack 3+ (2017): Dynamic import() syntax support
 - React 16.6 (2018): React.lazy() and Suspense for components
 - Modern Era (2020+): Framework-level splitting (Next.js, Vite), React Server Components
+- React Router v7.5+ (2025): Granular `route.lazy` in Data Mode for lazy-loading route properties separately
 #### Common Interview Questions
 
 - **How has code splitting evolved from manual script tags to modern frameworks?** We've moved from manual dependency management to build-tool automation, then to framework-level optimizations, and now to hybrid server-client splitting strategies.
@@ -2206,8 +2221,9 @@ Code splitting has evolved from manual script management to sophisticated framew
 - **What problems did Suspense solve for code splitting?** Suspense provides a declarative way to handle loading states, avoids callback hell, enables better error boundaries, and allows for more sophisticated loading patterns.
 - **How do modern frameworks like Next.js change code splitting strategies?** Next.js automates route-based splitting, provides built-in loading states, enables hybrid rendering, and optimizes chunk delivery through framework intelligence.
 - **What's the impact of React Server Components on code splitting?** Server Components have zero client bundle size, fundamentally changing the calculus of what needs to be code-split. The focus shifts to splitting client components and managing hydration.
+- **How does React Router v7.5+ improve route code splitting?** Data Mode can use a granular `route.lazy` object so route properties like `loader`, `action`, `Component`, and hydrate fallback code can load separately instead of waiting for one large lazy route module.
 - **How do you decide what to code split in a modern React application?** Split routes, heavy components, below-the-fold content, features behind authentication, and third-party libraries. Use analytics to identify slow-loading components.
-- **What are common pitfalls with code splitting and how have solutions evolved?** Early pitfalls: Flash of loading content, poor error handling. Modern solutions: Skeleton screens, error boundaries, preloading strategies, and progressive hydration.
+- **What are common pitfalls with code splitting and how have solutions evolved?** Early pitfalls: Flash of loading content, poor error handling. Modern solutions: Skeleton screens, error boundaries, preloading strategies, selective hydration, and framework-level route splitting.
 
 ### Functional Components
 
@@ -2291,7 +2307,6 @@ React Portals enable rendering React components into DOM nodes outside their par
 - Early Use Cases: Primarily for modals, tooltips, and overlays
 - React 17 (2020): Event delegation changes improve portal behavior
 - Modern Era (2022+): Portals for microfrontends, accessibility, and complex layouts
-- React 19 (2024): Potential portal enhancements with new features
 #### Common Interview Questions
 
 - **How have portals evolved from React 16 to modern versions?** Portals started as a basic escape hatch for DOM rendering. Modern usage includes accessibility patterns, microfrontend integration, SSR compatibility, and complex event handling scenarios.
@@ -2832,7 +2847,7 @@ Bindings connect template markup to component data. Main flavors: interpolation 
 
 - **Why use a service instead of sharing logic directly between components?** Services promote single responsibility, reusability, and make it easy to test logic in isolation.
 - **What does [(ngModel)] desugar to?** [ngModel]="value" + (ngModelChange)="value=$event" (property + event binding pair).
-- **How do you scope a service to a lazy module?** Provide it in that module’s providers array (or via providedIn: MyModule), ensuring each lazy-loaded module gets its own instance.
+- **How do you scope a service to a lazy feature?** In modern standalone routing, provide it in the route's `providers` array, or provide it on a component/directive for an isolated subtree. In NgModule-based legacy apps, use that lazy module's `providers` array. Prefer `providedIn: 'root'` for shared app-wide singletons.
 
 ### Pipes
 
@@ -2889,7 +2904,7 @@ export class UserComponent {
 
 #### Common Interview Questions
 
-- **What is the provider hierarchy in Angular?** Providers registered with providedIn: 'root' are application-wide singletons. Providers in NgModules are available to that module and its children. Providers on components create new instances for each component instance and its children.
+- **What is the provider hierarchy in Angular?** Providers registered with providedIn: 'root' are application-wide singletons. Route-level providers scope services to a routed feature and its children. NgModule providers remain relevant in NgModule-based apps. Component/directive providers create new instances for that element injector and its children.
 - **Constructor injection vs inject(): when would you use each?** Constructor injection was the dominant idiomatic style from Angular 2 through Angular 13 and remains fully supported, especially for required dependencies that are part of the class API. The `inject()` function became available as a stable Angular DI API in Angular 14, then became increasingly common with standalone and functional APIs in Angular 15-17+. In modern Angular projects, `inject()` is often preferred for field initializers, functional guards/interceptors, provider factories, and reusable DI helpers, while constructor injection remains common and valid for class-based components and services.
 - **How is inject() different from @Inject()?** `inject()` is a function from `@angular/core` that reads a dependency from the current injection context. `@Inject()` is a constructor-parameter decorator used when Angular needs an explicit token, especially for InjectionToken values, primitives/config values, or cases where the TypeScript type is not enough.
 - **Where can inject() be called?** Only inside an injection context: during construction or field initialization of a class Angular creates, inside provider factories, inside InjectionToken factories, or inside code run with runInInjectionContext. Calling it later from an ordinary class method outside that context throws an injection-context error.
@@ -2909,9 +2924,9 @@ export class UserComponent {
   useValue: Provides a specific value
   useFactory: Provides a value created by a factory function
   useExisting: Provides an existing token (alias)
-- **How does providedIn: 'root' differ from providing in a module?** providedIn: 'root' makes the service an application-wide singleton and enables tree-shaking if the service isn't used. Module providers create instances scoped to the module's injector.
+- **How does providedIn: 'root' differ from route, module, or component providers?** `providedIn: 'root'` makes the service an application-wide singleton and enables tree-shaking if the service isn't used. Route providers scope services to a routed feature, component/directive providers scope services to an element subtree, and NgModule providers are mainly relevant in NgModule-based applications.
 - **What is the inject function and when was it introduced?** `inject()` is a stable Angular DI API introduced in Angular 14. It provides more precise typing than many constructor-decorator cases and allows dependency injection without constructor parameters, but it depends on being called from an injection context.
-- **How do you prevent a service from being provided multiple times in lazy-loaded modules?** Use providedIn: 'root' or provide the service only in the root module. Providing services in lazy modules creates separate instances for each module.
+- **How do you prevent a service from being provided multiple times in lazy-loaded features?** Use `providedIn: 'root'` for true singletons, or provide the service only at the intended route/component scope. Providing the same service in multiple lazy scopes intentionally creates separate instances.
 - **What is hierarchical injector and how does it work?** Angular has a hierarchical injector system: root injector → module injectors → component injectors. When resolving a dependency, Angular starts at the component level and moves up the hierarchy until it finds a provider.
 - **How do you handle optional dependencies?** Use the @Optional() decorator or provide a default value:
   // Using @Optional() decorator
@@ -2980,7 +2995,7 @@ Angular's change detection mechanism determines when and how to update the UI wh
 - **What changes in Angular 21 zoneless applications?** New Angular 21 projects are zoneless by default. Updates need to notify Angular explicitly through signals read in templates, AsyncPipe, ChangeDetectorRef.markForCheck(), ComponentRef.setInput(), or host/template event listeners instead of relying on Zone.js to patch every async task.
 - **How do you manually trigger change detection?** Inject ChangeDetectorRef and call detectChanges() for immediate check or markForCheck() to schedule check in next cycle.
 - **Why can mutating an array fail to update an OnPush component?** OnPush checks reference equality. Mutation keeps the same reference; create new reference: this.items = [...this.items, newItem].
-- **How do Signals change Angular change detection?** Signals provide fine-grained reactivity - Angular knows exactly which components depend on which signals, enabling more efficient updates without Zone.js in future versions.
+- **How do Signals change Angular change detection?** Signals provide fine-grained reactivity - Angular knows exactly which components depend on which signals. In Angular 21 zoneless apps, signals are one of the primary ways to notify Angular that a view needs to update.
 - **What is the performance difference between change detection strategies?** Default checks all components (slower for large apps). OnPush checks only when inputs change (better performance). Signals enable most efficient fine-grained updates.
 
 ### Signals (Reactivity Primitives)
@@ -3011,7 +3026,7 @@ A signal is a reactivity primitive that holds a value and notifies interested co
   | Usage | Synchronous value access via () | Asynchronous subscription via subscribe() |
   | Strength | Simplicity, performance, deep integration with Angular templates | Powerful operators, handling complex async events, websockets |
 - **What is "fine-grained reactivity" and how do Signals enable it?** Fine-grained reactivity means the framework can update the specific part of the DOM that depends on a changed value, instead of checking the entire component tree. Signals track their dependencies automatically, so when a signal changes, Angular can precisely know which components or even which HTML expressions need to be updated.
-- **Can Signals replace RxJS and Zone.js in Angular?** Not entirely. Signals are intended to work alongside RxJS, not replace it. RxJS is still superior for complex async operations and event streams. Signals may eventually reduce or eliminate the need for Zone.js in many applications, as they provide a more explicit way to trigger change detection.
+- **Can Signals replace RxJS and Zone.js in Angular?** Not entirely. Signals are intended to work alongside RxJS, not replace it. RxJS is still superior for complex async operations, event streams, and many Angular APIs. In Angular 21 new projects, zoneless change detection is the default, and signals are a primary change-notification mechanism.
 - **How would you use a Signal in an Angular template?** You use a signal the same way you use a component property, by calling it as a function (due to its getter nature).
   ```html
   <p>Count: {{ count() }}</p>
@@ -3068,34 +3083,35 @@ RxJS is a library for reactive programming using Observables, making it easier t
 Angular provides a comprehensive set of patterns for component communication, leveraging its powerful dependency injection system and TypeScript integration. Understanding these patterns is essential for building maintainable Angular applications with proper separation of concerns and predictable data flow.
 #### Common Interview Questions
 
-- **What are the main component communication patterns in Angular and when should you use each?** Use @Input() for parent-to-child data flow, @Output() with EventEmitter for child-to-parent communication, [(ngModel)] for two-way binding in forms, Services with DI for sharing data between unrelated components, @ViewChild for parent accessing child component instances, and RxJS Subjects for reactive global state management.
-- **How do you choose between services and input/output for component communication?** Use input/output for direct parent-child relationships where the communication is explicit and hierarchical. Use services when components are not directly related, when you need to share state across multiple components, or when the data needs to be persisted beyond component lifecycle.
-- **What is the difference between @ViewChild and @ContentChild?** @ViewChild accesses elements/components that are part of the component's view (defined in its template), while @ContentChild accesses content that is projected into the component via `<ng-content>` (provided by the parent component).
+- **What are the main component communication patterns in Angular and when should you use each?** Use `input()` / `@Input()` for parent-to-child data flow, `output()` / `@Output()` for child-to-parent events, `model()` or `[(ngModel)]` for two-way binding, Services with DI for unrelated components, query APIs for parent-to-child instance access, and RxJS Subjects for reactive cross-component state.
+- **How do you choose between services and input/output for component communication?** Use input/output APIs for direct parent-child relationships where the communication is explicit and hierarchical. Use services when components are not directly related, when you need to share state across multiple components, or when the data needs to be persisted beyond component lifecycle.
+- **How do signal-based input/output APIs differ from decorator APIs?** Modern Angular recommends `input()`, `output()`, and `model()` for new projects. `input()` returns an `InputSignal`, so read it by calling it like `myInput()`. `@Input()`, `@Output()`, and `EventEmitter` remain fully supported and are common in existing codebases.
+- **What is the difference between viewChild() and contentChild()?** `viewChild()` accesses elements/components that are part of the component's own template, while `contentChild()` accesses content projected into the component via `<ng-content>`. The plural forms, `viewChildren()` and `contentChildren()`, return signal-based arrays of query results. Decorator APIs like `@ViewChild` and `@ContentChild` remain supported.
 - **How does Angular's change detection affect component communication?** Angular's change detection automatically updates views when data changes. With OnPush strategy, components only update when input references change or async pipes receive new values, making input-based communication more efficient but requiring careful immutability practices.
 - **When should you use RxJS Subjects versus simple services for state management?** Use RxJS Subjects when you need reactive programming patterns, multiple subscribers, or complex state transformations. Use simple services for simple data sharing without the need for reactive updates or when the data flow is straightforward.
 #### Communication Patterns Reference
-1. @Input() (Parent -> Child)
-   - Step 1: Child component defines input properties with @Input() decorator.
+1. input() / @Input() (Parent -> Child)
+   - Step 1: Child component defines input properties with `input()` for modern code or `@Input()` in decorator-based code.
    - Step 2: Parent binds data using property binding syntax: [inputName]="value".
-   - Step 3: Child uses input properties as regular class properties in template and logic.
+   - Step 3: If using `input()`, the child reads the `InputSignal` by calling it (`inputName()`). If using `@Input()`, the child reads a regular class property.
    - Note: Inputs are detected by Angular's change detection. Use OnPush strategy with immutable updates for performance.
-2. @Output() + EventEmitter (Child -> Parent)
-   - Step 1: Child component defines output properties with @Output() and EventEmitter.
-   - Step 2: Child emits events using eventEmitter.emit(payload).
+2. output() / @Output() (Child -> Parent)
+   - Step 1: Child component defines output properties with `output()` for modern code or `@Output()` and `EventEmitter` in decorator-based code.
+   - Step 2: Child emits events using `outputRef.emit(payload)` or `eventEmitter.emit(payload)`.
    - Step 3: Parent listens with event binding: (outputName)="handler($event)".
-   - Note: Always initialize EventEmitter and type it properly: `@Output() eventName = new EventEmitter<Type>()`.
-3. [(ngModel)] (Two-Way Binding)
-   - Step 1: Import FormsModule in your application module.
+   - Note: Decorator outputs remain supported. For decorator code, initialize and type EventEmitter properly: `@Output() eventName = new EventEmitter<Type>()`.
+3. model() / [(ngModel)] (Two-Way Binding)
+   - Step 1: For custom components, define a `model()` property when the component owns an editable value. For native form controls, import FormsModule in the standalone component or NgModule.
    - Step 2: Use [(ngModel)] on form elements: `<input [(ngModel)]="property">`.
-   - Step 3: Angular automatically syncs the view and model values.
-   - Note: For custom components, implement both @Input() and @Output() with update prefix: @Input() value and @Output() valueChange.
-4. @ViewChild / @ViewChildren (Parent accessing Child)
-   - Step 1: Parent uses @ViewChild decorator to query child component/element.
-   - Step 2: Access child after view initialization in ngAfterViewInit lifecycle hook.
+   - Step 3: For custom components, bind with `[(value)]` to the `model()` input.
+   - Note: The older custom two-way pattern with `@Input() value` and `@Output() valueChange` remains supported.
+4. viewChild() / @ViewChild (Parent accessing Child)
+   - Step 1: Parent uses `viewChild()` / `viewChildren()` for modern signal queries, or `@ViewChild` / `@ViewChildren` in decorator-based code.
+   - Step 2: Signal query functions return current results as signals; decorator query results become available in lifecycle hooks such as ngAfterViewInit.
    - Step 3: Parent can call child methods or access child properties directly.
-   - Note: Use static: true for elements that don't change dynamically; default is static: false.
+   - Note: `contentChild()` / `contentChildren()` query projected content. Decorator queries still support `static: true` for always-present elements that must be available earlier.
 5. Services + Dependency Injection (Any components)
-   - Step 1: Create a service with @Injectable() and provide it at appropriate level (root, module, component).
+   - Step 1: Create a service with @Injectable() and provide it at the appropriate level (root, route, component, or NgModule in legacy apps).
    - Step 2: Inject service into components via constructor injection (`constructor(private service: DataService)`) or an `inject()` field initializer.
    - Step 3: Components share data through service properties and methods.
    - Note: Service instances are singleton at their provided level. Use component providers for isolated instances.
@@ -3146,34 +3162,51 @@ Angular provides two approaches for handling forms: template-driven forms (decla
 
 #### Definition
 
-HTTP Interceptors are classes that implement the HttpInterceptor interface. They intercept outgoing HTTP requests and incoming responses, allowing you to modify headers, handle errors, add authentication tokens, log requests, or implement retry logic. Interceptors form a chain where each interceptor can process requests and responses in sequence.
+HTTP interceptors are middleware for Angular's HttpClient. Modern Angular recommends functional interceptors because they have more predictable behavior, especially in standalone and multi-injector setups. Class-based DI interceptors that implement HttpInterceptor remain supported for existing codebases.
 #### Common Interview Questions
 
 - **What are typical uses of HTTP interceptors?** Adding authentication tokens, logging requests/responses, handling errors globally, showing loading indicators, caching responses, adding retry logic, or modifying request/response data.
-- **How do you register an interceptor?** Provide it in the root module or applicationConfig providers array:
-- **How do you handle retry logic in an interceptor?** Use RxJS operators like retry or retryWhen:
+- **How do you register a modern functional interceptor?** Provide HttpClient with `withInterceptors()`:
   ```ts
-  return next.handle(req).pipe(
+  export const authInterceptor: HttpInterceptorFn = (req, next) => {
+    const authReq = req.clone({
+      setHeaders: { Authorization: `Bearer ${token}` }
+    });
+    return next(authReq);
+  };
+
+  export const appConfig: ApplicationConfig = {
+    providers: [
+      provideHttpClient(withInterceptors([authInterceptor]))
+    ]
+  };
+  ```
+- **How do you keep class-based interceptors working?** Register existing DI-based interceptors with `withInterceptorsFromDi()` and the `HTTP_INTERCEPTORS` multi provider. Prefer functional interceptors for new code.
+- **How do you handle retry logic in a functional interceptor?** Use RxJS operators like retry or retryWhen:
+  ```ts
+  return next(req).pipe(
     retryWhen(errors => errors.pipe(
       delay(1000),
       take(3)
     ))
   );
   ```
-- **What does the multi: true option do?** It allows multiple interceptors to be registered for the same token (HTTP_INTERCEPTORS), forming an interceptor chain instead of replacing previous interceptors.
-- **How do you ensure interceptors execute in a specific order?** Interceptors execute in the order they're provided. The first interceptor provided is the first to process the request and last to process the response.
-- **What's the difference between functional and class-based interceptors?** Functional interceptors (Angular 15+) are simpler functions that work better with standalone components. Class-based interceptors implement the HttpInterceptor interface and work with dependency injection.
-- **How can you skip an interceptor for specific requests?** Add a custom header to the request and check for it in the interceptor:
+- **What does the multi: true option do?** In class-based interceptor registration, it allows multiple interceptors to be registered for the same `HTTP_INTERCEPTORS` token, forming a chain instead of replacing previous interceptors.
+- **How do you ensure interceptors execute in a specific order?** Functional interceptors execute in the order listed in `withInterceptors([...])`. The first interceptor processes the request first and the response last.
+- **What's the difference between functional and class-based interceptors?** Functional interceptors are plain functions and are the recommended default in modern Angular. Class-based interceptors implement the `HttpInterceptor` interface and rely on DI multi providers, which is still valid for existing apps.
+- **How can you skip an interceptor for specific requests?** Prefer a custom `HttpContextToken` over a fake header so the flag does not get sent to the server:
   ```ts
-  const request = httpRequest.clone({
-    headers: httpRequest.headers.set('Skip-Interceptor', 'true')
+  export const SKIP_AUTH = new HttpContextToken(() => false);
+
+  http.get('/public', {
+    context: new HttpContext().set(SKIP_AUTH, true)
   });
-  // In your interceptor
-  intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    if (req.headers.has('Skip-Interceptor')) {
-      return next.handle(req);
+
+  export const authInterceptor: HttpInterceptorFn = (req, next) => {
+    if (req.context.get(SKIP_AUTH)) {
+      return next(req);
     }
-    // ... normal interceptor logic
+    return next(req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }));
   }
   ```
 
@@ -3192,13 +3225,13 @@ NgModules are containers that group related Angular artifacts (components, direc
 #### Common Interview Questions
 
 - **What is the difference between NgModule-based and standalone approaches?** NgModules require declaring components in modules and importing dependencies at module level. Standalone components manage their own dependencies and don't require NgModule wrappers.
-- **How does lazy loading work with standalone components?** Use loadComponent for single components or loadChildren with import() to lazy load standalone routes. The Angular compiler creates separate chunks automatically.
+- **How does lazy loading work with standalone components?** Use `loadComponent` for a single routed standalone component or `loadChildren` with `import()` for a lazy route array. The Angular compiler creates separate chunks automatically.
 - **What are the benefits of standalone components over NgModules?** Reduced boilerplate and simpler project structure
   Better tree-shaking and smaller bundle sizes
   Easier component reuse and testing
   Gradual migration path from NgModules
 - **Can you still use NgModules with standalone components?** Yes, through importProvidersFrom() function which allows importing providers from existing NgModules into standalone applications.
-- **How do you provide services in a standalone application?** Services can be provided in the bootstrapApplication providers array, using providedIn: 'root', or with the @Injectable({ providedIn: 'root' }) decorator.
+- **How do you provide services in a standalone application?** Services can be provided with `@Injectable({ providedIn: 'root' })`, the `bootstrapApplication` / `ApplicationConfig` providers array, route-level `providers`, or component/directive providers when a local instance is intended.
 - **What happened to AOT compilation with standalone components?** AOT compilation is still used and actually works better with standalone components since each component is more self-contained, enabling better optimization and tree-shaking.
 - **When would you choose NgModules over standalone components today?** Mainly when maintaining legacy applications or when using third-party libraries that haven't been updated to support standalone components. For new projects, standalone is recommended.
 
@@ -3206,20 +3239,33 @@ NgModules are containers that group related Angular artifacts (components, direc
 
 #### Definition
 
-Lazy loading is an optimization technique where feature modules are loaded on-demand when the user navigates to their associated routes, rather than loading everything at application startup. This reduces the initial bundle size and improves application loading performance. Angular supports both traditional NgModule-based lazy loading and modern standalone component lazy loading.
+Lazy loading is an optimization technique where routed features are loaded on demand when the user navigates to their associated routes, rather than loading everything at application startup. This reduces the initial bundle size and improves application loading performance. Angular supports both modern standalone component/route lazy loading and traditional NgModule-based lazy loading.
 #### Common Interview Questions
 
 - **What is the difference between RouterModule.forRoot() and RouterModule.forChild()?** forRoot() is used in the root module to configure the router and provide router services. forChild() is used in feature modules to define additional routes without providing a new router instance.
 - **How can you verify that lazy loading is working correctly?** Open browser DevTools → Network tab and look for separate JavaScript chunks downloaded when navigating to lazy-loaded routes (e.g., customers-customers-module.js or admin-admin-component.js).
 - **What is the role of the import() function in Angular lazy loading?** The import() function is a modern JavaScript feature for dynamic imports. The Angular compiler sees this syntax and automatically creates a separate chunk for the referenced module or component.
 - **Can you preload lazy-loaded modules?** Yes. Use PreloadAllModules to load all lazy modules in the background after the main application stabilizes, or create a custom preloading strategy to load specific modules based on user behavior.
-- **What's the difference between lazy loading modules vs. standalone components?** Module-based loading requires NgModule wrappers and uses loadChildren. Standalone component loading is more direct, uses loadComponent or loadChildren with routes, and has better tree-shaking.
-- **How do you handle authentication guards with lazy loading?** Apply guards to the lazy-loaded route:
+- **What's the difference between lazy loading modules vs. standalone components?** Module-based loading requires NgModule wrappers and uses `loadChildren`. Standalone component loading is more direct, uses `loadComponent` for one component or `loadChildren` for route arrays, and has better tree-shaking.
+- **What is the modern standalone lazy loading pattern?** Use `loadComponent` by default for a single route:
+  ```ts
   {
-  path: 'dashboard',
-  loadChildren: () => import('./dashboard/dashboard.module').then(m => m.DashboardModule),
-  canActivate: [AuthGuard]
+    path: 'dashboard',
+    loadComponent: () =>
+      import('./dashboard/dashboard.component').then(c => c.DashboardComponent)
   }
+  ```
+- **How do route-level providers work with lazy routes?** Add a `providers` array to a route to scope services to that routed feature and its children. This is the modern standalone replacement for many lazy-module provider patterns.
+- **How do you handle authentication guards with lazy loading?** Apply guards to the lazy-loaded route. For modern standalone routes, prefer functional guards and `loadComponent`:
+  ```ts
+  {
+    path: 'dashboard',
+    loadComponent: () =>
+      import('./dashboard/dashboard.component').then(c => c.DashboardComponent),
+    canActivate: [authGuard]
+  }
+  ```
+  NgModule-based legacy routes can still use `loadChildren: () => import('./dashboard/dashboard.module').then(m => m.DashboardModule)`.
 - **What are common lazy loading pitfalls?** Circular dependencies between modules, over-splitting (too many small chunks), forgetting to use forChild() in feature modules, or not handling loading states in the UI.
 - **How does lazy loading affect SEO?** Search engines may not execute JavaScript to load lazy content. Use SSR with @angular/ssr (historically Angular Universal) or ensure critical content is in the initial bundle for SEO-sensitive pages.
 ### New Control Flow (@if, @for, @switch) - Angular 17+
@@ -3244,7 +3290,7 @@ The new control flow is a declarative template syntax introduced in Angular 17 t
 Deferrable views are a performance optimization feature introduced in Angular 17 that enables lazy loading of component templates and their dependencies. Using the @defer block, you can declaratively specify when certain parts of your template should be loaded, reducing the initial bundle size and improving Core Web Vitals like Largest Contentful Paint (LCP).
 #### Common Interview Questions
 
-- **How do deferrable views improve Core Web Vitals?** Deferrable views reduce the initial JavaScript bundle size by loading non-critical components only when needed, improving Largest Contentful Paint (LCP) and Time to Interactive (TTI) metrics.
+- **How do deferrable views improve Core Web Vitals?** Deferrable views reduce the initial JavaScript bundle by loading non-critical components only when needed. This can improve Largest Contentful Paint (LCP) and help Interaction to Next Paint (INP) by keeping non-critical JavaScript work out of the initial load path.
 - **What triggers can be used with @defer?** on viewport: When the placeholder enters the browser viewport
   on interaction: On click, focus, or hover of a trigger element
   on hover: When the user hovers over a trigger area
@@ -3263,13 +3309,23 @@ Deferrable views are a performance optimization feature introduced in Angular 17
 - **What error handling options are available?** The @error block displays when loading fails. You can also use error handling in the component's constructor or ngOnInit to manage failures gracefully.
 - **How do deferrable views differ from traditional lazy loading?** Traditional lazy loading works at the route/component level, while deferrable views work at the template block level within a single component, providing more granular control.
 - **When should you avoid using @defer?** Avoid deferring content that's critical for initial rendering, above-the-fold content, or components needed for immediate user interaction. Also avoid over-deferring, which can cause too many sequential loads.
+
+### Enter/Leave Animations
+
+#### Definition
+
+Modern Angular documents `animate.enter` and `animate.leave` as compiler-supported APIs for applying CSS classes or callbacks when elements enter or leave the DOM. This is useful for common enter/leave transitions, while more complex animation systems may still use dedicated CSS or JavaScript animation libraries.
+#### Common Interview Questions
+
+- **When would you use animate.enter and animate.leave?** Use them for focused enter/leave DOM animations where Angular should coordinate class application or element removal timing. Treat them as a useful modern Angular API, but a lower-priority interview topic than DI, Signals, forms, or change detection.
+
 ### SSR & Hydration (Server-Side Rendering) - Angular 16+
 
 #### Definition
 
 Server-Side Rendering (SSR) generates HTML on the server and sends it to the client, improving initial load performance, SEO, and social media previews. Hydration is the process where Angular reuses the server-rendered DOM on the client side, attaching event listeners and making the application interactive. Angular's modern SSR (introduced in Angular 16+) features non-destructive hydration that prevents content flickering.
 
-As of Angular 21, server bootstrap accepts a `BootstrapContext`, and `getPlatform()`/`destroyPlatform()` are no-ops on the server.
+As of Angular 21, server bootstrap accepts a `BootstrapContext`. On the server, `getPlatform()` returns `null`, while `destroyPlatform()` is a no-op.
 #### Common Interview Questions
 
 - **What are the benefits of SSR over client-side rendering?** SSR improves SEO (search engines can crawl content), performance (faster First Contentful Paint), social media sharing (proper meta tags), and accessibility (content available without JavaScript).
@@ -4205,10 +4261,10 @@ The following comparisons summarize key differences between Angular, React, and 
 | Local State & Reactivity | Signals, zoneless change detection by default in Angular 21 new projects, RxJS in components. | useState, useReducer; updates trigger re-render. | ref(), reactive() (Composition API); data() (Options API). Automatic dependency tracking. |
 | Global State Management | Services + RxJS, NgRx (Redux), NgRx/ComponentStore, Akita. | Context API, Redux Toolkit, Zustand, Jotai, MobX; Recoil only in legacy codebases. | Pinia (official, modern), Vuex (legacy). Composables for shared stateful logic. |
 | DI & Services | Built-in hierarchical Dependency Injection system injects services. | Context API or external libraries for sharing data. | provide()/inject() for component-scoped dependency injection. |
-| Routing | @angular/router with declarative routes and guards. | React Router library with `<Routes>`, `<Route>` and components. | Vue Router (official library) with `<RouterLink>`, `<router-view>`. |
+| Routing | @angular/router with declarative routes and guards. | React Router v7: Declarative, Data, and Framework modes depending on app needs. | Vue Router (official library) with `<RouterLink>`, `<router-view>`. |
 | Forms | Template-driven and reactive forms with built-in validators; Signal Forms are Angular 21+ experimental. | Controlled/uncontrolled components; third-party libraries like React Hook Form and Formik. | v-model for two-way binding; built-in modifiers (.lazy, .number, .trim); Vuelidate/VeeValidate for complex validation. |
-| Lazy Loading | Built-in with loadChildren in routes (NgModule) or loadComponent (standalone). | Code splitting with React.lazy and Suspense. | Dynamic imports in Vue Router (component: () => import(...)). |
-| SSR & Hydration | @angular/ssr renders on the server; Angular Universal is the historical/original name. | Next.js or frameworks like Remix handle server-side rendering. | Nuxt.js (full-stack framework) or Vite/SSR plugin. |
+| Lazy Loading | Built-in with loadComponent for standalone routes or loadChildren for route arrays/NgModules. | Code splitting with React.lazy and Suspense. | Dynamic imports in Vue Router (component: () => import(...)). |
+| SSR & Hydration | @angular/ssr renders on the server; Angular Universal is the historical/original name. | Next.js App Router is the mainstream RSC path; React Router Framework Mode is another full-stack option. | Nuxt.js (full-stack framework) or Vite/SSR plugin. |
 | Testing | Angular CLI uses Vitest by default for new Angular 21 projects; Karma is supported for existing projects; TestBed for unit tests. | Jest/Vitest and React Testing Library for component tests; Enzyme only in legacy suites. | Jest/Vitest with Vue Test Utils for unit testing; Cypress/Playwright for E2E. |
 | CLI & Build | Angular CLI handles scaffolding, building, and testing. | Frameworks are recommended for new apps; for custom setups use Vite, Parcel, Rsbuild, or custom Webpack. Create React App is unmaintained/not recommended for new apps. | Vue CLI (legacy), Vite (modern, recommended) with official plugin. |
 | i18n | Built-in i18n and locale support. | Libraries like react-intl or next-i18next. | Vue I18n (official library). |
