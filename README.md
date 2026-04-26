@@ -2168,11 +2168,11 @@ Custom hooks represent one of the most significant evolutionary steps in React's
 The Virtual DOM is React's abstraction layer that sits between component updates and actual browser DOM manipulations. Its implementation has evolved significantly across React versions, from a simple performance optimization to a sophisticated reconciliation engine enabling advanced features like concurrent rendering.
 #### Virtual DOM Evolution Timeline
 
-React 0.3 (2013): Initial VDOM implementation - basic tree diffing
-React 15 (2016): Stack Reconciler - recursive tree traversal
-React 16 (2017): Fiber Architecture - incremental rendering, time slicing
-React 18 (2022): Concurrent Features - interruptible rendering, priorities
-React Compiler v1.0 (2025): Stable production-ready build-time auto-memoization that reduces manual React.memo/useMemo/useCallback boilerplate
+- React 0.3 (2013): Initial VDOM implementation - basic tree diffing
+- React 15 (2016): Stack Reconciler - recursive tree traversal
+- React 16 (2017): Fiber Architecture - incremental rendering, time slicing
+- React 18 (2022): Concurrent Features - interruptible rendering, priorities
+- React Compiler v1.0 (2025): Stable production-ready build-time auto-memoization that reduces manual React.memo/useMemo/useCallback boilerplate
 #### Common Interview Questions
 
 - **How has the Virtual DOM's role evolved from React's early versions to today?** Initially, VDOM was primarily a performance optimization to batch DOM updates. Today, it's a sophisticated scheduling system that enables concurrent rendering, suspense, and priority-based updates.
@@ -2192,12 +2192,12 @@ React Compiler v1.0 (2025): Stable production-ready build-time auto-memoization 
 Code splitting has evolved from manual script management to sophisticated framework-integrated patterns that automatically optimize bundle delivery. This evolution reflects the JavaScript ecosystem's growing complexity and the need for performance optimization in modern web applications.
 #### Code Splitting Evolution Timeline
 
-Early Web (2000s): Manual script tags with dependency management
-Require.js Era (2010-2014): AMD modules with runtime loading
-Webpack 1-2 (2014-2016): Static code splitting with require.ensure
-Webpack 3+ (2017): Dynamic import() syntax support
-React 16.6 (2018): React.lazy() and Suspense for components
-Modern Era (2020+): Framework-level splitting (Next.js, Vite), React Server Components
+- Early Web (2000s): Manual script tags with dependency management
+- Require.js Era (2010-2014): AMD modules with runtime loading
+- Webpack 1-2 (2014-2016): Static code splitting with require.ensure
+- Webpack 3+ (2017): Dynamic import() syntax support
+- React 16.6 (2018): React.lazy() and Suspense for components
+- Modern Era (2020+): Framework-level splitting (Next.js, Vite), React Server Components
 #### Common Interview Questions
 
 - **How has code splitting evolved from manual script tags to modern frameworks?** We've moved from manual dependency management to build-tool automation, then to framework-level optimizations, and now to hybrid server-client splitting strategies.
