@@ -2872,10 +2872,27 @@ Attribute directives change the appearance or behaviour of elements. Examples in
 
 #### Definition
 
-Dependency Injection is a design pattern where classes receive their dependencies from external sources rather than creating them internally. Angular's DI system provides instances of classes (services) where they are needed, managing their lifecycle and ensuring singletons are shared appropriately. The @Injectable() decorator marks a class as available for injection.
+Dependency Injection is a design pattern where classes receive their dependencies from external sources rather than creating them internally. Angular's DI system provides instances of classes (services) where they are needed, managing their lifecycle and ensuring singletons are shared appropriately. The @Injectable() decorator marks a class as available for injection. Angular services are most commonly consumed through constructor injection or the `inject()` function from `@angular/core` inside an injection context.
+#### Example
+
+```ts
+@Component({...})
+export class UserComponent {
+  constructor(private userService: UserService) {}
+}
+
+@Component({...})
+export class UserComponent {
+  private userService = inject(UserService);
+}
+```
+
 #### Common Interview Questions
 
 - **What is the provider hierarchy in Angular?** Providers registered with providedIn: 'root' are application-wide singletons. Providers in NgModules are available to that module and its children. Providers on components create new instances for each component instance and its children.
+- **Constructor injection vs inject(): when would you use each?** Constructor injection was the dominant idiomatic style from Angular 2 through Angular 13 and remains fully supported, especially for required dependencies that are part of the class API. The `inject()` function became available as a stable Angular DI API in Angular 14, then became increasingly common with standalone and functional APIs in Angular 15-17+. In modern Angular projects, `inject()` is often preferred for field initializers, functional guards/interceptors, provider factories, and reusable DI helpers, while constructor injection remains common and valid for class-based components and services.
+- **How is inject() different from @Inject()?** `inject()` is a function from `@angular/core` that reads a dependency from the current injection context. `@Inject()` is a constructor-parameter decorator used when Angular needs an explicit token, especially for InjectionToken values, primitives/config values, or cases where the TypeScript type is not enough.
+- **Where can inject() be called?** Only inside an injection context: during construction or field initialization of a class Angular creates, inside provider factories, inside InjectionToken factories, or inside code run with runInInjectionContext. Calling it later from an ordinary class method outside that context throws an injection-context error.
 - **How do you inject tokens that are not classes (e.g., values)?** Use the InjectionToken and useValue provider:
   ```ts
   export const APP_CONFIG = new InjectionToken<any>('APP_CONFIG');
@@ -2893,7 +2910,7 @@ Dependency Injection is a design pattern where classes receive their dependencie
   useFactory: Provides a value created by a factory function
   useExisting: Provides an existing token (alias)
 - **How does providedIn: 'root' differ from providing in a module?** providedIn: 'root' makes the service an application-wide singleton and enables tree-shaking if the service isn't used. Module providers create instances scoped to the module's injector.
-- **What is the inject function and when was it introduced?** The inject function was introduced in Angular 14 as part of the standalone components initiative. It allows dependency injection without constructor parameters, useful in functions, factories, or when order of injection matters.
+- **What is the inject function and when was it introduced?** `inject()` is a stable Angular DI API introduced in Angular 14. It provides more precise typing than many constructor-decorator cases and allows dependency injection without constructor parameters, but it depends on being called from an injection context.
 - **How do you prevent a service from being provided multiple times in lazy-loaded modules?** Use providedIn: 'root' or provide the service only in the root module. Providing services in lazy modules creates separate instances for each module.
 - **What is hierarchical injector and how does it work?** Angular has a hierarchical injector system: root injector → module injectors → component injectors. When resolving a dependency, Angular starts at the component level and moves up the hierarchy until it finds a provider.
 - **How do you handle optional dependencies?** Use the @Optional() decorator or provide a default value:
@@ -3079,7 +3096,7 @@ Angular provides a comprehensive set of patterns for component communication, le
    - Note: Use static: true for elements that don't change dynamically; default is static: false.
 5. Services + Dependency Injection (Any components)
    - Step 1: Create a service with @Injectable() and provide it at appropriate level (root, module, component).
-   - Step 2: Inject service into components via constructor: constructor(private service: DataService).
+   - Step 2: Inject service into components via constructor injection (`constructor(private service: DataService)`) or an `inject()` field initializer.
    - Step 3: Components share data through service properties and methods.
    - Note: Service instances are singleton at their provided level. Use component providers for isolated instances.
 6. RxJS Subjects (Global/Cross-component)
