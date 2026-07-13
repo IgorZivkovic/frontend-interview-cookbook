@@ -4,6 +4,24 @@ This chapter connects the individual frontend topics into one neutral end-to-end
 
 > **Interview goal:** Explain the default path first, then mention alternatives and tradeoffs. Avoid presenting SSR, microservices, global state, WebSockets, or any other tool as universally required.
 
+## Table of Contents
+
+- [The complete flow at a glance](#the-complete-flow-at-a-glance)
+- [1) A user opens a URL](#1-a-user-opens-a-url)
+- [2) HTML arrives and the rendering model takes effect](#2-html-arrives-and-the-rendering-model-takes-effect)
+- [3) The router selects a view and the application checks session state](#3-the-router-selects-a-view-and-the-application-checks-session-state)
+- [4) Login establishes identity and delegated access](#4-login-establishes-identity-and-delegated-access)
+- [5) Sessions, tokens, cookies, CORS, and CSP protect different boundaries](#5-sessions-tokens-cookies-cors-and-csp-protect-different-boundaries)
+- [6) The frontend requests data and the backend performs the trusted work](#6-the-frontend-requests-data-and-the-backend-performs-the-trusted-work)
+- [7) Async work, server state, and UI state are coordinated](#7-async-work-server-state-and-ui-state-are-coordinated)
+- [8) State changes produce an accessible UI update](#8-state-changes-produce-an-accessible-ui-update)
+- [9) Real-time updates use the simplest suitable transport](#9-real-time-updates-use-the-simplest-suitable-transport)
+- [10) Performance is managed across the whole path](#10-performance-is-managed-across-the-whole-path)
+- [11) Errors become recoverable behavior and observable signals](#11-errors-become-recoverable-behavior-and-observable-signals)
+- [12) CI/CD delivers changes according to project policy](#12-cicd-delivers-changes-according-to-project-policy)
+- [A concise interview answer](#a-concise-interview-answer)
+- [Common red flags in an interview answer](#common-red-flags-in-an-interview-answer)
+
 ## The complete flow at a glance
 
 ```text
@@ -15,7 +33,9 @@ User action
   -> JavaScript loading and optional hydration
   -> Router and session check
   -> BFF / API gateway / API
-  -> Authorization and input validation
+  -> Session or access-token authentication
+  -> Authorization for the requested action / resource
+  -> Input validation, rate limits and business rules
   -> Cache / service / database / queue
   -> Response and client-side data cache
   -> UI update, accessibility and telemetry
@@ -50,11 +70,11 @@ If server-rendered HTML needs client-side behavior, hydration attaches framework
 
 ## 3) The router selects a view and the application checks session state
 
-The router maps the URL to a page, layout, and data requirements. On an initial navigation, the server and client router must agree on the route. On later client-side navigations, the router can update the view without a full document reload.
+The router maps the URL to a page, layout, and data requirements. For SSR or route-specific prerendering, the server and client router must agree on the route and initial output. In pure CSR, the host can return the application shell for supported deep links and the client router resolves the view. On later client-side navigations, the router can update the view without a full document reload.
 
 The application may also restore session state before showing protected UI. This avoids displaying private controls briefly and then redirecting after authentication is discovered.
 
-A route guard is only a user-experience boundary. It can hide or redirect a page, but it cannot protect data by itself. Every backend operation must independently authenticate the caller and authorize access to the requested action or resource.
+A route guard is only a user-experience boundary. It can hide or redirect a page, but it cannot protect data by itself. Every protected backend operation must authenticate the caller when required and authorize access to the requested action or resource.
 
 **Interview takeaway:** Client-side routing controls navigation; server-side authorization provides security.
 
@@ -70,13 +90,13 @@ A backend-for-frontend (BFF) changes the browser's role. The backend acts as the
 
 ## 5) Sessions, tokens, cookies, CORS, and CSP protect different boundaries
 
-In a BFF design, the browser commonly receives a narrowly scoped `Secure`, `HttpOnly`, appropriately `SameSite` session cookie while OAuth tokens remain on the server. `HttpOnly` prevents JavaScript from reading the cookie, but cookies are sent automatically, so the server still needs appropriate CSRF defenses, origin checks, session rotation, and authorization.
+In a BFF design, the browser commonly receives a narrowly scoped `Secure`, `HttpOnly`, appropriately `SameSite` session cookie while OAuth tokens remain on the server. `HttpOnly` prevents JavaScript from reading the cookie, but cookies are sent automatically, so the server must choose an appropriate CSRF defense, such as a token and/or origin validation, keep authorization checks, and rotate session identifiers at security-sensitive transitions such as login or privilege changes.
 
 Some SPA architectures keep access tokens in browser memory and send an `Authorization` header directly to an API. Every browser-accessible storage choice has tradeoffs; no storage location compensates for an XSS vulnerability or weak server-side authorization.
 
 CORS and CSP solve different problems:
 
-- **CORS** tells browsers whether frontend code from one origin may read a response from another origin. It is not authentication and does not stop non-browser clients from calling an API.
+- **CORS** governs cross-origin browser access. A failed preflight prevents the actual non-safelisted request; a safelisted request may still be sent while JavaScript is denied access to the response. CORS is not authentication and does not stop non-browser clients from calling an API.
 - **Content Security Policy (CSP)** limits allowed content sources and script execution. It is defense in depth against content injection, not a replacement for output encoding, sanitization, and safe DOM APIs.
 
 **Interview takeaway:** Explain which threat each control addresses instead of grouping all browser security headers together.
@@ -95,6 +115,8 @@ The request may reach a same-origin BFF, an API gateway, or an API directly. On 
 6. Publishes long-running work to a queue when synchronous processing is inappropriate.
 7. Returns only the data and error detail safe for the caller.
 
+This is a conceptual security sequence, not a universal middleware order. Cheap size checks, parsing, edge rate limits, or abuse controls may run before authentication; protected business work still requires the necessary identity and authorization before access is granted.
+
 Client-side validation improves feedback, but it is never the final trust boundary.
 
 **Interview takeaway:** The browser is untrusted. Validation and authorization must be enforced where protected data and business operations live.
@@ -111,7 +133,7 @@ It is useful to separate:
 
 The interface should represent loading, empty, stale, success, and error states intentionally. Obsolete requests should be cancelled when supported, and stale responses must not overwrite newer results. Retry only transient failures, normally for idempotent operations, with a limit and backoff.
 
-A mutation adds another lifecycle. The client can validate early for fast feedback, but the server remains authoritative. After submission, the UI may wait for confirmation or apply an optimistic update only when it can roll back safely. Retry-sensitive create, checkout, or payment APIs can support an idempotency key to prevent duplicate effects. On success, update or invalidate the relevant server-state cache; on failure, restore optimistic state and show a useful recovery path.
+A mutation adds another lifecycle. The client can validate early for fast feedback, but the server remains authoritative. After submission, the UI may wait for confirmation or apply an optimistic update when failure can be reconciled safely through rollback, refetch, a failed-state marker, or a compensating action. Retry-sensitive create, checkout, or payment APIs can support an idempotency key to prevent duplicate effects. On success, update or invalidate the relevant server-state cache; on failure, reconcile the optimistic result and show a useful recovery path.
 
 **Interview takeaway:** State management is not just choosing Redux, NgRx, or Pinia; ownership, lifetime, freshness, and failure behavior matter first.
 
@@ -129,7 +151,7 @@ Internationalization affects more than translated strings. Dates, numbers, plura
 
 Polling is reasonable when updates are infrequent or infrastructure simplicity matters. Server-Sent Events (SSE) provide a long-lived server-to-client stream. WebSockets provide bidirectional messages when both sides need to send frequently with low latency.
 
-Production real-time clients need bounded reconnection with backoff and jitter, heartbeat or idle detection, schema and size validation, and backpressure handling. The server must authorize each subscription and action rather than trusting a connection forever after its handshake.
+Long-lived clients need failure handling appropriate to the transport. Native `EventSource` includes reconnection behavior; raw WebSocket clients usually implement application-level reconnection, while the browser WebSocket API has no built-in backpressure. Heartbeat or idle detection may be needed across proxies and half-open connections. Validate message schemas and sizes, and design flow control where producers can outrun consumers. Protected subscriptions and actions must be authorized; public streams need not require identity.
 
 **Interview takeaway:** Choose polling, SSE, or WebSockets from the communication pattern, not from novelty.
 
