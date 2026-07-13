@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.0] - 2026-07-13
+
+### Added
+- Added an explicit July 2026 content-verification marker to the main cookbook.
+- Added a table of contents, end-to-end flow diagram, concise interview answer, and checklist of common interview red flags to the bonus walkthrough.
+
+### Changed
+- Reverified and refreshed cookbook guidance for July 2026 across modern JavaScript, HTML and CSS, Node.js, React, Vue and Nuxt, Angular, TypeScript, tooling, testing, security, accessibility, and performance.
+- Reworked the bonus chapter into a framework-neutral end-to-end application lifecycle covering delivery, rendering, routing, authentication, authorization, browser security, backend processing, state, real-time communication, observability, and CI/CD.
+- Clarified the authentication, authorization, and validation flow, including practical caveats for CSR routing, CORS, CSRF and session handling, optimistic updates, and long-lived connections.
+
 ## [1.8.0] - 2026-04-25
 
 ### Changed
