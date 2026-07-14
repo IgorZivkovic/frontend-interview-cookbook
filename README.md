@@ -2968,11 +2968,65 @@ function TaskSavedToast({
 
 ## Vue Deep Dive
 
+### Running Example: Task Board
+
+The examples below are focused excerpts from one Vue 3 Task Board application. Imports, API implementations, and styling unrelated to the concept are omitted. Representative files include `task-types.ts`, `task-api.ts`, `TaskBoard.vue`, `TaskCard.vue`, `TaskEditor.vue`, `useTasks.ts`, and `tasks.ts`.
+
+```ts
+export type TaskStatus = 'todo' | 'in-progress' | 'blocked' | 'done';
+
+export interface Task {
+  readonly id: string;
+  readonly title: string;
+  readonly status: TaskStatus;
+  readonly assigneeId: string | null;
+}
+
+export interface TaskDraft {
+  title: string;
+}
+
+export interface TaskApi {
+  list(projectId: string, signal?: AbortSignal): Promise<readonly Task[]>;
+  create(projectId: string, draft: TaskDraft): Promise<Task>;
+}
+```
+
 ### Vue 2 vs Vue 3: The Composition API Revolution
 
 #### Definition
 
-Vue 3 represents a significant evolution from Vue 2, introducing a new, flexible paradigm for organizing component logic while preserving familiar concepts instead of promising compatibility without breaking changes. It includes breaking changes from Vue 2, with official migration paths and a migration build for incremental upgrades. The most transformative addition is the Composition API, a set of additive, function-based APIs that allow logic to be defined and reused more effectively than the Options API of Vue 2. Vue 2 reached end of life on 2023-12-31, so Vue 3 is the current baseline for new applications. As of July 2026, Vue 3.5.39 is the latest stable release; Vue 3.6 is still a beta line.
+Vue 3 represents a significant evolution from Vue 2 and includes breaking changes with official migration paths and a migration build. Its Composition API is an additive, function-based way to colocate and reuse feature logic; it is also built into Vue 2.7, and the Options API remains fully supported. Vue 2 reached end of life on 2023-12-31, so Vue 3 is the current baseline for new applications. As of July 2026, Vue 3.5.39 is the latest stable release; Vue 3.6 is still a beta line.
+
+#### Example — Task Board
+
+```vue
+<script setup lang="ts">
+const props = defineProps<{ tasks: readonly Task[] }>();
+const status = ref<TaskStatus | 'all'>('all');
+const statusId = useId();
+const visibleTasks = computed(() =>
+  status.value === 'all'
+    ? props.tasks
+    : props.tasks.filter((task) => task.status === status.value),
+);
+</script>
+
+<template>
+  <label :for="statusId">Status</label>
+  <select :id="statusId" v-model="status">
+    <option value="all">All</option>
+    <option value="todo">To do</option>
+    <option value="in-progress">In progress</option>
+    <option value="blocked">Blocked</option>
+    <option value="done">Done</option>
+  </select>
+  <TaskList :tasks="visibleTasks" />
+</template>
+```
+
+**What it demonstrates:** Vue 3 colocates one feature's state and derived data with Composition API functions, while `<script setup>` exposes those bindings directly to the template.
+
 #### Common Interview Questions
 
 - **What are the primary advantages of Vue 3 over Vue 2?** Key advantages include the Composition API for logic reuse, Proxy-based reactive objects plus ref primitives, a more optimized renderer, first-class TypeScript support, multiple isolated app instances, and a tree-shakable core. A complete application's size and performance still depend on its components, router, store, and other dependencies.
@@ -2981,22 +3035,36 @@ Vue 3 represents a significant evolution from Vue 2, introducing a new, flexible
 - **What problem does the Composition API solve that the Options API struggled with?** It solves two main problems:
   Logic Fragmentation: In the Options API, code for a single feature (e.g., user authentication) could be split across data, methods, and computed, making it hard to follow.
   Logic Reuse: While Vue 2 offered mixins for reuse, they could lead to naming collisions and unclear property origins. Composables provide a clean, scalable way to extract and reuse reactive logic.
-- **How does Vue 3's reactivity system differ from Vue 2's?** Vue 2 used Object.defineProperty to make data reactive, which could not detect property addition/deletion and had performance limitations with large objects. Vue 3 uses JavaScript Proxies, enabling it to track any property changes (including additions and deletions) and providing better performance for reactive objects.
-- **What is the mental model for migrating a component from the Options API to the Composition API?** The mental model shifts from "filling out options in a configuration object" to "writing a function that sets up and returns reactive state." You move from declaring data, methods, and computed as separate options to defining variables and functions inside the setup function and returning what the template needs access to.
+- **How does Vue 3's reactivity system differ from Vue 2's?** Vue 2 used `Object.defineProperty`, which required workarounds for property addition/deletion and some array changes. Vue 3 uses Proxies for reactive objects, so it can track additions, deletions, and array-index changes; broader Vue 3 performance gains also come from its compiler and renderer, not Proxies alone.
+- **What is the mental model for migrating a component from the Options API to the Composition API?** Organize setup logic by feature rather than by option type. An explicit `setup()` returns bindings used by the template, while recommended SFC `<script setup>` syntax exposes top-level bindings automatically.
 - **When would you recommend using the Options API for a new project?** The Options API is still a valid choice for low-complexity components, for developers new to Vue who find its structure easier to learn, or in codebases where the team is already proficient with it and the components are simple enough not to benefit from the Composition API's advantages.
 
 ### The Vue Instance & Application Lifecycle
 
 #### Definition
 
-In Vue 2, the Vue instance is the root of every application, created with new Vue(). In Vue 3, this is replaced by the application instance, created with createApp(). This change allows for better isolation between multiple Vue applications on the same page. The lifecycle of a Vue component refers to the series of phases it goes through from creation to destruction, with specific hooks available to execute code at each stage.
+In Vue 2, the Vue instance is the root of every application, created with `new Vue()`. Vue 3 instead creates an application instance with `createApp()`, which isolates plugins, directives, components, providers, and configuration per app. A component then moves through setup, mounting, zero or more updates, and unmounting.
+
+#### Example — Task Board
+
+```ts
+const app = createApp(App);
+
+app.use(createPinia());
+app.use(router);
+app.provide(taskApiKey, taskApi);
+app.mount('#app');
+```
+
+**What it demonstrates:** Vue 3 attaches plugins, providers, and configuration to one application instance before mounting it, avoiding Vue 2-style constructor-level global mutation.
+
 #### Common Interview Questions
 
 - **What is the key difference between creating a Vue 2 instance and a Vue 3 application?** Vue 2 creates root instances with `new Vue()`, but constructor-level configuration APIs can mutate shared global state. Vue 3 uses `const app = createApp(App)` and scopes plugins, components, directives, and configuration to each application instance, so multiple apps coexist more cleanly.
 - **Explain the purpose of the mount method in both Vue 2 and Vue 3.** Mounting attaches the Vue root to a DOM element and starts rendering. Vue 2 uses `new Vue({...}).$mount('#app')` or the `el` option; Vue 3 uses `createApp(App).mount('#app')`.
-- **What are the main lifecycle phases of a Vue component?** The main phases are: Creation (initial setup), Mounting (DOM insertion), Updating (re-rendering due to data changes), and Destruction (teardown and cleanup).
-- **Name the most commonly used lifecycle hooks and their execution order.** The core hooks in execution order are: beforeCreate, created, beforeMount, mounted, beforeUpdate, updated, beforeUnmount (Vue 3) / beforeDestroy (Vue 2), and unmounted (Vue 3) / destroyed (Vue 2).
-- **In which lifecycle hook are component data and events initialized?** Data observation and events are initialized at the end of the beforeCreate hook and are fully available within the created hook.
+- **What are the main lifecycle phases of a Vue component?** The main phases are setup/creation, mounting, zero or more updates, and unmounting with cleanup.
+- **What is the simplified per-instance lifecycle order?** `setup()` runs before all Options API hooks, followed by `beforeCreate`, `created`, `beforeMount`, and `mounted`. Each reactive render may run `beforeUpdate`/`updated`, then final teardown runs `beforeUnmount`/`unmounted`; parent/child ordering adds further rules.
+- **When is component state available?** Props are resolved before `beforeCreate`; Composition state is created during `setup()`. Options API data, computed properties, methods, and watchers are available by `created`, while DOM nodes are not available until the mount phase.
 - **Why is the mounted hook useful for DOM-dependent operations?** `mounted`/`onMounted` runs after the component's initial DOM tree is created. Use `nextTick` or `onUpdated` when access must reflect later reactive updates, and remember that mounted only guarantees the DOM is in-document when the application's root container is in-document.
 - **What is the difference between beforeUnmount and unmounted?** `beforeUnmount` runs while the instance is still functional; `unmounted`/`onUnmounted` runs after its reactive effects and child tree have stopped. Cleanup may be registered in either as appropriate, with `onUnmounted` commonly used to dispose timers, listeners, and subscriptions.
 - **How has the lifecycle hook naming changed from Vue 2 to Vue 3 for destruction?** Vue 2 used beforeDestroy and destroyed. Vue 3 renamed these to beforeUnmount and unmounted to better align with the mounting phase (beforeMount/mounted) and improve clarity.
@@ -3006,26 +3074,74 @@ In Vue 2, the Vue instance is the root of every application, created with new Vu
 #### Definition
 
 Vue uses an HTML-based template syntax that allows you to declaratively bind the rendered DOM to the underlying component instance's data. The core of this system is built with directives, which are special attributes prefixed with v- that apply reactive behavior to the DOM. These directives are the primary mechanism for creating dynamic and interactive user interfaces in Vue.
+
+#### Example — Task Board
+
+```vue
+<script setup lang="ts">
+const { task } = defineProps<{ task: Task }>();
+const emit = defineEmits<{ select: [id: string] }>();
+</script>
+
+<template>
+  <article :id="`task-${task.id}`" :data-status="task.status">
+    <h3>{{ task.title }}</h3>
+    <button
+      type="button"
+      :disabled="task.status === 'done'"
+      @click="emit('select', task.id)"
+    >
+      Select task
+    </button>
+  </article>
+</template>
+```
+
+**What it demonstrates:** Interpolation renders text, `v-bind` shorthand (`:`) binds attributes, and `v-on` shorthand (`@`) connects a DOM event to component behavior.
+
 #### Common Interview Questions
 
 - **What is the primary purpose of Vue's template syntax?** To provide a declarative way to bind data to the DOM, enabling a clear relationship between the component's state and the rendered output. Vue compiles these templates into highly-optimized JavaScript render functions.
-- **Explain the difference between the v-bind and v-on directives.** v-bind is used for one-way data binding from the component's data to an HTML attribute (e.g., id, class, href), often shortened to :. v-on is used to listen to DOM events and execute some JavaScript, often shortened to @.
+- **Explain the difference between the v-bind and v-on directives.** `v-bind` binds an HTML attribute, DOM property, or component prop and is commonly shortened to `:`. `v-on` listens to a DOM event or component-emitted event and is commonly shortened to `@`.
 - **What are the different ways to use the v-bind directive for an element's class?** You can use a string, an object (to toggle classes), or an array (to apply a list of classes). The object syntax is common for conditionally applying classes based on data properties.
 - **How does the v-model directive work under the hood?** v-model is syntactic sugar that combines v-bind for value binding and v-on for input event listening. For a text input, `<input v-model="searchText">` is equivalent to `<input :value="searchText" @input="searchText = $event.target.value">`.
-- **What is the purpose of the v-if vs v-show directives and when would you choose one over the other?** v-if conditionally renders the element, fully destroying and recreating it and its children/components. v-show always renders the element and toggles its CSS display property. Use v-if if the condition is unlikely to change at runtime (lazy, toggles infrequently). Use v-show for expensive elements that need to be toggled very frequently.
+- **What is the purpose of the v-if vs v-show directives and when would you choose one over the other?** `v-if` is lazy initially but has a higher toggle cost because it mounts/unmounts the branch. `v-show` always pays the initial render cost and then toggles CSS `display`, so it suits frequent visibility changes.
 - **Describe the use case for the v-for key attribute. Why is it important?** The key attribute is a unique identifier for each iterated node. It helps Vue's virtual DOM algorithm identify nodes and efficiently patch and reorder elements when the list changes. Using a stable, unique key (like an id) is crucial for performance and correct component state management within lists.
 - **What are the available argument modifiers for the v-on directive?** Vue provides event modifiers to handle common DOM event details. Common modifiers include .stop (equivalent to event.stopPropagation()), .prevent (equivalent to event.preventDefault()), .capture, and .self.
-- **What is the purpose of the v-once and v-memo directives?** v-once renders the element and component once, skipping future updates. v-memo is a performance optimization that skips updates of a subtree unless a specific set of dependencies has changed, useful for large v-for lists.
+- **What is the purpose of the v-once and v-memo directives?** `v-once` renders a subtree once and skips future updates. `v-memo` reuses a memoized VNode subtree while its fixed dependency array is equal; it is a rare, measured optimization rather than a default treatment for every large list.
+
 ### Reactivity Fundamentals: ref(), reactive(), and Proxies
 
 #### Definition
 
-Reactivity is the core feature of Vue that automatically updates the DOM when application state changes. Vue 3 uses Proxies for objects returned by `reactive()` and getter/setter access for refs. The primary Composition API primitives are `ref()` and `reactive()`. Vue 3.4 improved reactivity performance, while stable Vue 3.5 added features such as reactive props destructuring, numeric watcher depth, `onWatcherCleanup`, `useTemplateRef`, lazy hydration, `data-allow-mismatch`, and deferred Teleport.
+Reactivity is the core feature of Vue that automatically updates the DOM when application state changes. Vue 3 uses Proxies for objects returned by `reactive()` and getter/setter access for refs. The primary Composition API primitives are `ref()` and `reactive()`. Vue 3.4 improved reactivity performance, while stable Vue 3.5 added features such as reactive props destructuring, numeric watcher depth, `onWatcherCleanup`, `useTemplateRef`, `useId`, lazy hydration, `data-allow-mismatch`, and deferred Teleport.
+
+#### Example — Task Board
+
+```vue
+<script setup lang="ts">
+const selectedId = ref<string | null>(null);
+const draft = reactive<TaskDraft>({ title: '' });
+
+function editTask(task: Task) {
+  selectedId.value = task.id;
+  draft.title = task.title;
+}
+</script>
+
+<template>
+  <input v-model="draft.title" aria-label="Task title" />
+  <p>Editing: {{ selectedId ?? 'new task' }}</p>
+</template>
+```
+
+**What it demonstrates:** `ref()` wraps one replaceable value, `reactive()` proxies a related object, JavaScript uses `.value` for the ref, and templates unwrap it automatically.
+
 #### Common Interview Questions
 
 - **What is the fundamental difference between ref() and reactive()?** ref() is used for creating a reactive reference to a single value (primitive or object) and requires accessing the value via the .value property in JavaScript. reactive() is used for creating a reactive object and provides direct property access without the need for .value.
 - **Why does ref() exist when we have reactive()?** ref() is necessary because Vue's reactivity system relies on object properties. Primitive values (like strings, numbers, booleans) cannot be tracked as objects. ref() wraps the primitive in an object, allowing it to be reactive, whereas reactive() only works with objects.
-- **How does Vue 3's Proxy-based reactivity differ from Vue 2's Object.defineProperty approach?** Vue 2's Object.defineProperty could only track property access and mutation, requiring workarounds for adding new properties (Vue.set). Vue 3's Proxies can track property addition, deletion, and array index mutation natively, providing more comprehensive reactivity with better performance.
+- **How does Vue 3's Proxy-based reactivity differ from Vue 2's Object.defineProperty approach?** Vue 2 required workarounds such as `Vue.set` for additions and could not intercept every array operation. Vue 3 Proxies cover property addition, deletion, and array-index mutation; this is broader tracking coverage, not a guarantee that every Proxy operation is faster.
 - **When should you use ref() over reactive(), and vice versa?** Use ref() for: primitive values, when you need to replace the entire object reference, or when working with template refs. Use reactive() for: groups of data that logically belong together and you don't intend to replace the entire object reference.
 - **What is the limitation of destructuring a reactive() object?** Destructuring disconnects a local variable from the source property's get/set tracking, so assigning that variable will not update the source and primitive values no longer trigger through the original property. A destructured nested object can still be a reactive proxy. Use `toRef()`/`toRefs()` when the local binding must stay linked to source properties.
 - **Explain the purpose of the toRef() and toRefs() utility functions.** toRef() creates a ref for a specific property on a reactive source object. toRefs() converts a reactive object into a plain object where each property is a ref pointing to the corresponding property of the original object. This is essential for maintaining reactivity when destructuring or returning reactive state from composables.
@@ -3037,6 +3153,29 @@ Reactivity is the core feature of Vue that automatically updates the DOM when ap
 #### Definition
 
 Computed properties and watchers are two reactive composition utilities that respond to changes in state. Computed properties declaratively compute derived values based on other reactive data, caching the result until dependencies change. Watchers imperatively perform side effects in response to changes in specific reactive data sources, providing more granular control over reactive operations.
+
+#### Example — Task Board
+
+```vue
+<script setup lang="ts">
+const props = defineProps<{ tasks: readonly Task[] }>();
+const status = ref<TaskStatus | 'all'>('all');
+const visibleTasks = computed(() =>
+  status.value === 'all'
+    ? props.tasks
+    : props.tasks.filter((task) => task.status === status.value),
+);
+
+watch(status, (value) => taskPreferences.saveStatus(value));
+</script>
+
+<template>
+  <TaskList :tasks="visibleTasks" />
+</template>
+```
+
+**What it demonstrates:** `computed()` owns cached derived data, while `watch()` performs an external side effect when one explicit source changes.
+
 #### Common Interview Questions
 
 - **What is the primary purpose of a computed property versus a watcher?** Computed properties are for deriving values based on other reactive state (declarative). Watchers are for performing side effects when data changes (imperative), such as fetching data, manipulating the DOM directly, or executing asynchronous operations.
@@ -3046,7 +3185,7 @@ Computed properties and watchers are two reactive composition utilities that res
 - **How do you define a computed property in the Composition API versus the Options API?** In the Options API: computed: { fullName() { return this.first + ' ' + this.last } }. In the Composition API: const fullName = computed(() => firstName.value + ' ' + lastName.value).
 - **What are the performance implications of computed properties versus methods?** Computed properties are cached based on their dependencies, so they're more efficient than methods when the same value is accessed multiple times without dependency changes. Methods run fresh on every invocation.
 - **How can you watch multiple sources simultaneously with the watch function?** You can pass an array of reactive sources as the first argument: watch([source1, source2], ([newVal1, newVal2], [oldVal1, oldVal2]) => { /* handler */ }).
-- **What does the once option do in watch()?** It automatically stops the watcher after the first trigger, which is useful for one-time reactions like initial fetches based on a reactive value.
+- **What does the `once` option do in `watch()`?** `once: true` stops the watcher after the callback's first execution. Without `immediate`, that execution follows the first source change; with `immediate: true`, the eager run is the single execution.
 - **When should you use the immediate and deep options with watchers?** Use `immediate: true` to run the callback during watcher creation. Watching a reactive object directly is implicitly deep. A getter that returns an object is shallow unless `{ deep: true }` is supplied; in Vue 3.5+, `deep` may also be a number that limits traversal depth.
 - **What is a common pitfall when watching objects?** `watch(reactiveObject, callback)` reacts to nested mutations, but the old and new callback values are the same object reference for such mutations. A getter such as `watch(() => state.someObject, callback)` reacts to replacement by default, not nested mutation, unless `deep` is enabled.
 
@@ -3055,6 +3194,29 @@ Computed properties and watchers are two reactive composition utilities that res
 #### Definition
 
 Conditional rendering controls whether elements are rendered in the DOM based on truthy conditions, primarily using the v-if, v-else-if, v-else, and v-show directives. List rendering dynamically generates elements based on an array or object data source using the v-for directive, which is essential for displaying collections of data.
+
+#### Example — Task Board
+
+```vue
+<script setup lang="ts">
+const props = defineProps<{ tasks: readonly Task[] }>();
+const openTasks = computed(() =>
+  props.tasks.filter((task) => task.status !== 'done'),
+);
+</script>
+
+<template>
+  <p v-if="openTasks.length === 0">No open tasks.</p>
+  <ul v-else>
+    <li v-for="task in openTasks" :key="task.id">
+      <TaskCard :task="task" />
+    </li>
+  </ul>
+</template>
+```
+
+**What it demonstrates:** A computed value filters before rendering, `v-if` chooses one branch, and a stable task ID preserves row identity in `v-for`.
+
 #### Common Interview Questions
 
 - **What is the key difference in DOM behavior between v-if and v-show?** v-if is "true" conditional rendering - it fully destroys and recreates elements and their child components in the DOM when toggled. v-show always renders the element and only toggles its CSS display property between none and its original value.
@@ -3063,7 +3225,7 @@ Conditional rendering controls whether elements are rendered in the DOM based on
 - **What happens if you use the same key value for multiple items in a v-for list?** Using duplicate keys can cause rendering errors, incorrect component state preservation, and unpredictable behavior during list updates. Keys must be unique among siblings.
 - **How can you access the index when iterating with v-for?** You can access the current iteration index as the second parameter: v-for="(item, index) in items". For objects, you can access the key as the second parameter and index as the third: v-for="(value, key, index) in object".
 - **What is the recommended approach for using v-if and v-for on the same element?** Avoid using both directives on the same element. Instead, move the v-if to a wrapper `<template>` tag or use a computed property to pre-filter the list before rendering with v-for.
-- **How does Vue handle the lifecycle of components inside a v-if conditional?** When v-if is false, the component and its children are fully destroyed and removed from the DOM. When v-if becomes true again, the components are recreated and go through their full lifecycle (mounted, etc.).
+- **How does Vue handle the lifecycle of components inside a v-if conditional?** When `v-if` becomes false, the component subtree unmounts and is removed. When it becomes true again, Vue creates and mounts a new subtree instance.
 - **What is the purpose of the v-else and v-else-if directives?** v-else provides an "else" block for v-if, and v-else-if provides an "else if" block. They must immediately follow a v-if or v-else-if element and allow for building complex conditional rendering logic.
 - **How can you iterate over a range of numbers with v-for?** You can use v-for with a number: v-for="n in 10" will iterate from 1 to 10, with n taking values from 1 through 10.
 
@@ -3072,9 +3234,45 @@ Conditional rendering controls whether elements are rendered in the DOM based on
 #### Definition
 
 Class and style bindings are specialized forms of data binding that allow you to dynamically manipulate an element's CSS classes and inline styles based on component state. Vue provides enhanced support for both class and style attributes through the v-bind directive (often shortened to :) with special handling for objects and arrays.
+
+#### Example — Task Board
+
+```vue
+<script setup lang="ts">
+const { task, selected = false } = defineProps<{
+  task: Task;
+  selected?: boolean;
+}>();
+
+const statusColors: Record<TaskStatus, string> = {
+  todo: '#64748b',
+  'in-progress': '#2563eb',
+  blocked: '#dc2626',
+  done: '#16a34a',
+};
+</script>
+
+<template>
+  <article
+    class="task-card"
+    :class="{
+      'task-card--selected': selected,
+      'task-card--blocked': task.status === 'blocked',
+    }"
+    :style="{ borderInlineStartColor: statusColors[task.status] }"
+  >
+    {{ task.title }}
+    <span>Status: {{ task.status }}</span>
+    <span v-if="selected">Selected task</span>
+  </article>
+</template>
+```
+
+**What it demonstrates:** Static and dynamic classes merge, object syntax toggles state classes, and a style binding maps domain state to one inline visual token while visible text keeps status and selection from relying on color alone.
+
 #### Common Interview Questions
 
-- **What are the three main ways to bind CSS classes in Vue?** You can bind classes using: a string (for static classes), an object (for toggling multiple classes conditionally), or an array (for applying a list of classes including conditional ones).
+- **What value forms can dynamic `:class` accept?** It accepts a class string, an object whose truthy keys are included, or an array combining strings/objects. A normal static `class` attribute can be present at the same time and Vue merges it with the dynamic result.
 - **How does the object syntax for class binding work?** The object syntax allows you to toggle classes based on truthiness: :class="{ 'active': isActive, 'text-danger': hasError }". Each class will be present if the corresponding data property evaluates to true.
 - **When would you use the array syntax for class binding?** Use array syntax when you need to apply a list of classes, potentially mixed with conditional classes: `:class="[baseClass, isActive ? activeClass : '', errorClass]"`.
 - **How can you bind inline styles using the object syntax?** You can bind styles with an object where keys are CSS property names (in camelCase or kebab-case) and values are the style values: :style="{ color: activeColor, fontSize: fontSize + 'px' }".
@@ -3089,52 +3287,133 @@ Class and style bindings are specialized forms of data binding that allow you to
 #### Definition
 
 Event handling in Vue allows components to respond to user interactions through the v-on directive (shortened to @). Form input bindings create two-way data flow between form inputs and component state, primarily using the v-model directive, which simplifies synchronizing input values with reactive data.
+
+#### Example — Task Board
+
+```vue
+<script setup lang="ts">
+const emit = defineEmits<{ create: [draft: TaskDraft] }>();
+const title = ref('');
+const titleId = useId();
+
+function submit() {
+  const normalizedTitle = title.value.trim();
+  if (!normalizedTitle) return;
+  emit('create', { title: normalizedTitle });
+  title.value = '';
+}
+</script>
+
+<template>
+  <form @submit.prevent="submit">
+    <label :for="titleId">Title</label>
+    <input :id="titleId" v-model.trim="title" name="title" />
+    <button type="submit" :disabled="!title.trim()">Create task</button>
+  </form>
+</template>
+```
+
+**What it demonstrates:** `v-model.trim` synchronizes and normalizes the input, while `@submit.prevent` keeps browser-event handling declarative and calls one typed submit path.
+
 #### Common Interview Questions
 
 - **What is the difference between v-on:click and @click?** There is no functional difference. @click is the shorthand syntax for v-on:click. Both directives listen for the click event and execute the specified handler.
 - **How do you access the native DOM event object in an event handler?** A method handler such as `@click="handleClick"` automatically receives the native event as its first argument. In an inline expression, use the special `$event` value, for example `@click="handleClick('save', $event)"`.
 - **What are event modifiers and why are they useful?** Event modifiers are postfixes denoted by a dot that indicate the directive should be called in a special way. Common modifiers include .stop (stops propagation), .prevent (prevents default action), and .self (only trigger if event.target is the element itself). They keep event handling logic declarative in templates.
-- **How does v-model work under the hood for different form input types?** v-model is syntactic sugar that combines v-bind:value with v-on:input (for text inputs) or v-on:change (for checkboxes/radio buttons). It automatically handles the appropriate property and event based on the input element type.
+- **How does `v-model` work for different native input types?** Text inputs and textareas use `value` plus `input`; checkboxes and radios use `checked` plus `change`; selects use `value` plus `change`. Vue also handles IME composition and collection bindings that a hand-written pair can easily miss.
 - **What are the available modifiers for the v-model directive?** Common v-model modifiers include: .lazy (syncs after change events instead of input), .number (casts input to number), and .trim (trims whitespace from input).
 - **How do you handle form submissions in Vue?** Use @submit.prevent="handleSubmit" on the form element. The .prevent modifier stops the default form submission, and the handler method can process the form data.
 - **What's the difference between using v-model and manually binding :value with @input?** For a simple text input they can express the same data flow, but `v-model` selects the correct property/event for text, checkbox, radio, and select controls, handles IME composition details, supports modifiers, and maps to component model props/events. Manual bindings are useful when custom transformation or timing is required.
 - **How do you handle multiple checkboxes with the same v-model?** When multiple checkboxes share the same v-model bound to an array, Vue automatically manages the array to include the values of checked boxes. Each checkbox should have a unique value attribute.
-- **What is the proper way to implement custom form components with v-model?** In Vue 3, custom components can implement v-model by expecting a modelValue prop and emitting an update:modelValue event. For multiple v-model bindings, use specific prop names like v-model:title and emit update:title.
+- **What is the modern way to implement custom component `v-model`?** In Vue 3.4+, prefer `defineModel()` in `<script setup>`; `defineModel('title')` supports a named model such as `v-model:title`. The macro generates the underlying prop plus `update:*` event contract, which can still be written manually when needed.
+
 ### Component Fundamentals: Props & Custom Events
 
 #### Definition
 
 Components are the building blocks of Vue applications, allowing you to split the UI into independent, reusable pieces. Props are custom attributes you can register on a component to pass data from a parent component down to a child component. Custom Events enable child components to communicate back to parent components by emitting events that can carry payload data.
+
+#### Example — Task Board
+
+```vue
+<!-- TaskCard.vue -->
+<script setup lang="ts">
+const { task } = defineProps<{ task: Task }>();
+const emit = defineEmits<{ complete: [id: string] }>();
+</script>
+
+<template>
+  <article>
+    <h3>{{ task.title }}</h3>
+    <button
+      type="button"
+      :disabled="task.status === 'done'"
+      @click="emit('complete', task.id)"
+    >
+      Complete
+    </button>
+  </article>
+</template>
+```
+
+**What it demonstrates:** The child treats its prop as a read-only input and emits a typed request for the parent to mark that task as complete.
+
 #### Common Interview Questions
 
-- **What are the two main ways to define props in Vue components?** Props can be defined as an array of strings (props: ['title', 'content']) for simple declaration, or as an object (props: { title: String, count: Number }) for type checking and validation.
-- **What is the one-way data flow principle with props and why is it important?** Props follow a one-way data flow from parent to child. This prevents child components from accidentally mutating the parent's state, making the data flow easier to understand and debug. If a child needs to modify data, it should emit an event to request the change from the parent.
+- **How do you define props in current Vue components?** In `<script setup>`, use `defineProps()` with either a runtime declaration or a type-only TypeScript declaration. The Options API still supports array and object `props` forms, with the object form providing runtime types, defaults, and validators.
+- **What is the one-way data flow principle with props and why is it important?** A prop binding is shallow-readonly in the child, so the child should emit a request rather than assign it. Nested objects and arrays are shared references and can technically be mutated, but doing so hides ownership and should usually be avoided.
 - **How do you validate props in Vue components?** When defining props as an object, you can specify validation requirements including type checking, required flag, default values, and custom validator functions to ensure props meet specific criteria.
 - **What is the difference between kebab-case and camelCase for prop names?** JavaScript prop declarations use camelCase. Kebab-case attributes are required when writing directly in an in-DOM HTML template because HTML lowercases names; Vue Single-File Component templates also accept camelCase/PascalCase, although kebab-case props remain a common convention.
-- **How do custom events enable child-to-parent communication?** Child components use the $emit method to trigger custom events (this.$emit('update', newValue)). Parent components listen to these events using v-on or @ (`<child-component @update="handleUpdate">`).
+- **How do custom events enable child-to-parent communication?** A `<script setup>` child declares a contract with `defineEmits()` and calls the returned `emit` function; an Options API component uses `this.$emit`. The parent listens with `v-on`/`@` and retains ownership of the state change.
 - **What are the best practices for naming custom events?** Define and emit multi-word events in camelCase in JavaScript and listen with kebab-case in templates, which Vue maps automatically. The HTML case-insensitivity caveat specifically matters for in-DOM templates.
 - **How can you pass data from a child to a parent component through custom events?** You can pass data as the second parameter of $emit: this.$emit('update', newValue). The parent component can access this data in the event handler method or via the $event variable in inline handlers.
 - **What is the purpose of defining emitted events in a component using the emits option?** Declaring emitted events in the emits option makes the component's interface more self-documenting, enables Vue to validate event names, and allows you to define validation for event payloads in development mode.
-- **How do you handle the scenario where a prop needs to be modified by a child component?** The child should not directly mutate the prop. Instead, it should emit an event to request the parent to update the original data, or use the prop as the initial value for local data and emit changes when the local data is modified.
+- **How do you handle a prop that the child needs to edit?** Emit an event or expose a `v-model` contract so the parent updates the source. A local ref initialized from a prop becomes a disconnected copy and will not follow later parent changes unless that independence is intentional.
 
 ### Vue.js Component Communication Patterns
 
 #### Definition
 
 Vue.js provides multiple patterns for component communication, each suited for different scenarios in the component hierarchy. Understanding when to use each pattern is crucial for building maintainable and scalable Vue applications. These patterns range from simple parent-child data flow to global state management for application-wide data sharing.
+
+#### Example — Task Board
+
+```vue
+<script setup lang="ts">
+const props = defineProps<{ tasks: readonly Task[] }>();
+const selectedId = ref<string | null>(null);
+const selectedTask = computed(() =>
+  props.tasks.find((task) => task.id === selectedId.value) ?? null,
+);
+</script>
+
+<template>
+  <TaskList
+    :tasks="props.tasks"
+    :selected-id="selectedId"
+    @select="selectedId = $event"
+  />
+  <TaskDetails v-if="selectedTask" :task="selectedTask" />
+</template>
+```
+
+**What it demonstrates:** The nearest common parent owns selection, passes data to both children through props, and receives the list's event so sibling views stay synchronized.
+
 #### Common Interview Questions
 
 - **What are the main component communication patterns in Vue.js and when should you use each?** Use Props for direct parent-to-child data flow, Custom Events for child-to-parent communication, v-model for two-way binding on form inputs, Slots for content distribution and composition, Provide/Inject for avoiding prop drilling in deep hierarchies, and Pinia for global state management across the entire application.
 - **How do you choose between provide/inject and props for data passing?** Use props for direct parent-child relationships where the data flow is clear and traceable. Use provide/inject when you have deeply nested components that need access to data without intermediate components acting as pass-throughs, or when building component libraries where the component hierarchy isn't known in advance.
 - **What is the difference between using slots and props for component content?** Props pass data values to child components, while slots pass template content. Use props for simple data values and configuration. Use slots when the parent needs control over the rendering of specific sections of the child component, or when building layout components that need to be highly flexible.
-- **How does v-model work under the hood in Vue 3?** v-model is syntactic sugar for :modelValue prop plus @update:modelValue event. For custom components, you define a modelValue prop and emit update:modelValue events. Vue 3 also supports multiple v-model bindings using v-model:propName syntax.
+- **How does component `v-model` work in current Vue?** In Vue 3.4+, `defineModel()` is the concise `<script setup>` API. It compiles to a model prop plus matching `update:*` event; named models such as `defineModel('title')` correspond to `v-model:title`.
 - **When should you upgrade from local state to Pinia for state management?** Move to Pinia when: multiple unrelated components need the same data, you need to share state across routes, you require time-travel debugging, you have complex state logic that needs to be tested independently, or when prop drilling becomes unwieldy and hard to maintain.
+
 #### Communication Patterns Reference
+
 1. Props (Parent -> Child)
    - Step 1: Child defines props using defineProps in `<script setup>` or props option.
    - Step 2: Parent passes data via attributes using v-bind (e.g., :prop="value").
    - Step 3: Child uses props as reactive, read-only variables in template or script.
-   - Note: Props are reactive and should not be mutated in the child to maintain unidirectional data flow.
+   - Note: Prop bindings are reactive and shallow-readonly. Avoid mutating nested object/array references as well because ownership remains with the parent.
 2. Custom Events (Child -> Parent)
    - Step 1: Child defines events using defineEmits in `<script setup>` or emits option.
    - Step 2: Child emits event with optional payload using emit('event', data).
@@ -3149,7 +3428,7 @@ Vue.js provides multiple patterns for component communication, each suited for d
    - Step 1: Child defines `<slot>` placeholders in its template (default or named).
    - Step 2: Parent provides content between component tags, optionally using v-slot for named/scoped slots.
    - Step 3: Vue renders parent's content in child's slots, with scoped slots passing child data to parent.
-   - Note: Scoped slots (e.g., v-slot="{ item }") allow child-to-parent data sharing.
+   - Note: Slot props expose child data only to the parent-defined slot render fragment; they are not a general child-to-parent event channel.
 5. Provide/Inject (Deep Nesting)
    - Step 1: Ancestor provides data using provide(key, value) in `<script setup>`.
    - Step 2: Descendant (any level) injects data with inject(key).
@@ -3166,12 +3445,45 @@ Vue.js provides multiple patterns for component communication, each suited for d
 #### Definition
 
 Slots are a mechanism for content distribution in Vue components that allow parent components to inject content into a child component's template. They provide a way to create flexible and reusable components by leaving certain parts of the component's output open for parent-provided content, enabling complex composition patterns.
+
+#### Example — Task Board
+
+```vue
+<!-- TaskList.vue -->
+<script setup lang="ts">
+defineProps<{ tasks: readonly Task[] }>();
+</script>
+
+<template>
+  <ul>
+    <li v-for="task in tasks" :key="task.id">
+      <slot name="task" :task="task">
+        {{ task.title }}
+      </slot>
+    </li>
+  </ul>
+</template>
+```
+
+```vue
+<!-- TaskBoard.vue -->
+<template>
+  <TaskList :tasks="tasks">
+    <template #task="{ task }">
+      <TaskCard :task="task" show-assignee />
+    </template>
+  </TaskList>
+</template>
+```
+
+**What it demonstrates:** The list owns iteration and fallback content, while a typed scoped slot lets the parent control each task's markup with data supplied by the child.
+
 #### Common Interview Questions
 
 - **What is the primary purpose of slots in Vue components?** Slots enable component composition by allowing parent components to pass template content to child components, creating flexible and reusable components that can adapt to different content needs while maintaining their core structure and behavior.
 - **What is the difference between the default slot and named slots?** The default slot (anonymous slot) serves as the catch-all outlet for content that doesn't have a specific slot name. Named slots allow you to target specific areas in the child component's template using the v-slot directive with a slot name.
 - **How do you use the v-slot directive with named slots?** In the parent template, use `<template v-slot:name>` to specify content for a named slot. The shorthand is #name. The child component uses `<slot name="name">` to define where the content should be rendered.
-- **What are scoped slots and what problem do they solve?** Scoped slots allow child components to pass data back to the parent's slot content, enabling the parent to control the rendering while having access to the child's internal state. This solves the problem of making slot content dynamic based on the child component's data.
+- **What are scoped slots and what problem do they solve?** A child passes slot props to a render fragment supplied by the parent, so the parent controls markup while using data selected by the child. That data is scoped to the slot content rather than becoming general parent component state.
 - **How do you provide fallback content in slots?** You can provide default content between the `<slot>` tags in the child component. This content will be rendered if the parent doesn't provide any content for that slot.
 - **What is the difference between v-slot syntax on `<template>` versus directly on components?** v-slot can only be used on `<template>` elements unless the component has only a default slot. For default slots only, you can use v-slot directly on the component tag, but this is less common and can be confusing.
 - **How can you access slot data in the parent component?** Using the scoped slot syntax: `<template #name="slotProps">` or `<template v-slot:name="slotProps">`. The slotProps object contains the data passed from the child component via v-bind on the slot.
@@ -3183,83 +3495,210 @@ Slots are a mechanism for content distribution in Vue components that allow pare
 #### Definition
 
 Lifecycle hooks are functions that allow you to execute code at specific stages of a component's creation, update, and destruction process. Vue provides a series of hooks that correspond to different phases of the component lifecycle. The way these hooks are accessed differs between the Options API and Composition API, but they serve the same fundamental purpose.
+
+#### Example — Task Board
+
+```vue
+<script setup lang="ts">
+let stopLiveUpdates: (() => void) | undefined;
+
+onMounted(() => {
+  stopLiveUpdates = startTaskLiveUpdates();
+});
+
+onUnmounted(() => {
+  stopLiveUpdates?.();
+});
+</script>
+```
+
+**What it demonstrates:** Composition API hooks attach setup and cleanup to the component's mount lifetime; Options API expresses the same phases with `mounted` and `unmounted` methods.
+
 #### Common Interview Questions
 
 - **What are the main lifecycle phases in a Vue component?** The main phases are: Initialization (beforeCreate, created), DOM Mounting (beforeMount, mounted), Updating (beforeUpdate, updated), and Destruction (beforeUnmount, unmounted).
 - **How do you access lifecycle hooks in the Options API versus the Composition API?** In the Options API, hooks are defined as methods on the component options object (created() { ... }). In the Composition API, hooks are imported from Vue and called within setup() (onMounted(() => { ... })).
-- **What is the execution order of the main lifecycle hooks?** The core hooks execute in this order: beforeCreate → created → beforeMount → mounted → beforeUpdate → updated → beforeUnmount → unmounted.
-  It's important to note that in the Composition API, the setup() function executes before the beforeCreate hook and serves a similar purpose to the created hook.
-- **In which lifecycle hook is the component's reactive data fully available?** Reactive data becomes available in the created hook. In beforeCreate, the component's data, computed properties, and methods are not yet initialized.
+- **What is the simplified lifecycle order for one instance?** `setup()` runs before all Options hooks, followed by `beforeCreate`, `created`, `beforeMount`, and `mounted`. The `beforeUpdate`/`updated` pair may repeat zero or more times, then `beforeUnmount` and `unmounted` finish teardown; parent/child ordering adds further rules.
+- **When is reactive state available?** Composition state exists during `setup()`. In the Options API, data, computed properties, methods, and watchers are available by `created`; the DOM is still unavailable until mounting.
 - **Why is the mounted hook useful for DOM-dependent operations?** It runs after the initial component DOM is created, so initial element refs are available. For DOM that must reflect later reactive changes, use `nextTick` or `onUpdated`; mounted is not the only valid DOM-access point.
 - **What is the key difference between beforeCreate and created hooks?** In beforeCreate, the component instance is created but data observation, computed properties, and methods are not set up. In created, the instance is fully configured with reactive data, computed properties, methods, and watchers.
 - **How do you handle cleanup logic in the Composition API versus Options API?** Options API components use `beforeUnmount` or `unmounted`. Composition API code registers cleanup with `onUnmounted`; Vue ignores a value returned from `onMounted`. Watchers instead support their callback's `onCleanup` argument and Vue 3.5's `onWatcherCleanup`.
 - **What lifecycle hooks were renamed from Vue 2 to Vue 3 and why?** beforeDestroy was renamed to beforeUnmount and destroyed was renamed to unmounted to better align with the mounting phase (beforeMount/mounted) and improve naming consistency.
-- **When would you use onUpdated versus a watcher for reacting to data changes?** Use onUpdated when you need to perform DOM operations after any component update. Use watchers when you need to react to changes in specific reactive properties with more granular control and access to previous values.
+- **When would you use `onUpdated` versus a watcher?** Use `onUpdated` for DOM work after any component update, and avoid mutating component state there because that can create a loop. Use a watcher for one specific reactive source, often followed by `nextTick()` when its resulting DOM must be read.
+
 ### Composition API Deep Dive: setup(), ref() vs reactive()
 
 #### Definition
 
 The Composition API is a set of function-based APIs introduced in Vue 3 that allows for better logic composition and reuse in components. The setup() function serves as the entry point for using the Composition API, where component logic is defined. ref() and reactive() are the two primary functions for creating reactive state, each with distinct use cases and behaviors.
+
+#### Example — Task Board
+
+```ts
+export default defineComponent({
+  props: {
+    tasks: {
+      type: Array as PropType<readonly Task[]>,
+      required: true,
+    },
+  },
+  emits: {
+    select: (id: string) => id.length > 0,
+  },
+  setup(props, { emit }) {
+    const selectedId = ref<string | null>(null);
+    const selectedTask = computed(() =>
+      props.tasks.find((task) => task.id === selectedId.value) ?? null,
+    );
+    function select(id: string) {
+      selectedId.value = id;
+      emit('select', id);
+    }
+    return { selectedTask, select };
+  },
+});
+```
+
+**What it demonstrates:** Explicit `setup()` receives reactive props and a context, composes state and derived data, and returns only the public bindings needed by the template.
+
 #### Common Interview Questions
 
-- **What is the purpose of the setup() function in the Composition API?** The setup() function is the entry point for Composition API usage. It executes before the component is created and is where you define reactive state, computed properties, functions, and lifecycle hooks, then return them for the template to access.
+- **What is the purpose of `setup()` in the Composition API?** Vue calls it while initializing the component instance, before all Options API lifecycle hooks. It creates reactive state, derived values, functions, and lifecycle registrations, then returns bindings for a template or a render function.
 - **What are the main differences between using ref() and reactive()?** ref() works with any value type and requires accessing the value via .value in JavaScript. reactive() only works with objects and provides direct property access without .value. ref() is more versatile while reactive() provides cleaner syntax for objects.
 - **When should you prefer ref() over reactive()?** Use ref() for primitive values, when you need to replace the entire object reference, when working with template refs, or when you need consistent syntax for both primitives and objects.
 - **When is reactive() more appropriate than ref()?** Use reactive() when you have a group of properties that logically belong together and you don't plan to replace the entire object reference, providing cleaner property access without .value.
-- **What are the arguments of the setup() function and what do they provide?** The setup() function receives two arguments: props (containing the component's props) and context (which provides access to attrs, slots, and emit for custom events).
+- **What are the arguments of `setup()` and what do they provide?** It receives reactive shallow-readonly props and a stable context containing `attrs`, `slots`, `emit`, and `expose`.
 - **Why can destructuring a reactive() object be problematic and how do you solve it?** A destructured local binding is no longer linked to the source property's get/set trap, although a nested object value can still itself be reactive. Use `toRef()` for one property or `toRefs()` for the properties of a reactive object when those bindings must remain linked.
-- **What is the role of the context parameter in the setup() function?** The context parameter provides access to component features not available as props: attrs (fallthrough attributes), slots (slot content), and emit (function to emit custom events).
+- **What is the role of the `setup` context?** It provides fallthrough `attrs`, slot functions, the `emit` function, and `expose` for defining the component's public instance surface.
 - **How do you access component instance properties like $emit in the Composition API?** In the Composition API, you don't use this. Instead, you access emit through the context parameter in setup(): setup(props, { emit }) { emit('event') }.
 - **What is the mental model shift from Options API to Composition API?** The shift moves from organizing code by options type (data, methods, computed) to organizing code by feature/concern, colocating all logic related to a specific feature within the same scope in the setup() function.
+
 ### Compiler Macros (defineProps, defineEmits, defineModel in `<script setup>`)
 
 #### Definition
 
 Compiler macros are special functions that are processed at compile time rather than runtime when using Vue's `<script setup>` syntax. They provide a declarative way to define component props, emits, and model bindings directly within the script setup block. These macros are stripped away during compilation and replaced with appropriate runtime code, offering better TypeScript integration and more concise component definition compared to the Options API.
+
+#### Example — Task Board
+
+```vue
+<script setup lang="ts">
+const { taskId } = defineProps<{ taskId: string }>();
+const emit = defineEmits<{ save: [taskId: string, draft: TaskDraft] }>();
+const title = defineModel<string>('title', { required: true });
+const titleId = useId();
+
+function submit() {
+  const normalizedTitle = title.value.trim();
+  if (!normalizedTitle) return;
+  emit('save', taskId, { title: normalizedTitle });
+}
+</script>
+
+<template>
+  <form @submit.prevent="submit">
+    <label :for="titleId">Title</label>
+    <input :id="titleId" v-model="title" />
+    <button type="submit" :disabled="!title.trim()">Save</button>
+  </form>
+</template>
+```
+
+**What it demonstrates:** `defineProps`, `defineEmits`, and `defineModel` compile a typed component contract; the parent can bind the title with `v-model:title` and handle the separate save event.
+
 #### Common Interview Questions
 
 - **What are compiler macros and how do they differ from regular JavaScript functions?** Compiler macros are special functions that are processed and removed during Vue's compilation process, unlike regular functions that execute at runtime. They provide hints to the Vue compiler about component structure and are replaced with actual JavaScript code in the final output.
 - **What is the purpose of defineProps and how does it compare to the Options API props definition?** defineProps is used to declare component props within `<script setup>`. It's more concise than the Options API and provides better TypeScript support. Unlike the Options API where props are defined in a separate object, defineProps is called directly in the setup context and returns a reactive props object.
 - **How do you define prop types and defaults using defineProps?** You can pass a type-based definition with `defineProps<{ title: string; count?: number }>()` or a runtime declaration with `defineProps({ title: { type: String, required: true }, count: { type: Number, default: 0 } })`. In Vue 3.5+, reactive props destructuring supports JavaScript defaults, for example `const { count = 0 } = defineProps<Props>()`; `withDefaults` remains useful when retaining a props object.
 - **What is the role of defineEmits and how do you type emitted events?** defineEmits declares the events a component can emit. With TypeScript, you can use a type-based declaration: `defineEmits<{ (e: 'update', value: string): void; (e: 'submit'): void }>()`. This provides full type checking for event names and payloads.
-- **What does defineModel do and when would you use it?** defineModel creates a typed `v-model` binding in `<script setup>` with optional defaults and modifiers. Use it when you want a concise, type-safe two-way binding API for a component.
+- **What does `defineModel` do and when would you use it?** Available since Vue 3.4, it creates a typed component `v-model` binding with optional modifiers and transforms. Be careful with a child default when the parent model is `undefined`, because the two sides can begin desynchronized.
 - **How do you access the props and emits defined with macros in your component logic?** defineProps() returns a reactive object containing the props, which you can use directly in your template and logic. defineEmits() returns an emit function that you can call to trigger events: const emit = defineEmits(); emit('update', value).
 - **What are the advantages of using compiler macros over the Options API?** They reduce boilerplate, colocate declarations with setup logic, and provide strong TypeScript and IDE inference. They are compile-time syntax rather than inherently faster or more tree-shakeable than an equivalent Options API component.
 - **Can you use defineProps and defineEmits with both TypeScript and JavaScript?** Yes, both work with JavaScript and TypeScript. Type-based declarations improve checking and autocompletion, and their TypeScript syntax is erased, but the Vue compiler still generates runtime props/emits metadata where it can; they are not literally free of runtime declarations.
 - **What is the withDefaults helper and when would you use it?** `withDefaults(defineProps<Props>(), defaults)` adds defaults to a type-based props object. Since Vue 3.5, destructured props can instead use native defaults; use `withDefaults` when code needs to keep and access the complete props object.
 - **How are compiler macros emitted?** The macro calls themselves are compiled away, but Vue still generates the runtime component declarations needed for props, emits, and models. Type-based props become equivalent runtime declarations where possible and use a compact production form.
-- **What are the limitations of using `<script setup>` with compiler macros?** Limitations include: no access to the component instance via this, more complex setup for certain advanced patterns like render functions, and potential confusion for developers coming from Options API. Some IDE setups may also require additional configuration for full support.
+- **What are the important compiler-macro constraints?** Macros only work in `<script setup>`. Declarations passed to `defineProps()` and `defineEmits()`, and options passed to `defineOptions()`, are hoisted and cannot reference setup-local variables; other macros have their own rules, so `defineExpose({ focusTitle })` can expose a setup-local binding. Runtime and type-only declarations cannot be combined in one macro call, and AST-based type-to-runtime conversion cannot represent every complex whole-props type.
+
 ### Composables: The Vue Equivalent of Custom Hooks
 
 #### Definition
 
 Composables are functions that leverage Vue's Composition API to encapsulate and reuse stateful logic. They are the Vue equivalent of React's custom hooks, allowing you to extract reactive logic into reusable units that can be composed together in components. Composables typically use refs, reactive objects, and other Composition API functions to create self-contained logic pieces.
+
+#### Example — Task Board
+
+```ts
+export function useTaskSearch(
+  tasks: MaybeRefOrGetter<readonly Task[]>,
+) {
+  const query = ref('');
+  const visibleTasks = computed(() => {
+    const normalizedQuery = query.value.trim().toLowerCase();
+    return toValue(tasks).filter((task) =>
+      task.title.toLowerCase().includes(normalizedQuery),
+    );
+  });
+
+  return { query, visibleTasks };
+}
+```
+
+**What it demonstrates:** A concrete composable accepts a value, ref, or getter through `toValue()`, and returns refs that remain reactive when destructured by its caller.
+
 #### Common Interview Questions
 
 - **What is a composable and how does it differ from a regular utility function?** A composable is a function that uses Vue's reactive system (ref, reactive, computed, etc.) to encapsulate stateful logic, while a regular utility function is typically pure and doesn't involve reactivity. Composables can maintain internal state and react to changes.
 - **What are the naming conventions for composable functions?** Composables are typically prefixed with "use" (e.g., useCounter, useFetch) to distinguish them from regular functions and follow the same convention as React hooks.
 - **How do composables enable better code organization compared to mixins?** Composables solve mixin problems by making the source of properties explicit through function calls, avoiding naming conflicts, and allowing types to be automatically inferred without manual merging.
 - **What is the typical structure and return pattern of a composable?** Composables usually return an object or tuple containing reactive references and functions that operate on them. This allows destructuring in components while maintaining reactivity through refs.
-- **How do composables handle reactivity and lifecycle?** Composables can use reactive state (ref, reactive), computed properties, and lifecycle hooks (onMounted, onUnmounted) internally. The lifecycle hooks are bound to the component that uses the composable.
+- **How do composables handle reactivity and lifecycle?** They can compose refs, computed values, watchers, and lifecycle hooks. A composable that registers component lifecycle hooks must be called synchronously from the appropriate `setup()` context so Vue can associate those hooks with the active instance.
 - **What are common use cases for creating custom composables?** Common use cases include: data fetching (useFetch), form handling (useForm), mouse tracking (useMouse), local storage (useLocalStorage), and authentication (useAuth).
 - **How do you handle asynchronous operations in composables?** Async operations in composables typically use refs to track loading state, error state, and data, often with lifecycle hooks to handle cleanup and cancellation.
 - **Can composables accept parameters and how should they be normalized?** Yes. A composable can accept a plain value, ref, or getter and normalize it with `toValue()`; `toRef()` can similarly normalize a value/ref/getter to a ref. `toRefs()` is specifically for turning the properties of a reactive object into linked refs.
 - **What is the composable equivalent of Options API patterns like data, methods, and computed?** Data becomes ref() or reactive(), methods become regular functions, and computed properties become computed() - all colocated within the composable function and returned to the component.
+
 ### Dependency Injection: provide() & inject()
 
 #### Definition
 
 Dependency injection in Vue is a pattern that allows ancestor components to serve as dependencies for all their descendants, regardless of how deep the component hierarchy is, without having to pass props down through every level. This is achieved through the provide() and inject() functions, which create a form of component-level dependency injection that works alongside rather than replacing props.
+
+#### Example — Task Board
+
+```ts
+export const taskApiKey = Symbol('task-api') as InjectionKey<TaskApi>;
+
+export function useTaskApi(): TaskApi {
+  const api = inject(taskApiKey);
+  if (!api) throw new Error('TaskApi provider is missing');
+  return api;
+}
+```
+
+```vue
+<!-- TaskFeatureProvider.vue -->
+<script setup lang="ts">
+provide(taskApiKey, taskApi);
+</script>
+
+<template>
+  <slot />
+</template>
+```
+
+**What it demonstrates:** A symbol-based `InjectionKey` keeps the dependency typed and collision-free, the provider scopes it to one feature subtree, and the consumer fails fast outside that scope.
+
 #### Common Interview Questions
 
 - **What problem do provide() and inject() solve that props cannot handle efficiently?** They solve "prop drilling" - the need to pass props through multiple intermediate components that don't use them, just to get them to deeply nested child components that need them.
 - **What is the key difference between using provide()/inject() and global state management like Pinia?** provide()/inject() are designed for component-scoped dependency injection within a specific subtree, while global state management is application-wide. Provide/inject is more suitable for component library authors and specific feature isolation.
 - **How do you make provided values reactive?** You must provide reactive values (refs or reactive objects) explicitly. If you provide a regular JavaScript value, it won't be reactive to changes in the provider component.
 - **What is the difference between providing in the Options API versus Composition API?** In Options API, use the provide option (can be object or function). In Composition API, use the provide() function within setup(). The Composition API approach is more flexible and type-friendly.
-- **How can you ensure that a component only works when used within a provider component?** Use the inject() function with a default value or throw an error if the injection is not found, making the dependency requirement explicit.
+- **How can you require a provider?** Call `inject(key)` without a fallback, check for `undefined`, and throw a clear setup error. Passing a default instead makes the dependency optional.
 - **What are the best practices for naming injection keys?** Use Symbol-based keys to avoid naming collisions, especially in large applications or when building component libraries. For smaller apps, string keys are acceptable but should be namespaced.
 - **Can you update provided reactive values from the injecting component?** Yes, if you provide a reactive object or ref, the injecting component can mutate it, but this breaks the unidirectional data flow principle and should be done cautiously, typically by providing methods alongside data.
-- **How does dependency injection work with TypeScript in Vue?** You can type both the provided values and injected values using TypeScript generics, but it requires careful setup with injection keys and type declarations to maintain type safety.
+- **How does dependency injection work with TypeScript?** Declare a shared `InjectionKey<T>` symbol. It constrains both `provide()` and `inject()` and avoids string-key collisions, while a runtime missing-provider check still remains necessary.
 - **When should you avoid using provide()/inject() in favor of props?** Avoid provide/inject for simple parent-child communication or when the component relationships are shallow. Use props when the data flow is clear and the hierarchy isn't deep, as props are more explicit and easier to trace.
 
 ### Template Refs & Component Refs
@@ -3267,47 +3706,121 @@ Dependency injection in Vue is a pattern that allows ancestor components to serv
 #### Definition
 
 Template refs are a feature that allows direct access to DOM elements or child component instances in your templates. By using the ref attribute, you create a reference to a specific element or component that can be accessed in your component's JavaScript logic. This provides an escape hatch from Vue's declarative paradigm when direct DOM manipulation or component instance access is necessary.
+
+#### Example — Task Board
+
+```vue
+<!-- TaskEditor.vue -->
+<script setup lang="ts">
+const titleInput = useTemplateRef<HTMLInputElement>('titleInput');
+const titleId = useId();
+
+function focusTitle() {
+  titleInput.value?.focus();
+}
+
+onMounted(focusTitle);
+defineExpose({ focusTitle });
+</script>
+
+<template>
+  <label :for="titleId">Title</label>
+  <input :id="titleId" ref="titleInput" />
+</template>
+```
+
+**What it demonstrates:** `useTemplateRef()` accesses the mounted DOM node for focus, while `defineExpose()` publishes one deliberate method if a parent must use a component ref.
+
 #### Common Interview Questions
 
 - **What is the primary use case for template refs?** Template refs are used when you need direct access to DOM elements for operations like focus management, text selection, media playback control, or integrating with third-party libraries that require direct DOM manipulation.
 - **How do you create a template ref in Vue 3's Composition API?** In Vue 3.5+, prefer `const input = useTemplateRef('input')` with `<input ref="input">`; the language tools can infer the element type. The pre-3.5 pattern `const input = ref(null)` with a matching template name remains supported.
-- **What is the timing consideration when accessing template refs?** Template refs are only populated after the component has mounted. Accessing them in setup() or created() lifecycle hooks will return null because the DOM hasn't been rendered yet. Use onMounted() to ensure refs are available.
+- **What is the timing consideration when accessing template refs?** A template ref starts as `null`, is populated after mount, and can become `null` again when `v-if` removes the node or the component unmounts. Read it in `onMounted`/after `nextTick` and always handle absence.
 - **How do template refs work with v-for directives?** When using ref inside v-for, the ref value becomes an array containing all the DOM elements or component instances. However, this array order is not guaranteed to match the data array order.
 - **What is the difference between using refs on DOM elements versus component instances?** A DOM ref contains the element. A component ref exposes its public instance, not emitted events as readable members. Options API components expose their public instance unless limited with `expose`; `<script setup>` components are private by default and expose only values declared with `defineExpose`.
-- **How can you create multiple refs for elements in a list without using v-for?** You can use a function ref that gets called for each element: :ref="(el) => { if (el) itemsRefs.push(el) }". This gives you more control over how refs are collected.
+- **How should function refs manage a list of elements?** Assign and remove elements by a stable item ID because the function runs during updates and receives `null` on unmount. Blindly pushing into an array can retain stale nodes or duplicates.
 - **What are the best practices for using template refs?** Use template refs sparingly as they break declarative patterns. Prefer declarative solutions when possible. Always check if the ref exists before using it, and clean up any event listeners or side effects in onUnmounted().
 - **How do you access a child component's methods or data using refs?** Attach a ref to the child and access only its public surface, for example `childRef.value?.someMethod()`. A `<script setup>` child must explicitly publish that method with `defineExpose({ someMethod })`. Prefer props/events because component refs create tighter coupling.
 - **What is the TypeScript consideration when working with template refs?** Vue 3.5 and `@vue/language-tools` can often infer `useTemplateRef()` types. Explicit types remain useful for ambiguous or dynamic refs, for example `useTemplateRef<HTMLInputElement>('input')` or a component's exposed public type.
+
 ### Built-in Components: `<KeepAlive>`, `<Teleport>`, `<Suspense>`
 
 #### Definition
 
 Vue provides several built-in components that solve common architectural patterns in web applications. `<KeepAlive>` enables state preservation for dynamic component switching, `<Teleport>` allows rendering content in different parts of the DOM tree, and `<Suspense>` provides a way to handle async component dependencies with fallback states.
+
+#### Example — Task Board
+
+```vue
+<template>
+  <KeepAlive include="TaskEditor">
+    <component :is="activePanel" />
+  </KeepAlive>
+
+  <Suspense>
+    <AsyncTaskMetrics />
+    <template #fallback>
+      <p role="status">Loading task metrics…</p>
+    </template>
+  </Suspense>
+
+  <Teleport defer to="#task-overlays">
+    <TaskDialog v-if="editingTask" :task="editingTask" />
+  </Teleport>
+  <div id="task-overlays"></div>
+</template>
+```
+
+**What it demonstrates:** `<KeepAlive>` preserves a switched editor instance, `<Suspense>` coordinates an async fallback, and Vue 3.5's deferred `<Teleport>` resolves a target rendered later in the same tick.
+
 #### Common Interview Questions
 
 - **What problem does the `<KeepAlive>` component solve?** `<KeepAlive>` caches inactive dynamic component instances so switching does not unmount and recreate them. It preserves local state, but an active cached component can still update and render when its dependencies change.
 - **How do you control which components get cached by `<KeepAlive>`?** Use the include and exclude props to specify which component names should or shouldn't be cached. You can use strings, regex patterns, or arrays to define the caching strategy.
-- **What lifecycle hooks are triggered specifically for `<KeepAlive>` components?** Cached components trigger activated when inserted into the DOM and deactivated when removed from the DOM but kept in cache. These hooks help manage component state during cache transitions.
+- **What lifecycle hooks are specific to `<KeepAlive>`?** `activated`/`onActivated` also runs on initial mount, while `deactivated`/`onDeactivated` runs when cached and again during final unmount. They complement rather than replace normal mount/unmount behavior.
 - **What is the primary use case for the `<Teleport>` component?** `<Teleport>` allows rendering a component's content in a different part of the DOM tree while maintaining its logical position in the Vue component hierarchy. This is essential for modals, tooltips, notifications, and other overlay elements.
 - **How does `<Teleport>` maintain component context while rendering elsewhere?** Although the content renders in a different DOM location, the component remains part of the original parent's component tree, preserving props, event listeners, and injection context.
 - **Can you conditionally disable `<Teleport>` and how?** Yes, use the disabled prop to conditionally disable teleportation. When disabled is true, the content renders in its original position instead of the target location.
 - **What did Vue 3.5 add for deferred Teleport targets?** The `defer` prop postpones target resolution until the rest of the same mount/update tick, allowing a target rendered later in Vue's tree to be used. The target must still appear within that same tick.
 - **What problem does `<Suspense>` solve in Vue applications?** `<Suspense>` provides a declarative way to handle async component dependencies and display fallback content while waiting for async operations to complete, simplifying loading state management.
-- **What are the two types of async dependencies that `<Suspense>` can wait for?** `<Suspense>` can wait for: 1) Components with async setup() functions, and 2) Components with Async Components (dynamic imports with loading states).
-- **What are the limitations of `<Suspense>` in its current implementation?** `<Suspense>` is still considered experimental in Vue 3 and has edge cases around nesting and SSR integration. Treat it as a component-level async dependency tool that should be tested in the rendering mode you use, not as a general app-level data fetching primitive.
+- **What async dependencies can `<Suspense>` wait for?** It coordinates descendants with async `setup()`/top-level await and async components created with `defineAsyncComponent` (suspensible by default). A Vue Router lazy route import is a separate mechanism and does not activate a component's `<Suspense>` by itself.
+- **What are the limitations of `<Suspense>` in its current implementation?** It remains experimental and has rules around nesting and SSR integration. It coordinates pending/fallback states but has no separate error slot; handle descendant failures with `errorCaptured`/`onErrorCaptured`, and test the exact rendering mode you use.
 
 ### Error Handling with errorCaptured Hook
 
 #### Definition
 
 The errorCaptured hook is a lifecycle hook that allows a component to catch errors from its child components (both direct and nested descendants). Unlike React's Error Boundaries, which are component-based, errorCaptured is a hook that can be added to any component, providing a more flexible but manual approach to error handling. When an error is captured, the component can handle it, log it, and optionally prevent it from propagating further up the component tree.
+
+#### Example — Task Board
+
+```vue
+<script setup lang="ts">
+const { taskId } = defineProps<{ taskId: string }>();
+const failed = ref(false);
+
+onErrorCaptured((error, _instance, info) => {
+  reportTaskPanelError(error, info);
+  failed.value = true;
+  return false;
+});
+</script>
+
+<template>
+  <p v-if="failed" role="alert">Task details could not be displayed.</p>
+  <TaskDetails v-else :task-id="taskId" />
+</template>
+```
+
+**What it demonstrates:** A parent provides fallback UI for a descendant failure and reports it before returning `false`, which stops both ancestor capture hooks and `app.config.errorHandler` for that error.
+
 #### Common Interview Questions
 
 - **What is the errorCaptured hook and how does it differ from React's Error Boundaries?** errorCaptured is a lifecycle hook that any component can implement to catch errors from its child components. Unlike React's class-based Error Boundaries, Vue's approach is hook-based and doesn't require a special component type, offering more flexibility but requiring manual implementation.
-- **What parameters does the errorCaptured hook receive?** The hook receives three parameters: (error, instance, info). error is the Error object, instance is the component instance that triggered the error, and info is a string containing information about where the error was captured (e.g., 'in render function').
-- **What is the return value significance in errorCaptured?** If errorCaptured returns false, it prevents the error from propagating further up the parent chain. This allows a component to handle errors locally without affecting higher-level components.
+- **What parameters does `errorCaptured` receive?** It receives the error, the component instance that exposed it, and an information value describing the source; production builds may shorten that information to a code.
+- **What does returning `false` from `errorCaptured` mean?** It stops propagation to ancestor capture hooks and also prevents `app.config.errorHandler` from receiving that error. A local boundary that returns `false` must report the failure itself before showing fallback UI.
 - **What types of errors does errorCaptured catch versus what it misses?** It captures descendant errors from renders, lifecycle hooks, setup, watchers, directives, transitions, and Vue-managed event handlers. Vue also observes rejected Promises returned by supported handlers. Detached work such as an unreturned Promise or `setTimeout` callback is outside that chain, and a component does not capture an error thrown by itself.
-- **How would you implement a global error handler in a Vue application?** Configure `app.config.errorHandler` for uncaught Vue application errors and production reporting. Use `onErrorCaptured` for subtree fallback behavior; browser-level `error` and `unhandledrejection` listeners can supplement it for failures outside Vue's managed call chain.
+- **How would you implement a global error handler in a Vue application?** Configure `app.config.errorHandler` for Vue-managed errors that propagate to the app. Use `onErrorCaptured` for subtree fallback behavior; returning `false` suppresses that global callback. Browser `error` and `unhandledrejection` listeners only supplement failures outside Vue's managed chain.
 - **What's the execution order when multiple components in the hierarchy have errorCaptured hooks?** The hooks are triggered in the propagation order - from the component closest to the error source up to the root. Each component's errorCaptured hook is called in sequence until one returns false to stop propagation.
 - **How do you handle async errors outside Vue's error pipeline?** Return or await Promises from Vue-managed handlers when possible. Use `try`/`catch` around detached asynchronous work and report intentionally handled failures; a browser `unhandledrejection` listener is a final safety net, not the primary component error strategy.
 - **What are the best practices for using errorCaptured in production applications?** Use it strategically for critical component trees, always log errors to a monitoring service (like Sentry), provide graceful fallback UIs, and avoid overusing it as it can make error tracking more complex.
@@ -3318,16 +3831,39 @@ The errorCaptured hook is a lifecycle hook that allows a component to catch erro
 #### Definition
 
 Render functions provide an alternative to templates by allowing you to programmatically create your component's VNode tree using JavaScript. Instead of using HTML-based templates, you use JavaScript's full programming power to describe the component's render output. JSX is a syntax extension that can be used with Vue's render functions, offering a more familiar, XML-like syntax similar to React's JSX. This approach is useful for highly dynamic components where the template structure needs to be determined programmatically. As of Vue 3.4, the global JSX namespace is no longer registered; set `jsxImportSource: "vue"` or import `vue/jsx` for TSX support.
+
+#### Example — Task Board
+
+```ts
+export default defineComponent({
+  props: {
+    task: { type: Object as PropType<Task>, required: true },
+    fields: {
+      type: Array as PropType<readonly (keyof Task)[]>,
+      required: true,
+    },
+  },
+  setup(props) {
+    return () => h('dl', props.fields.flatMap((field) => [
+      h('dt', { key: `${String(field)}-label` }, String(field)),
+      h('dd', { key: String(field) }, String(props.task[field] ?? '—')),
+    ]));
+  },
+});
+```
+
+**What it demonstrates:** A field schema programmatically determines the VNode structure, which justifies `h()`; templates remain the clearer default when the structure is known ahead of time.
+
 #### Common Interview Questions
 
-- **When would you choose render functions over templates in Vue?** Render functions are preferable when you need full programmatic control over the component's output, such as when creating highly dynamic components where the template structure is determined at runtime, when building component libraries that require maximum flexibility, or when working with complex functional components that need optimization beyond what templates can provide.
+- **When would you choose render functions over templates?** Choose them when a schema, recursive algorithm, or library API determines the VNode structure programmatically. Templates are the default for known markup because they are more declarative and let the compiler apply template-specific optimizations.
 - **How does Vue's h() function compare to React's createElement?** Both create virtual nodes from a type, props, and children. Vue components receive slots as functions in the children position. Custom directives are not a direct `h()` argument: apply them with `withDirectives(h(...), [[directive, value]])`, optionally resolving a registered directive with `resolveDirective`.
 - **What are the advantages and disadvantages of using JSX with Vue?** Advantages include full JavaScript expressiveness, strong TypeScript tooling, and familiar syntax for React developers. Tradeoffs include required JSX tooling, different handling for template conveniences such as directives and `v-model`, and fewer template-specific compile-time optimizations. `<style scoped>` still works when JSX/render functions are used inside a Vue SFC.
 - **How do you handle conditional rendering and loops in render functions?** Use standard JavaScript constructs: ternary operators or && for conditionals (`condition ? h('div') : null`), and array.map() for loops (`items.map(item => h('li', item))`). This provides more flexibility than template directives but requires more manual code.
 - **What is the equivalent of template directives (v-if, v-for) in render functions?** There are no direct equivalents - you use JavaScript instead. v-if becomes ternary operators or logical AND, v-for becomes array.map(), v-model becomes manual value binding and event handling, and v-bind becomes object property assignment.
 - **How do you handle slots in render functions?** Access slots via the slots object in the render function's context parameter. Use slots.default() for default slot content and slots.name() for named slots. You can also pass data to scoped slots by providing arguments to the slot function calls.
-- **What are the performance implications of using render functions vs templates?** Templates are generally faster for most use cases because they can be statically analyzed and optimized by Vue's compiler. Render functions have runtime overhead but can be more efficient for highly dynamic scenarios where the template compiler's optimizations don't apply.
-- **How do you use JSX with Vue's Composition API?** You can return JSX directly from the setup() function, or use the `<script setup>` syntax with a JSX/TSX file. The Composition API's reactive variables and functions work seamlessly with JSX, making it a natural pairing for developers coming from React hooks.
+- **What are the performance implications of render functions versus templates?** Templates compile to render functions with static analysis and patch optimizations. Hand-written render functions/JSX are not inherently faster; choose them for structure and measure the actual update path.
+- **How do you use JSX with the Composition API?** A normal `setup()` can return a render function that returns JSX, or a `.tsx` component can return JSX directly. Core `<script setup>` does not treat a top-level JSX expression as the SFC's render output; use a template or define a component/render function explicitly.
 - **What is the difference between functional components and regular components in render functions?** A functional component is a plain render function that receives props and context and has no component instance or lifecycle. In Vue 3 its performance advantage over a stateful component is negligible, so use it for semantic simplicity rather than assuming it is faster.
 
 ### Custom Directives
@@ -3335,6 +3871,30 @@ Render functions provide an alternative to templates by allowing you to programm
 #### Definition
 
 Custom directives are a mechanism for creating reusable low-level DOM behavior abstractions in Vue. Similar to Angular's attribute directives, they allow you to attach custom behavior to DOM elements and can be used across components. Directives are primarily intended for direct DOM manipulation and are useful for creating reusable DOM interaction patterns that don't fit the component model, such as focus management, click-outside detection, tooltips, or integration with third-party DOM libraries.
+
+#### Example — Task Board
+
+```vue
+<script setup lang="ts">
+const editing = ref(false);
+const title = ref('');
+const titleId = useId();
+const vAutofocus = {
+  mounted: (element: HTMLInputElement) => element.focus(),
+};
+</script>
+
+<template>
+  <button type="button" @click="editing = true">Add task</button>
+  <div v-if="editing">
+    <label :for="titleId">Title</label>
+    <input :id="titleId" v-model="title" v-autofocus />
+  </div>
+</template>
+```
+
+**What it demonstrates:** A local `vAutofocus` directive owns one low-level DOM behavior when the input is inserted; the component still owns the editor's state and markup.
+
 #### Common Interview Questions
 
 - **What are the different hook functions available in a custom directive?** Custom directives have several lifecycle hooks: created (called before the element's attributes or event listeners are applied), beforeMount (called once when the directive is first bound to the element), mounted (called when the bound element's parent component is mounted), beforeUpdate (called before the containing component's VNode is updated), updated (called after the containing component's VNode and the VNodes of its children have updated), beforeUnmount (called before the bound element's parent component is unmounted), and unmounted (called only once when the directive is unbound from the element).
@@ -3342,9 +3902,9 @@ Custom directives are a mechanism for creating reusable low-level DOM behavior a
 - **What is the difference between custom directives and components?** Components are for creating reusable UI pieces with their own template and logic, while directives are for low-level DOM manipulation on existing elements. Use components when you need to create new UI elements; use directives when you need to add behavior to existing DOM elements.
 - **When should you use a custom directive versus a composable?** Use custom directives when you need to directly manipulate the DOM element itself (focus, scroll, animations) or integrate with DOM-based libraries. Use composables for reactive logic and state management that doesn't require direct DOM access. Directives are element-centric, while composables are logic-centric.
 - **How do you create global vs local custom directives?** Global directives registered with `app.directive('name', definition)` are available throughout that app. A directive in a component's `directives` option—or a `vName` variable in `<script setup>`—is available only in that component's own template, not automatically in descendant templates.
-- **What are some common real-world use cases for custom directives?** Common use cases include: click-outside detection (v-click-outside), focus management (v-focus), infinite scroll (v-infinite-scroll), permission checks (v-permission), tooltip/popover triggers (v-tooltip), and lazy loading images (v-lazy).
+- **What are common real-world directive use cases?** Focus, click-outside behavior, observers, and third-party DOM integrations are good element-level cases. A permission directive can hide UI for convenience, but the server/API must still authorize every protected operation.
 - **How do you handle cleanup in custom directives?** Cleanup should be performed in the beforeUnmount or unmounted hooks. This includes removing event listeners, clearing timeouts/intervals, and disconnecting observers. Any resources allocated in mounted should be released in the unmount hooks.
-- **Can custom directives be used with Vue's reactivity system?** Yes, directives can react to changes in their bound value. When the value changes, the beforeUpdate and updated hooks are triggered, allowing the directive to respond to reactive changes and update the DOM behavior accordingly.
+- **Can custom directives respond to reactive updates?** Directive `beforeUpdate`/`updated` hooks run as the owner component updates, even when the binding value itself is unchanged. Compare `binding.value` with `binding.oldValue` before performing value-dependent DOM work.
 - **What is the difference between a directive's value and oldValue parameters?** In the beforeUpdate and updated hooks, the binding parameter contains both value (the current value) and oldValue (the previous value). This allows you to compare changes and only update the DOM when necessary for performance optimization.
 
 ### Plugins
@@ -3352,23 +3912,85 @@ Custom directives are a mechanism for creating reusable low-level DOM behavior a
 #### Definition
 
 Plugins in Vue are a way to package and distribute reusable functionality that can be easily added to Vue applications. They are the primary mechanism for adding global-level features to Vue, such as components, directives, mixins, configuration options, or instance methods. Plugins allow you to extend Vue's core capabilities and provide a clean, standardized way to integrate third-party libraries and share functionality across multiple Vue applications.
+
+#### Example — Task Board
+
+```ts
+export interface TaskTelemetry {
+  track(event: 'task_created' | 'task_completed', taskId: string): void;
+}
+
+export const taskTelemetryKey =
+  Symbol('task-telemetry') as InjectionKey<TaskTelemetry>;
+
+export const taskTelemetryPlugin = {
+  install(app: App, telemetry: TaskTelemetry) {
+    app.provide(taskTelemetryKey, telemetry);
+  },
+};
+
+export function useTaskTelemetry(): TaskTelemetry {
+  const telemetry = inject(taskTelemetryKey);
+  if (!telemetry) throw new Error('Task telemetry plugin is missing');
+  return telemetry;
+}
+
+createApp(AppRoot).use(taskTelemetryPlugin, telemetry).mount('#app');
+```
+
+**What it demonstrates:** The plugin installs one cross-cutting dependency on an app; a typed composable lets components opt into that app-level capability without a global property.
+
 #### Common Interview Questions
 
 - **What is the purpose of Vue plugins and when would you create one?** Plugins add application-level functionality such as shared providers, configuration, components, directives, or third-party integrations. In Vue 3, publish app-wide properties through `app.config.globalProperties` when necessary, or prefer `app.provide()` and composables over the Vue 2 `Vue.prototype` pattern.
 - **What is the basic structure of a Vue plugin?** A Vue plugin is either a function or an object with an install method. The function receives the Vue app instance and optional options as parameters: const myPlugin = { install(app, options) { // plugin logic } } or const myPlugin = (app, options) => { // plugin logic }.
 - **How do you register a plugin in a Vue application?** Plugins are registered using the app's use() method: app.use(myPlugin, options). The options parameter is optional and gets passed to the plugin's install function. Plugins must be registered before the application is mounted.
 - **What are common use cases for creating custom plugins?** Common use cases include: adding global components/directives, integrating HTTP clients (Axios), adding state management, integrating UI libraries, adding authentication utilities, providing internationalization (i18n), and creating utility libraries that need app-wide access.
-- **How do plugins differ from composables in terms of scope and usage?** Plugins are app-level and modify the Vue application instance globally, while composables are component-level and provide reusable logic that components opt into. Plugins are setup once per application, while composables can be used multiple times with isolated state.
-- **What is the difference between a plugin and a mixin?** Plugins are registered at the application level and can add global features, while mixins are component-level and merge logic into individual components. Plugins are more suitable for library authors and app-wide extensions, while mixins are for sharing component logic within an application.
+- **How do plugins differ from composables?** A plugin installs an app-level capability once, while a composable is called explicitly from setup code. A composable may create per-call state or intentionally connect callers to shared module, injected, or store state.
+- **What is the difference between a plugin and a mixin?** A plugin is an installation mechanism and can register providers, components, directives, or even `app.mixin()`. Mixins merge options into components and can also be app-wide, but their implicit property origins make them a pattern to use sparingly; composables are usually clearer for logic reuse.
 - **How do you handle configuration options in a plugin?** Configuration options are passed as the second parameter to app.use(plugin, options) and are received in the plugin's install function. These options should be validated and used to customize the plugin's behavior. Default options can be merged with user-provided options.
 - **Can plugins be asynchronous and how do you handle async initialization?** `app.use()` always returns the application instance and does not await a Promise returned by `install`. Complete required asynchronous initialization explicitly before `app.mount()`, or let the plugin expose a separate readiness Promise that application bootstrap awaits.
 - **What are the best practices for writing maintainable plugins?** Best practices include: providing clear documentation, using TypeScript for better type safety, validating configuration options, handling errors gracefully, avoiding side effects in the plugin's top-level scope, making plugins tree-shakable when possible, and following semantic versioning for releases.
 - **How do you test Vue plugins?** Plugins can be tested by creating a test Vue application, registering the plugin, and verifying that the expected functionality is added. Use testing utilities like Vue Test Utils to mount components that use the plugin's features and assert the expected behavior.
+
 ### State Management: Pinia (Modern) vs Vuex (Legacy)
 
 #### Definition
 
 State management in Vue provides stores for application-level state shared across components. Vuex 3 supports Vue 2 and Vuex 4 supports Vue 3; both use a Flux-inspired mutation/action model. Pinia is Vue's current default recommendation for new Vue 3 applications, offering a smaller API, strong TypeScript inference, and Composition API integration. Existing Vuex applications do not need to migrate solely because Pinia is the default.
+
+#### Example — Task Board
+
+```ts
+export const useTaskStore = defineStore('tasks', {
+  state: () => ({
+    tasks: [] as Task[],
+    loading: false,
+  }),
+  getters: {
+    openTasks: (state) =>
+      state.tasks.filter((task) => task.status !== 'done'),
+  },
+  actions: {
+    async load(projectId: string) {
+      this.loading = true;
+      try {
+        this.tasks = [...await taskApi.list(projectId)];
+      } finally {
+        this.loading = false;
+      }
+    },
+    complete(taskId: string) {
+      this.tasks = this.tasks.map((task) =>
+        task.id === taskId ? { ...task, status: 'done' as const } : task,
+      );
+    },
+  },
+});
+```
+
+**What it demonstrates:** Pinia owns shared mutable domain state, a derived getter, and business actions that distant components and routes can reuse.
+
 #### Common Interview Questions
 
 - **What are the key differences between Pinia and Vuex?** Pinia has a simpler API with less boilerplate, no mutations (only actions and state), excellent TypeScript support with full type inference, and better Composition API integration. Vuex requires more verbose code with mutations, getters, and actions.
@@ -3386,6 +4008,34 @@ State management in Vue provides stores for application-level state shared acros
 #### Definition
 
 Vue Router is the official router for Vue applications, enabling client-side navigation, nested layouts, data-aware guards, and URL synchronization. As of July 2026, Vue Router 5.1.0 is the current stable release for Vue 3.
+
+#### Example — Task Board
+
+```ts
+export const router = createRouter({
+  history: createWebHistory(),
+  routes: [{
+    path: '/projects/:projectId',
+    component: () => import('./ProjectLayout.vue'),
+    children: [{
+      path: 'tasks/:taskId?',
+      name: 'project-task',
+      component: () => import('./TaskBoardPage.vue'),
+      props: true,
+    }],
+  }],
+});
+
+export function openTask(projectId: string, taskId: string) {
+  return router.push({
+    name: 'project-task',
+    params: { projectId, taskId },
+  });
+}
+```
+
+**What it demonstrates:** Vue Router owns nested URL matching, history navigation, named route parameters, and lazy route chunks; task fetching remains a separate concern.
+
 #### Common Interview Questions
 
 - **How did Vue Router evolve from v3 to the current v5?** Vue Router 3 targets Vue 2. Vue Router 4 adopted Vue 3's `createRouter`, Composition API, and stronger TypeScript model. Vue Router 5 is a stable transition release that integrates file-based routing and the former `unplugin-vue-router` workflow; v4 applications that did not use that plugin can generally upgrade without code modifications. Planned removals and the ESM-only baseline are deferred to v6.
@@ -3403,6 +4053,49 @@ Vue Router is the official router for Vue applications, enabling client-side nav
 #### Definition
 
 Data fetching in Vue involves retrieving data from external sources like APIs and managing the associated reactive state within components. Composables provide a powerful pattern for encapsulating data fetching logic, handling loading states, errors, and caching, making this functionality reusable across different components while maintaining clean separation of concerns.
+
+#### Example — Task Board
+
+```ts
+export function useTasks(
+  api: TaskApi,
+  projectId: MaybeRefOrGetter<string>,
+) {
+  const tasks = shallowRef<readonly Task[]>([]);
+  const status = ref<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const error = shallowRef<unknown | null>(null);
+
+  watch(
+    () => toValue(projectId),
+    async (id, _oldId, onCleanup) => {
+      const controller = new AbortController();
+      onCleanup(() => controller.abort());
+      status.value = 'loading';
+      error.value = null;
+
+      try {
+        tasks.value = await api.list(id, controller.signal);
+        status.value = 'success';
+      } catch (cause) {
+        if (!controller.signal.aborted) {
+          error.value = cause;
+          status.value = 'error';
+        }
+      }
+    },
+    { immediate: true },
+  );
+
+  return {
+    tasks: readonly(tasks),
+    status: readonly(status),
+    error: readonly(error),
+  };
+}
+```
+
+**What it demonstrates:** The composable owns a client request lifecycle, exposes read-only state, and aborts obsolete work when the project changes or the watcher stops.
+
 #### Common Interview Questions
 
 - **What are the advantages of using composables for data fetching over placing logic directly in components?** Composables enable logic reuse, better separation of concerns, easier testing, and consistent handling of loading states, errors, and caching across multiple components.
@@ -3414,11 +4107,44 @@ Data fetching in Vue involves retrieving data from external sources like APIs an
 - **How do you handle dependent data fetching where one request relies on another's result?** Use computed properties to create dependencies between data sources, and watch effects to trigger subsequent fetches when dependent data changes, or use async/await chaining within the composable.
 - **What is the role of the onServerPrefetch lifecycle hook in SSR data fetching?** onServerPrefetch allows you to perform async operations during SSR and wait for them to complete before rendering, ensuring the server sends fully populated HTML to the client.
 - **How can you share data fetching state across multiple components using composables?** Calling a composable normally creates a fresh state instance for each consumer. Share deliberately through Pinia, provide/inject, or module-scope state with SSR request-isolation safeguards; frameworks such as Nuxt can also deduplicate same-key `useAsyncData` state.
+
 ### SSR & Hydration: Nuxt 4 Framework
 
 #### Definition
 
 Server-Side Rendering (SSR) generates HTML on the server and sends rendered pages to the client; it can improve initial content delivery, crawlability, and social previews when caching and server latency are handled well. Hydration is the process where Vue takes over that HTML and makes it interactive. Nuxt is a full-stack Vue framework with universal rendering, server routes, hybrid route rules, and prerendering. Nuxt 4, released in July 2025, is the current stable major, with 4.4.8 current in July 2026.
+
+#### Example — Task Board
+
+```vue
+<!-- app/pages/projects/[projectId]/tasks.vue -->
+<script setup lang="ts">
+const route = useRoute();
+const projectId = computed(() => String(route.params.projectId));
+const { data: tasks, error } = await useFetch<readonly Task[]>(
+  () => `/api/projects/${projectId.value}/tasks`,
+);
+</script>
+
+<template>
+  <p v-if="error" role="alert">Tasks could not be loaded.</p>
+  <TaskList v-else :tasks="tasks ?? []" />
+</template>
+```
+
+```ts
+// server/api/projects/[projectId]/tasks.get.ts
+export default defineEventHandler(async (event) => {
+  const projectId = getRouterParam(event, 'projectId');
+  if (!projectId) throw createError({ status: 400 });
+
+  const userId = await requireUserId(event);
+  return taskRepository.listForUser(projectId, userId);
+});
+```
+
+**What it demonstrates:** Nuxt connects file routing, an authorized Nitro endpoint, and payload-aware `useFetch` so SSR data is reused during hydration instead of fetched twice.
+
 #### Common Interview Questions
 
 - **What are the primary benefits of SSR over Client-Side Rendering (CSR)?** SSR can provide crawlable content and social metadata before JavaScript executes and can improve FCP/LCP when server response and hydration costs are controlled. It is not automatically faster: server latency, cacheability, payload size, and client hydration still matter.
@@ -3427,7 +4153,7 @@ Server-Side Rendering (SSR) generates HTML on the server and sends rendered page
 - **What is hydration and what common issues can occur during this process?** Hydration is when Vue attaches to server-rendered HTML and makes it interactive. Issues include hydration mismatches when server and client render different HTML, causing elements to flicker or break interactivity.
 - **How does Nuxt 4 handle data fetching for SSR?** Use `useFetch` for an SSR-aware request, `useAsyncData` to wrap arbitrary asynchronous work, and `$fetch` for direct requests where payload transfer/deduplication is not required. The Nuxt 2 Options API `asyncData` method is not a Nuxt 4 data API.
 - **What rendering modes are available in Nuxt 4?** Nuxt supports universal rendering, client-only rendering with `ssr: false`, prerendered/static routes, and hybrid rendering/caching configured per route with `routeRules`.
-- **How do you handle authentication in Nuxt SSR applications?** Validate sessions in server routes and route middleware, and prefer `HttpOnly`, `Secure`, appropriately `SameSite` cookies so secrets are available to the server but not client JavaScript. `useAuth` is not a built-in Nuxt composable; it comes from an auth module or application code. Core utilities such as `useCookie` can support a custom implementation.
+- **How do you handle authentication in Nuxt SSR applications?** Page route middleware can redirect during initial SSR and client navigation, but it is a UX guard and does not protect Nitro `/api` routes. Authenticate and authorize every server handler independently, preferably with `HttpOnly`, `Secure`, appropriately `SameSite` session cookies. `useAuth` comes from an auth module or application code, not Nuxt core.
 - **What is the purpose of the `<NuxtLink>` component compared to regular `<a>` tags?** `<NuxtLink>` provides intelligent client-side navigation with prefetching, automatic active state management, and prevents full page reloads while maintaining SSR benefits.
 - **How does Nuxt optimize performance through code splitting?** Nuxt creates route/page chunks automatically. Components split on demand when they use Nuxt's lazy-component convention or an explicit dynamic import; ordinary eagerly imported components remain in their parent chunk.
 
@@ -3436,6 +4162,30 @@ Server-Side Rendering (SSR) generates HTML on the server and sends rendered page
 #### Definition
 
 Server-Side Rendering (SSR) in Vue renders components to HTML on the server and sends that result to the client. CSR typically begins with a smaller application shell and renders content in the browser. Hydration then attaches Vue's event handling and reactive behavior to server-rendered HTML. SSR can improve initial content and crawlability, but results depend on server latency, caching, payload size, and hydration cost.
+
+#### Example — Task Board
+
+```ts
+export function createTaskApp(tasks: readonly Task[]) {
+  return createSSRApp(TaskBoard, { tasks });
+}
+```
+
+```ts
+// Server entry: create a fresh app for every request.
+const tasks = await taskApi.list(projectId);
+const appHtml = await renderToString(createTaskApp(tasks));
+const state = serializeForHtml(tasks);
+response.end(renderTaskDocument(appHtml, state));
+```
+
+```ts
+// Client entry: reuse the server's safely serialized initial state.
+createTaskApp(window.__TASKS__).mount('#app');
+```
+
+**What it demonstrates:** Core Vue SSR requires a per-request app, asynchronous rendering, XSS-safe state transfer, and identical initial input when the client hydrates the server HTML.
+
 #### Common Interview Questions
 
 - **What is the difference between Client-Side Rendering (CSR) and Server-Side Rendering (SSR) in Vue?** CSR performs initial application rendering in the browser; SSR sends rendered HTML and hydrates it on the client. SSR can improve initial content and crawlability but consumes server resources and adds serialization/hydration constraints. Subsequent navigation speed depends on the chosen router, caching, and data strategy rather than CSR or SSR alone.
@@ -3448,11 +4198,44 @@ Server-Side Rendering (SSR) in Vue renders components to HTML on the server and 
 - **What are common performance optimizations for Vue SSR applications?** Use correct cache headers and CDN/micro-caching where personalization permits, split client code, preload only genuinely critical resources, use preconnect selectively, and consider `103 Early Hints`. HTTP/2 Server Push is no longer supported by major browsers and should not be recommended.
 - **How do you debug SSR-specific issues in Vue applications?** Inspect server logs and Vue hydration warnings, compare server HTML with the first client render, verify serialized state, and use Nuxt DevTools/payload inspection for Nuxt applications. `vue-server-renderer` is the Vue 2 package, not a Vue 3 debugging mode; Vue 3.5's `data-allow-mismatch` should only suppress intentional differences.
 - **What are the limitations and trade-offs of using SSR in Vue applications?** Trade-offs include: increased server costs and complexity, potential for slower Time to Interactive (TTI), more complex development setup, limitations with certain browser-only libraries, and challenges with complex animations and interactions that rely on client-side timing.
+
 ### Optimization & Performance: v-once, v-memo, and Virtual Scrolling
 
 #### Definition
 
 Vue provides several built-in optimization techniques to improve rendering performance in different scenarios. v-once and v-memo are directives that optimize re-rendering by limiting updates, while virtual scrolling is a pattern for efficiently rendering large lists by only displaying visible items in the viewport.
+
+#### Example — Task Board
+
+```vue
+<script setup lang="ts">
+const { tasks } = defineProps<{ tasks: readonly Task[] }>();
+const selectedId = ref<string | null>(null);
+</script>
+
+<template>
+  <h2 v-once>Project tasks</h2>
+
+  <VirtualTaskList
+    v-if="tasks.length > 500"
+    :items="tasks"
+    :item-size="48"
+  />
+  <template v-else>
+    <TaskRow
+      v-for="task in tasks"
+      :key="task.id"
+      v-memo="[task, task.id === selectedId]"
+      :task="task"
+      :selected="task.id === selectedId"
+      @select="selectedId = task.id"
+    />
+  </template>
+</template>
+```
+
+**What it demonstrates:** `v-once` freezes genuinely static content, `v-memo` reuses unchanged immutable task rows during updates, and a virtualizer reduces the initial DOM cost for very large lists.
+
 #### Common Interview Questions
 
 - **What is the purpose of the v-once directive and when should it be used?** v-once renders an element or component once and skips future updates. It's useful for static content that never changes, such as terms of service text, legal disclaimers, or any content that doesn't depend on reactive data.
@@ -3463,7 +4246,7 @@ Vue provides several built-in optimization techniques to improve rendering perfo
 - **When would you choose virtual scrolling over pagination?** Choose virtual scrolling when you need continuous scrolling experience, when users need to scan through large datasets quickly, or when maintaining scroll position and context is important for the user experience.
 - **How do you implement basic virtual scrolling in Vue?** Virtual scrolling requires calculating visible items based on scroll position, container height, and item height, then rendering only those items while using a spacer element to maintain correct scroll height.
 - **What performance metrics can improve with these techniques?** Skipping expensive updates or virtualizing a large list can reduce JavaScript and main-thread work and may improve INP when rendering is the bottleneck. They do not inherently improve CLS; a virtual list with inaccurate or changing item dimensions can cause layout shifts, so reserve stable space and measure real-user metrics.
-- **How does v-memo interact with Vue's reactivity system?** v-memo creates a conditional reactivity boundary. The component only re-renders when the memoized dependencies change, bypassing the normal reactive update triggers for that subtree.
+- **How does `v-memo` affect an update?** It does not stop the owner component's reactive render effect. When its fixed dependency array is equal, Vue reuses the memoized VNode subtree and skips new VNode creation, diffing, and patching for that subtree. With `v-for`, place it on the same element and include every value whose change must update the UI.
 - **What are the common pitfalls when implementing virtual scrolling?** Common pitfalls include incorrect item height calculations, poor handling of dynamic content sizes, inadequate buffer zones causing flickering, and accessibility issues with screen readers and keyboard navigation.
 
 ## Angular Deep Dive

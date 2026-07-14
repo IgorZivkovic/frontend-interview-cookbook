@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.0] - 2026-07-14
+
+### Added
+- Added a shared Task Board scenario and focused code examples across every Vue topic.
+
+### Changed
+- Clarified current Vue 3.5 reactivity, lifecycle, component contracts, composables, dependency injection, built-ins, Pinia, Vue Router, Nuxt 4, SSR, and performance guidance.
+- Standardized Vue examples around `<script setup lang="ts">`, typed compiler macros, explicit state ownership, SSR-safe data flow, and accessible UI states.
+
 ## [1.11.0] - 2026-07-14
 
 ### Added
