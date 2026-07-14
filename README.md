@@ -2839,22 +2839,60 @@ Vue provides several built-in optimization techniques to improve rendering perfo
 ## Angular Deep Dive
 Angular is a TypeScript-based framework for building web applications. It uses declarative templates, dependency injection, signals, and RxJS to manage complex UIs. As of July 12, 2026, Angular 22 is the active line, while Angular 21 and Angular 20 are in LTS. Angular 22 requires Node.js `^22.22.3 || ^24.15.0 || ^26.0.0` and TypeScript `>=6.0.0 <6.1.0`; TypeScript 7 is generally available, but it is outside Angular 22's supported compiler range.
 
-Angular 22 promotes Signal Forms, `resource()`/`httpResource()`, and the Angular Aria pattern set to production-ready status in its release announcement. It also adds `@Service()` and stable `injectAsync()` for auto-provided and lazily loaded services, expands template syntax, makes `OnPush` the default for new applications, and deprecates the legacy webpack-based builders. The Angular Aria API reference still carries Developer Preview badges on individual symbols, so that documentation conflict is called out in its section below.
+Angular 22 promotes Signal Forms, `resource()`/`httpResource()`, and the Angular Aria pattern set to production-ready status. It also adds `@Service()` and stable `injectAsync()` for auto-provided and lazily loaded services, expands template syntax, makes `OnPush` the default for new applications, and deprecates the legacy webpack-based builders. The current Angular Aria guide and API reflect its stable status, although roadmap wording can lag release documentation.
+
+### Running Example: Task Board
+
+The examples below are focused excerpts from one standalone Task Board application. Imports and decorator metadata unrelated to the concept are omitted. Representative files include `task.model.ts`, `task.store.ts`, `task-api.ts`, `task-card.ts`, `task-board.ts`, `task-editor.ts`, and `tasks.routes.ts`.
+
+```ts
+export type TaskStatus = 'todo' | 'in-progress' | 'blocked' | 'done';
+export type TaskPriority = 'low' | 'medium' | 'high';
+
+export interface Task {
+  readonly id: string;
+  readonly title: string;
+  readonly status: TaskStatus;
+  readonly priority: TaskPriority;
+  readonly assigneeId: string | null;
+}
+```
 
 ### Component vs Directive
 
 #### Definition
 
-A Component is a special type of directive that has a template and is the primary UI building block in Angular. Components manage a view (HTML template), contain business logic in their class, and can receive data via @Input() and emit events via @Output(). A Directive is a class that adds custom behavior to existing DOM elements or components. There are three types of directives: Components (directives with templates), Structural Directives (alter DOM layout by adding/removing elements, e.g., `*ngIf`, `*ngFor`), and Attribute Directives (change appearance/behavior of elements, e.g., `NgClass`, `NgStyle`).
+A Component is a special type of directive that has a template and is the primary UI building block in Angular. Components manage a view, receive data through `input()` or `@Input()`, and emit events through `output()` or `@Output()`. A Directive adds behavior to an existing DOM element or component without owning a view. Components, structural directives, and attribute directives therefore solve different UI composition problems.
+
 #### Evolution Timeline
 
 - Angular 2+ (2016): Introduced components as the primary building blocks alongside directives
 - Angular 14 (2022): Standalone components introduced as developer preview
 - Angular 15 (2022): Standalone components became stable
 - Angular 17 (2023): Standalone components became default for new projects
+
+#### Example — Task Board
+
+```ts
+@Component({
+  selector: 'app-task-card',
+  imports: [PriorityDirective],
+  template: `
+    <article [appPriority]="task().priority">
+      <h3>{{ task().title }}</h3>
+    </article>
+  `,
+})
+export class TaskCardComponent {
+  readonly task = input.required<Task>();
+}
+```
+
+**What it demonstrates:** The component owns a view and its input contract, while `PriorityDirective` adds reusable behavior to the existing `<article>` without supplying a template.
+
 #### Common Interview Questions
 
-- **What is the key difference between a component and a directive?** A component always has a template and represents a UI section, while a directive enhances existing DOM elements or components without introducing new templates.
+- **What is the key difference between a component and a directive?** A component declares and owns a view. A non-component directive does not declare a component view: an attribute directive changes an existing host, while a structural directive controls embedded template instances.
 - **How do structural directives differ from attribute directives?** Structural directives manipulate the DOM layout by adding/removing elements (using TemplateRef and ViewContainerRef), while attribute directives change the appearance or behavior of existing elements.
 - **What are standalone components and when were they introduced?** Standalone components were introduced in Angular 14 (2022) as a developer preview, became stable in Angular 15, and became the default in Angular 17. They don't require NgModules and can import dependencies directly.
 - **Can you mix NgModule-based and standalone components in the same application?** Yes, Angular supports a gradual migration path. You can bootstrap standalone components while still using NgModule-based components elsewhere in the application.
@@ -2864,10 +2902,35 @@ A Component is a special type of directive that has a template and is the primar
 #### Definition
 
 Bindings connect template markup to component data. Main flavors are interpolation (`{{ value }}`), property (`[src]="url"`), event (`(click)="save()"`), and two-way (`[(ngModel)]="name"`). Services are injectable classes that encapsulate shared logic. `@Injectable()` remains the configurable, general-purpose decorator; Angular 22 also provides `@Service()` for a simple automatically provided service.
+
+#### Example — Task Board
+
+```ts
+@Component({
+  selector: 'app-task-details',
+  template: `
+    <h2>{{ task().title }}</h2>
+    <button [disabled]="task().status === 'done'" (click)="complete()">
+      Complete
+    </button>
+  `,
+})
+export class TaskDetailsComponent {
+  private readonly store = inject(TaskStore);
+  protected readonly task = this.store.selectedTask;
+
+  protected complete(): void {
+    this.store.complete(this.task().id);
+  }
+}
+```
+
+**What it demonstrates:** Interpolation renders service-backed state, property binding controls the button, and event binding delegates the business operation to an injected service.
+
 #### Common Interview Questions
 
 - **Why use a service instead of sharing logic directly between components?** Services promote single responsibility, reusability, and make it easy to test logic in isolation.
-- **What did Angular 22's `@Service()` decorator add?** `@Service()` replaces common `@Injectable({ providedIn: 'root' })` boilerplate and is auto-provided by default. It can also define its own factory or disable automatic provision. Use `@Injectable()` when constructor injection, non-root scoping, or advanced provider configuration is required; both decorators can use field-level `inject()`.
+- **What did Angular 22's `@Service()` decorator add?** `@Service()` replaces common `@Injectable({ providedIn: 'root' })` boilerplate and is auto-provided by default. It can define a factory or disable automatic provision for explicit route/component providers. Use `@Injectable()` for constructor injection, established `providedIn` scopes such as `platform`, or existing provider patterns; both decorators can use field-level `inject()`.
 - **What does [(ngModel)] desugar to?** [ngModel]="value" + (ngModelChange)="value=$event" (property + event binding pair).
 - **How do you scope a service to a lazy feature?** In modern standalone routing, provide it in the route's `providers` array, or provide it on a component/directive for an isolated subtree. In NgModule-based legacy apps, use that lazy module's `providers` array. Prefer `providedIn: 'root'` for shared app-wide singletons.
 
@@ -2876,6 +2939,24 @@ Bindings connect template markup to component data. Main flavors are interpolati
 #### Definition
 
 Pipes transform data in templates. Angular provides built-in pipes such as `date`, `currency`, `async`, and `json`. Custom pipes implement `PipeTransform` and define a `transform(value, ...args)` method.
+
+#### Example — Task Board
+
+```ts
+@Pipe({ name: 'openTaskCount', standalone: true })
+export class OpenTaskCountPipe implements PipeTransform {
+  transform(tasks: readonly Task[]): number {
+    return tasks.filter(task => task.status !== 'done').length;
+  }
+}
+```
+
+```html
+<p>{{ tasks() | openTaskCount }} open tasks</p>
+```
+
+**What it demonstrates:** Custom pipes are pure by default, so this transformation reruns when the task-array reference changes rather than when an item is mutated in place.
+
 #### Common Interview Questions
 
 - **What is the difference between pure and impure pipes?** Pure pipes run only when their inputs change; impure pipes run on every change detection cycle. Impure pipes can be expensive and should be used sparingly.
@@ -2886,52 +2967,100 @@ Pipes transform data in templates. Angular provides built-in pipes such as `date
 
 #### Definition
 
-Structural directives shape the DOM by adding or removing elements. Built‑in directives include `*ngIf` for conditional rendering, `*ngFor` for iteration and `*ngSwitch` for multiple conditions. Custom directives can be created using the @Directive decorator and manipulating the TemplateRef and ViewContainerRef.
+Structural directives create, remove, or move embedded views. The legacy `*ngIf`, `*ngFor`, and `[ngSwitch]` plus `*ngSwitchCase`/`*ngSwitchDefault` APIs are deprecated since Angular 20 in favor of the compiler-supported `@if`, `@for`, and `@switch` blocks covered later. Custom structural directives still use `TemplateRef` and `ViewContainerRef` when an application needs reusable view-creation behavior.
+
+#### Example — Task Board
+
+```ts
+@Directive({ selector: '[appCan]' })
+export class CanDirective {
+  private readonly template = inject(TemplateRef<unknown>);
+  private readonly container = inject(ViewContainerRef);
+  private readonly permissions = inject(PermissionService);
+  readonly appCan = input.required<string>();
+
+  constructor() {
+    effect(() => {
+      this.container.clear();
+      if (this.permissions.can(this.appCan())) {
+        this.container.createEmbeddedView(this.template);
+      }
+    });
+  }
+}
+```
+
+```html
+<button *appCan="'task:edit'">Edit task</button>
+```
+
+**What it demonstrates:** The directive controls whether Angular creates an embedded view. It controls presentation only; the backend must still authorize the operation.
 
 #### Common Interview Questions
 
 - **What happens to component state when `*ngIf` toggles false?** The view is destroyed; component instances are removed and recreated on next true.
-- **What is the difference between ngIf and [hidden]?** ngIf removes the element from the DOM entirely when the condition is false, whereas [hidden] toggles the CSS display property, keeping the element in the DOM.
+- **What is the difference between `ngIf` and `[hidden]`?** `ngIf` destroys its embedded view when the condition is false. `[hidden]` binds the native `hidden` property, so the node remains in the DOM and is normally not rendered, although author CSS can override the browser's default hidden style.
 - **How do you create a custom structural directive?** Inject TemplateRef (the template to render) and ViewContainerRef (the insertion point), then use createEmbeddedView and clear to control when the template is rendered.
 
 ### Attribute Directives
 
 #### Definition
 
-Attribute directives change the appearance or behaviour of elements. Examples include NgStyle, NgClass and custom directives that respond to host events via @HostListener and inject the host element with ElementRef.
+Attribute directives change the appearance or behavior of an existing element without changing DOM structure. Modern code can express host properties, attributes, classes, styles, and listeners through directive `host` metadata; `@HostBinding` and `@HostListener` remain supported for existing code.
+
+#### Example — Task Board
+
+```ts
+@Directive({
+  selector: '[appPriority]',
+  host: {
+    '[class.task--high]': "appPriority() === 'high'",
+    '[attr.data-priority]': 'appPriority()',
+  },
+})
+export class PriorityDirective {
+  readonly appPriority = input.required<Task['priority']>();
+}
+```
+
+```html
+<article [appPriority]="task.priority">{{ task.title }}</article>
+```
+
+**What it demonstrates:** The directive updates a class and data attribute on its host element without adding, removing, or owning any DOM structure.
+
 #### Common Interview Questions
 
 - **How do attribute directives differ from structural directives?** Attribute directives modify existing elements (e.g., add styles) without changing the DOM structure, while structural directives add or remove elements.
-- **How can you respond to DOM events in a directive?** Use the @HostListener decorator to listen to events on the host element and execute logic inside the directive.
-- **How do you bind host classes or styles in a directive?** Use @HostBinding or Renderer2 to update host properties in a safe, Angular-friendly way.
+- **How can you respond to DOM events in a directive?** Prefer an event entry in directive `host` metadata for new code, for example `'(click)': 'onClick($event)'`. `@HostListener` remains supported.
+- **How do you bind host classes, styles, properties, or events in a directive?** Prefer the `host` property in directive metadata for new code because the bindings remain visible together. `@HostBinding` and `@HostListener` are supported, while `Renderer2` is useful when imperative DOM work is genuinely required.
 
 ### Dependency Injection (DI)
 
 #### Definition
 
 Dependency Injection is a design pattern where classes receive their dependencies from external sources rather than creating them internally. Angular's DI system provides instances of classes where they are needed and manages their lifecycle according to provider scope. `@Injectable()` supplies creation metadata and configurable provider options, while Angular 22's `@Service()` automatically provides a simple service. Angular dependencies are commonly consumed through constructor injection, `inject()`, or—when an auto-provided service should be code-split—stable `injectAsync()`.
-#### Example
+
+#### Example — Task Board
 
 ```ts
-import { Component, inject } from '@angular/core';
-import { UserService } from './user.service';
+export const TASK_ROUTES: Routes = [{
+  path: 'projects/:projectId/tasks/:taskId/edit',
+  providers: [TaskDraftStore],
+  loadComponent: () =>
+    import('./task-edit-page').then(module => module.TaskEditPage),
+}];
 
-@Component({
-  selector: 'app-constructor-user',
-  template: ''
-})
-export class ConstructorUserComponent {
-  constructor(private userService: UserService) {}
+export class TaskEditorComponent {
+  protected readonly draft = inject(TaskDraftStore);
 }
 
-@Component({
-  selector: 'app-field-user',
-  template: ''
-})
-export class FieldUserComponent {
-  private userService = inject(UserService);
+export class TaskToolbarComponent {
+  protected readonly draft = inject(TaskDraftStore);
 }
 ```
+
+**What it demonstrates:** The editor and toolbar under one activated routed subtree resolve the same route-scoped draft store. A separate route injector that declares the provider receives its own instance.
 
 #### Common Interview Questions
 
@@ -2941,27 +3070,18 @@ export class FieldUserComponent {
 - **Where can inject() be called?** Only inside an injection context: during construction or field initialization of a class Angular creates, inside provider factories, inside InjectionToken factories, or inside code run with runInInjectionContext. Calling it later from an ordinary class method outside that context throws an injection-context error.
 - **How do you inject tokens that are not classes (e.g., values)?** Use a typed `InjectionToken` and an appropriate provider:
   ```ts
-  import { Component, Inject, InjectionToken, inject } from '@angular/core';
-  import { LoggingService } from './logging.service';
-
   interface AppConfig { apiUrl: string; timeout: number }
   export const APP_CONFIG = new InjectionToken<AppConfig>('APP_CONFIG');
 
   @Component({
-    selector: 'app-settings',
-    template: '',
-    providers: [
-      {
-        provide: APP_CONFIG,
-        useValue: { apiUrl: 'https://api.example.com', timeout: 5000 }
-      }
-    ]
+    providers: [{
+      provide: APP_CONFIG,
+      useValue: { apiUrl: '/api', timeout: 5000 },
+    }],
+    template: `...`,
   })
-  export class SettingsComponent {
-    constructor(@Inject(APP_CONFIG) private config: AppConfig) {}
-
-    // The inferred type is LoggingService | null.
-    private loggingService = inject(LoggingService, { optional: true });
+  export class TaskBoardComponent {
+    private readonly config = inject(APP_CONFIG);
   }
   ```
 - **What's the difference between useClass, useValue, useFactory, and useExisting?** useClass: Provides an instance of the given class
@@ -2973,71 +3093,50 @@ export class FieldUserComponent {
 - **How does Angular 22's `injectAsync()` differ from `inject()`?** It returns an async accessor that lazily loads and resolves an auto-provided service, enabling service-level code splitting and optional prefetch triggers. Use `injectAsync(() => import('./report.service'))` when the service is the module's default export, or `injectAsync(() => import('./report.service').then(m => m.ReportService))` for a named export. The target must be auto-provided with `@Service()` or `@Injectable({ providedIn: 'root' })`; ordinary `inject()` remains synchronous.
 - **How do you prevent a service from being provided multiple times in lazy-loaded features?** Use `providedIn: 'root'` for true singletons, or provide the service only at the intended route/component scope. Providing the same service in multiple lazy scopes intentionally creates separate instances.
 - **How does hierarchical injection work?** Angular first looks through the requesting element's `ElementInjector` ancestry, then the corresponding `EnvironmentInjector` ancestry. This enables local component instances, route-scoped services, and application-wide singletons without reducing the model to a simple root → module → component chain.
-- **How do you handle optional dependencies and defaults?** `@Optional()` and `inject(token, { optional: true })` return `null` when no provider is found. A TypeScript default parameter only handles `undefined`, so `constructor(@Optional() @Inject(SOME_TOKEN) value: string = 'default')` does not provide the intended fallback. Choose one of these approaches.
-
-  Consumer-side fallback inside an Angular-created class:
-
-  ```ts
-  import { Injectable, InjectionToken, inject } from '@angular/core';
-
-  export const SOME_TOKEN = new InjectionToken<string>('SOME_TOKEN');
-
-  @Injectable()
-  export class Consumer {
-    readonly value = inject(SOME_TOKEN, { optional: true }) ?? 'default';
-  }
-  ```
-
-  Or let the token own its default, in which case optional injection and `??` are unnecessary:
-
-  ```ts
-  import { Injectable, InjectionToken, inject } from '@angular/core';
-
-  export const DEFAULTED_TOKEN = new InjectionToken<string>('DEFAULTED_TOKEN', {
-    providedIn: 'root',
-    factory: () => 'default'
-  });
-
-  @Injectable()
-  export class Consumer {
-    readonly value = inject(DEFAULTED_TOKEN);
-  }
-  ```
+- **How do you handle optional dependencies and defaults?** Optional injection returns `null`, so use a nullish fallback such as `inject(SOME_TOKEN, { optional: true }) ?? 'default'`. Alternatively, define the default in the token itself with an `InjectionToken` factory. A TypeScript default parameter only handles `undefined`, not the `null` returned by optional DI.
 
 ### Lifecycle Hooks
 
 #### Definition
 
 Angular calls lifecycle hook methods at key points in a component's existence: from creation to destruction. These hooks allow you to run code at specific moments during a component's lifecycle, such as initialization, change detection, content projection, view rendering, and cleanup.
+
 #### Evolution Timeline
 
 - Angular 2 (2016): Original lifecycle hooks introduced (ngOnInit, ngOnChanges, etc.)
 - Angular 16 (2023): Application-level render callbacks added for browser-only DOM work (afterNextRender, afterRender)
-- Angular 17 (2023): Enhanced hooks for improved performance and developer experience
 - Angular 20 (2025): afterRender was renamed/reframed as afterEveryRender; use afterRender in Angular 16-19 codebases and afterEveryRender in Angular 20+ codebases.
+
+#### Example — Task Board
+
+```ts
+@Component({
+  selector: 'app-task-editor',
+  template: `<input #title [value]="task().title" aria-label="Task title">`,
+})
+export class TaskEditorComponent {
+  readonly task = input.required<Task>();
+  private readonly title = viewChild.required<ElementRef<HTMLInputElement>>('title');
+  private readonly events = inject(TaskEvents);
+  protected readonly lastSaved = signal<Task | null>(null);
+
+  constructor() {
+    afterNextRender({
+      write: () => this.title().nativeElement.focus(),
+    });
+    this.events.saved$.pipe(takeUntilDestroyed())
+      .subscribe(task => this.lastSaved.set(task));
+  }
+}
+```
+
+**What it demonstrates:** `viewChild()` exposes a query signal, `afterNextRender()` runs after Angular's next application render in the browser, and `takeUntilDestroyed()` ties the subscription to the component lifecycle.
+
 #### Common Interview Questions
 
-- **Which hook is safest for DOM query logic (ViewChild) and why?** ngAfterViewInit - the view and its child components are fully initialized at this point. Earlier hooks like ngOnInit may try to access DOM elements that don't exist yet.
+- **When should you use `ngAfterViewInit()` versus `afterNextRender()`?** Use `ngAfterViewInit()` for component-instance setup that depends on the initialized view or decorator queries. Use `afterNextRender()` for browser DOM work that must run after Angular completes the next application render; render callbacks are skipped during SSR and prerendering.
 - **Why can ngOnChanges fire before ngOnInit?** Input bindings are set first, so Angular detects changes even before initialization completes. ngOnChanges runs whenever inputs change, including the initial setting of values.
-- **How would you perform cleanup for RxJS subscriptions in modern Angular?** Prefer template `AsyncPipe` when the value is only rendered. For an imperative subscription, Angular 16+ provides `takeUntilDestroyed()`; call it in an injection context or pass an injected `DestroyRef`. Manual subscriptions still require explicit teardown.
-
-  ```ts
-  import { Component } from '@angular/core';
-  import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-  import { DataService } from './data.service';
-
-  @Component({
-    selector: 'app-user',
-    template: ''
-  })
-  export class UserComponent {
-    constructor(private readonly dataService: DataService) {
-      this.dataService.getData()
-        .pipe(takeUntilDestroyed())
-        .subscribe(data => console.log(data));
-    }
-  }
-  ```
+- **How would you perform cleanup for RxJS subscriptions in modern Angular?** Prefer template `AsyncPipe` when the value is only rendered. For an imperative subscription, use `takeUntilDestroyed()` as in the example; call it in an injection context or pass an injected `DestroyRef`. Manual subscriptions still require explicit teardown.
 - **What are the new render callbacks introduced in Angular 16+ and when are they useful?** afterNextRender: Runs once after the next application render. Useful for one-time DOM operations.
   afterRender / afterEveryRender: Runs after every application render. The name is afterRender in Angular 16-19 and afterEveryRender in Angular 20+. Useful for analytics or DOM measurements.
   Use case: Accessing browser APIs safely without causing ExpressionChangedAfterItHasBeenChecked errors.
@@ -3061,6 +3160,31 @@ Angular calls lifecycle hook methods at key points in a component's existence: f
 #### Definition
 
 Angular's change detection mechanism determines when and how to update the UI when application state changes. Zoneless change detection has been stable since Angular 20.2 and is the default for newly generated applications since Angular 21. New Angular 22 applications also default components to `OnPush` and rename the eager strategy to `ChangeDetectionStrategy.Eager` (`Default` remains a deprecated alias). Existing applications can retain their configured strategy, and zone-based change detection remains available through `provideZoneChangeDetection()`.
+
+#### Example — Task Board
+
+```ts
+@Component({
+  selector: 'app-task-list',
+  imports: [TaskCardComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    @for (task of tasks(); track task.id) {
+      <app-task-card [task]="task" />
+    }
+  `,
+})
+export class TaskListComponent {
+  readonly tasks = signal<Task[]>([]);
+
+  add(task: Task): void {
+    this.tasks.update(tasks => [...tasks, task]);
+  }
+}
+```
+
+**What it demonstrates:** A signal write notifies zoneless Angular, while the immutable collection update and stable `track` key work cleanly with `OnPush`.
+
 #### Common Interview Questions
 
 - **What triggers change detection in Angular?** With zone-based change detection, Angular normally schedules checks after patched browser tasks and microtasks—such as handlers for DOM events, timers, network completion, and Promise reactions—run inside the Angular zone. An Observable emission is not inherently a Zone.js trigger: `AsyncPipe` marks its view, while an imperative subscription depends on where the producer/callback runs or must notify Angular explicitly.
@@ -3075,6 +3199,7 @@ Angular's change detection mechanism determines when and how to update the UI wh
 #### Definition
 
 A signal is a reactivity primitive that holds a value and notifies tracked consumers when that value changes. Consumers include templates, `computed()` values, and `effect()` callbacks; they are not all effects. Signals provide granular dependency tracking while remaining synchronously readable.
+
 #### Evolution Timeline
 
 - Angular 16 (2023): Signals introduced as developer preview
@@ -3082,6 +3207,25 @@ A signal is a reactivity primitive that holds a value and notifies tracked consu
 - Angular 20 (2025): effect() and linkedSignal() became stable
 - Angular 21 (2025): Zoneless becomes the default for new applications
 - Angular 22 (2026): `resource()` and `httpResource()` become stable for signal-based asynchronous reads
+
+#### Example — Task Board
+
+```ts
+export class TaskFilters {
+  readonly tasks = signal<Task[]>([]);
+  readonly status = signal<'all' | TaskStatus>('all');
+
+  readonly visibleTasks = computed(() => {
+    const status = this.status();
+    return status === 'all'
+      ? this.tasks()
+      : this.tasks().filter(task => task.status === status);
+  });
+}
+```
+
+**What it demonstrates:** Writable signals hold current state, while `computed()` expresses cached derived state without using an effect.
+
 #### Common Interview Questions
 
 - **What problem do Signals solve in Angular?** Signals provide synchronously readable state with explicit, granular dependency tracking. Angular can record which views and computed values consume a signal and mark relevant consumers when it changes. This can reduce broad change-notification work and simplify derived state, but actual rendering performance still depends on component structure and update patterns.
@@ -3099,19 +3243,40 @@ A signal is a reactivity primitive that holds a value and notifies tracked consu
   | Strength | Simplicity, performance, deep integration with Angular templates | Powerful operators, handling complex async events, websockets |
 - **What is "fine-grained reactivity" and how do Signals enable it?** Angular records which views consume each signal, so a change can mark the relevant consumers instead of treating every asynchronous task as evidence that the whole application may have changed.
 - **Can Signals replace RxJS and Zone.js in Angular?** Signals replace neither every stream nor every asynchronous abstraction. They work well for current state and derived state, while RxJS remains useful for cancellation, coordination, and event streams. Zoneless is the default for newly generated Angular 21+ applications, with signals as one of several notification mechanisms.
-- **How would you use a Signal in an Angular template?** You use a signal the same way you use a component property, by calling it as a function (due to its getter nature).
-  ```html
-  <p>Count: {{ count() }}</p>
-  <p>Doubled: {{ doubleCount() }}</p>
-  <button (click)="count.set(count() + 1)">Increment</button>
-  ```
-- **Are there signals in other frameworks?** Yes. Preact and Solid.js have signals as their core reactivity model. Vue's ref() and computed() are very similar in concept to signals. This pattern is becoming a modern standard for state management due to its simplicity and performance.
+- **How would you use a Signal in an Angular template?** Call its getter in the template, for example `{{ visibleTasks().length }}`. Angular records the template read as a dependency and marks the view when that signal changes.
+- **Are there signals in other frameworks?** Yes. Solid uses signal-based reactivity at its core, Preact offers the `@preact/signals` library, and Vue's `ref()` and `computed()` are closely related concepts. Similar primitives do not imply identical scheduling or rendering behavior across frameworks.
 
 ### RxJS (Reactive Extensions for JavaScript)
 
 #### Definition
 
 RxJS is a library for reactive programming using Observables, making it easier to compose asynchronous or callback-based code. It provides powerful operators to transform, combine, manipulate, and work with streams of data. RxJS is fundamental to Angular's HTTP client, router, forms, and many other asynchronous operations.
+
+#### Example — Task Board
+
+```ts
+@Component({
+  selector: 'app-task-search',
+  imports: [ReactiveFormsModule],
+  template: `<input [formControl]="query" aria-label="Search tasks">`,
+})
+export class TaskSearchComponent {
+  private readonly api = inject(TaskApi);
+  readonly query = new FormControl('', { nonNullable: true });
+
+  readonly results = toSignal(
+    this.query.valueChanges.pipe(
+      debounceTime(250),
+      distinctUntilChanged(),
+      switchMap(query => this.api.search(query)),
+    ),
+    { initialValue: [] },
+  );
+}
+```
+
+**What it demonstrates:** RxJS handles a debounced event stream and cancels stale HTTP work through `switchMap`; `toSignal()` owns the subscription in the component's injection context.
+
 #### Common Interview Questions
 
 - **How do Observables differ from Promises?** A Promise represents one eventual result. Its constructor executor runs immediately, although the Promise itself does not make arbitrary work "eager." An Observable represents a producer/subscription contract and may emit zero, one, or many values. Many Observables are lazy, but hot Observables already have an active producer. Unsubscribing stops delivery and may run teardown; it cancels underlying work only when that producer implements cancellation.
@@ -3140,6 +3305,30 @@ RxJS is a library for reactive programming using Observables, making it easier t
 #### Definition
 
 Angular provides a comprehensive set of patterns for component communication, leveraging its powerful dependency injection system and TypeScript integration. Understanding these patterns is essential for building maintainable Angular applications with proper separation of concerns and predictable data flow.
+
+#### Example — Task Board
+
+```ts
+@Component({
+  selector: 'app-task-card',
+  template: `
+    <button (click)="completed.emit(task().id)">
+      Complete {{ task().title }}
+    </button>
+  `,
+})
+export class TaskCardComponent {
+  readonly task = input.required<Task>();
+  readonly completed = output<string>();
+}
+```
+
+```html
+<app-task-card [task]="task" (completed)="complete($event)" />
+```
+
+**What it demonstrates:** The parent passes data through a required signal input, and the child reports a semantic event through `output()`.
+
 #### Common Interview Questions
 
 - **What are the main component communication patterns in Angular and when should you use each?** Use `input()` / `@Input()` for parent-to-child data flow, `output()` / `@Output()` for child-to-parent events, `model()` or `[(ngModel)]` for two-way binding, Services with DI for unrelated components, query APIs for parent-to-child instance access, and RxJS Subjects for reactive cross-component state.
@@ -3148,49 +3337,25 @@ Angular provides a comprehensive set of patterns for component communication, le
 - **What is the difference between viewChild() and contentChild()?** `viewChild()` accesses elements/components that are part of the component's own template, while `contentChild()` accesses content projected into the component via `<ng-content>`. The plural forms, `viewChildren()` and `contentChildren()`, return signal-based arrays of query results. Decorator APIs like `@ViewChild` and `@ContentChild` remain supported.
 - **How does Angular's change detection affect component communication?** Inputs, outputs, template events, signals, `AsyncPipe`, and explicit change-detection notifications all participate. With OnPush, immutable input updates remain important, but input changes and async-pipe emissions are not the only triggers.
 - **When should you use RxJS Subjects versus simple services for state management?** Use RxJS Subjects when you need reactive programming patterns, multiple subscribers, or complex state transformations. Use simple services for simple data sharing without the need for reactive updates or when the data flow is straightforward.
+
 #### Communication Patterns Reference
-1. input() / @Input() (Parent -> Child)
-   - Step 1: Child component defines input properties with `input()` for modern code or `@Input()` in decorator-based code.
-   - Step 2: Parent binds data using property binding syntax: [inputName]="value".
-   - Step 3: If using `input()`, the child reads the `InputSignal` by calling it (`inputName()`). If using `@Input()`, the child reads a regular class property.
-   - Note: Inputs are detected by Angular's change detection. Use OnPush strategy with immutable updates for performance.
-2. output() / @Output() (Child -> Parent)
-   - Step 1: Child component defines output properties with `output()` for modern code or `@Output()` and `EventEmitter` in decorator-based code.
-   - Step 2: Child emits events using `outputRef.emit(payload)` or `eventEmitter.emit(payload)`.
-   - Step 3: Parent listens with event binding: (outputName)="handler($event)".
-   - Note: Decorator outputs remain supported. For decorator code, initialize and type EventEmitter properly: `@Output() eventName = new EventEmitter<Type>()`.
-3. model() / [(ngModel)] (Two-Way Binding)
-   - Step 1: For custom components, define a `model()` property when the component owns an editable value. For native form controls, import FormsModule in the standalone component or NgModule.
-   - Step 2: Use [(ngModel)] on form elements: `<input [(ngModel)]="property">`.
-   - Step 3: For custom components, bind with `[(value)]` to the `model()` input.
-   - Note: The older custom two-way pattern with `@Input() value` and `@Output() valueChange` remains supported.
-4. viewChild() / @ViewChild (Parent accessing Child)
-   - Step 1: Parent uses `viewChild()` / `viewChildren()` for modern signal queries, or `@ViewChild` / `@ViewChildren` in decorator-based code.
-   - Step 2: Signal query functions return current results as signals; decorator query results become available in lifecycle hooks such as ngAfterViewInit.
-   - Step 3: Parent can call child methods or access child properties directly.
-   - Note: `contentChild()` / `contentChildren()` query projected content. Decorator queries still support `static: true` for always-present elements that must be available earlier.
-5. Services + Dependency Injection (Any components)
-   - Step 1: Create a service with @Injectable() and provide it at the appropriate level (root, route, component, or NgModule in legacy apps).
-   - Step 2: Inject service into components via constructor injection (`constructor(private service: DataService)`) or an `inject()` field initializer.
-   - Step 3: Components share data through service properties and methods.
-   - Note: Service instances are singleton at their provided level. Use component providers for isolated instances.
-6. RxJS Subjects (Global/Cross-component)
-   - Step 1: Create a private subject in the service: `private dataSubject = new BehaviorSubject<T>(initial)`.
-   - Step 2: Expose a read-only stream: `readonly data$ = this.dataSubject.asObservable()`.
-   - Step 3: Components subscribe to observable and update via service methods.
-   - Note: Use async pipe in templates for automatic subscription management and OnPush compatibility.
-7. Route Parameters (URL-based)
-   - Step 1: Define route with parameters: { path: 'user/:id', component: UserComponent }.
-   - Step 2: Inject ActivatedRoute and subscribe to params: this.route.params.subscribe().
-   - Step 3: Use parameter values to load component data.
-   - Note: Use paramMap for better TypeScript support and snapshot for one-time access.
-   - Note: Router state APIs increasingly use signals (e.g., lastSuccessfulNavigation), so invoke them when required.
+
+| Need | Modern default | Use when |
+| --- | --- | --- |
+| Parent to child | `input()` | A parent supplies data or configuration |
+| Child to parent | `output()` | A child reports a semantic event |
+| Two-way component value | `model()` | A reusable control owns an editable value |
+| View or projected-content query | `viewChild()` / `contentChild()` | A component needs a specific child instance or element |
+| Shared state or behavior | Scoped service with DI | Components are not connected by a direct data-flow edge |
+| Multivalue event stream | Observable or private Subject exposed as an Observable | Cancellation, composition, or multicast events are required |
+| URL-owned state | Router parameters, query parameters, or router state | State should survive navigation or be shareable as a URL |
 
 ### Forms & Validation
 
 #### Definition
 
 Angular supports template-driven forms, reactive forms, and, in Angular 22+, stable Signal Forms. Reactive forms use `FormGroup`, `FormControl`, and `FormArray`; Signal Forms use a writable signal model, a generated field tree, and schema-based validation. All three approaches have valid use cases.
+
 #### Evolution Timeline
 
 - Angular 2 (2016): Both template-driven and reactive forms introduced
@@ -3198,39 +3363,48 @@ Angular supports template-driven forms, reactive forms, and, in Angular 22+, sta
 - Angular 15+: Improved standalone component support for forms
 - Angular 21 (2025): Signal Forms introduced as an experimental API in `@angular/forms/signals`
 - Angular 22 (2026): Signal Forms become stable, with interoperability APIs for incremental migration
+
+#### Example — Task Board
+
+```ts
+@Component({
+  imports: [FormField],
+  template: `
+    <label>Title <input [formField]="taskForm.title"></label>
+    <button [disabled]="taskForm().invalid()">Save</button>
+  `,
+})
+export class TaskEditorComponent {
+  readonly draft = signal({ title: '', priority: 'medium' as TaskPriority });
+  readonly taskForm = form(this.draft, path => {
+    required(path.title, { message: 'Title is required' });
+    minLength(path.title, 3, { message: 'Use at least 3 characters' });
+  });
+}
+```
+
+**What it demonstrates:** An Angular 22 Signal Form derives a typed field tree from a writable model and applies schema-based validation.
+
 #### Common Interview Questions
 
 - **What are the key differences between template-driven and reactive forms?** Template-driven forms are declarative and simpler for basic scenarios. Reactive forms are imperative, provide better type safety, easier testing, and more control for complex scenarios like dynamic forms or cross-field validation.
 - **What are Signal Forms?** Signal Forms are stable in Angular 22+. They model form data with a writable signal, expose type-safe field state, and define validation through schemas. Reactive forms remain stable and appropriate for existing applications and use cases that fit their APIs.
 - **How do you trigger validation manually in reactive forms?** Call form.markAllAsTouched() to mark all controls as touched, or control.updateValueAndValidity() to re-run validation on a specific control.
 - **Why use async validators for uniqueness checks?** Async validators return an Observable or Promise and let Angular represent a `PENDING` state while server validation completes. Angular does not automatically debounce HTTP calls. Use `updateOn: 'blur'`/`'submit'` or an explicit debounce strategy, and make cancellation/teardown behavior intentional.
-- **What are typed forms (Angular 14+) and why use them?** Typed forms provide TypeScript type safety for form values. Instead of `FormControl<any>`, use `FormControl<string>` to get compile-time type checking and better IDE support.
+- **What are typed forms (Angular 14+) and why use them?** Typed forms provide compile-time checking for controls and form values. For a non-nullable string control, use `new FormControl('', { nonNullable: true })`; without that option, reset semantics normally make the type `FormControl<string | null>`.
 - **How do you handle dynamic form arrays?** Use `FormArray` to manage dynamic lists of controls. Add or remove controls with `push()` and `removeAt()`, and iterate in a modern template with `@for` (`*ngFor` in older templates).
-- **What's the difference between form.value and form.getRawValue()?** form.value excludes disabled controls, while form.getRawValue() includes all controls regardless of disabled state, useful when you need complete form data.
+- **What's the difference between `form.value` and `form.getRawValue()`?** For an enabled group, `.value` omits disabled descendants; a disabled group includes all descendants in its value. `getRawValue()` consistently includes disabled controls and is the clearer choice when the complete form model is required.
 - **How do you implement cross-field validation?** Add the validator at the group level so it can compare sibling controls:
   ```ts
-  import {
-    AbstractControl,
-    FormControl,
-    FormGroup,
-    ValidationErrors
-  } from '@angular/forms';
+  const passwordsMatch = (group: AbstractControl): ValidationErrors | null =>
+    group.get('password')?.value === group.get('confirmation')?.value
+      ? null
+      : { passwordsMismatch: true };
 
-  function passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
-    const password = control.get('password')?.value;
-    const confirmation = control.get('confirmPassword')?.value;
-    return password === confirmation ? null : { mismatch: true };
-  }
-
-  export class AccountForm {
-    readonly form = new FormGroup(
-      {
-        password: new FormControl('', { nonNullable: true }),
-        confirmPassword: new FormControl('', { nonNullable: true })
-      },
-      { validators: passwordMatchValidator }
-    );
-  }
+  const accountForm = new FormGroup({
+    password: new FormControl('', { nonNullable: true }),
+    confirmation: new FormControl('', { nonNullable: true }),
+  }, { validators: passwordsMatch });
   ```
 - **How do forms work with standalone components?** Import `ReactiveFormsModule` or `FormsModule` directly in the standalone component's `imports`. These are still NgModules, but the component can consume them without being declared in an application NgModule. Form behavior is otherwise the same; tree-shaking depends on the complete dependency graph and build.
 
@@ -3239,205 +3413,195 @@ Angular supports template-driven forms, reactive forms, and, in Angular 22+, sta
 #### Definition
 
 HTTP interceptors are middleware for Angular's HttpClient. Modern Angular recommends functional interceptors because they have more predictable behavior, especially in standalone and multi-injector setups. Class-based DI interceptors that implement HttpInterceptor remain supported for existing codebases.
+
+#### Example — Task Board
+
+```ts
+export const SKIP_AUTH = new HttpContextToken(() => false);
+
+export const apiInterceptor: HttpInterceptorFn = (req, next) => {
+  if (!req.url.startsWith('/api/')) return next(req);
+  let headers = req.headers.set('X-Correlation-ID', crypto.randomUUID());
+
+  if (!req.context.get(SKIP_AUTH)) {
+    const token = inject(AuthService).getAccessToken();
+    if (token) headers = headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  return next(req.clone({ headers }));
+};
+```
+
+**What it demonstrates:** A functional interceptor scopes credentials to the application API, clones immutable request data, adds tracing and authentication metadata, and uses `HttpContextToken` for request-local policy.
+
 #### Common Interview Questions
 
 - **What are typical uses of HTTP interceptors?** Adding authentication tokens, logging requests/responses, handling errors globally, showing loading indicators, caching responses, adding retry logic, or modifying request/response data.
-- **How do you register a modern functional interceptor?** Provide HttpClient with `withInterceptors()`:
-  ```ts
-  import { ApplicationConfig, inject } from '@angular/core';
-  import {
-    HttpInterceptorFn,
-    provideHttpClient,
-    withInterceptors
-  } from '@angular/common/http';
-  import { AuthService } from './auth.service';
-
-  export const authInterceptor: HttpInterceptorFn = (req, next) => {
-    const token = inject(AuthService).getAccessToken();
-    if (!token) return next(req);
-
-    const authReq = req.clone({
-      setHeaders: { Authorization: `Bearer ${token}` }
-    });
-    return next(authReq);
-  };
-
-  export const appConfig: ApplicationConfig = {
-    providers: [
-      provideHttpClient(withInterceptors([authInterceptor]))
-    ]
-  };
-  ```
+- **How do you register a modern functional interceptor?** Provide `HttpClient` in application configuration with `provideHttpClient(withInterceptors([apiInterceptor]))`. Interceptors run in the listed order for requests and unwind in reverse order for responses.
 - **How do you keep class-based interceptors working?** Register existing DI-based interceptors with `withInterceptorsFromDi()` and the `HTTP_INTERCEPTORS` multi provider. Prefer functional interceptors for new code.
 - **How do you handle retry logic in a functional interceptor?** Retry only transient failures and normally only idempotent methods. Cap retries and propagate permanent or final failures; production code should also honor `Retry-After` where applicable.
 
   ```ts
-  import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
-  import { retry, throwError, timer } from 'rxjs';
-
   const IDEMPOTENT_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
   export const retryInterceptor: HttpInterceptorFn = (req, next) => {
     if (!IDEMPOTENT_METHODS.has(req.method)) return next(req);
-
     return next(req).pipe(
       retry({
         count: 3,
         delay: (error, retryCount) => {
           const transient = error instanceof HttpErrorResponse &&
-            (error.status === 0 || error.status === 408 ||
-             error.status === 429 || error.status >= 500);
-
-          return transient
-            ? timer(500 * 2 ** (retryCount - 1))
+            ([0, 408, 429].includes(error.status) || error.status >= 500);
+          return transient ? timer(500 * 2 ** (retryCount - 1))
             : throwError(() => error);
-        }
-      })
+        },
+      }),
     );
   };
   ```
 - **What does the multi: true option do?** In class-based interceptor registration, it allows multiple interceptors to be registered for the same `HTTP_INTERCEPTORS` token, forming a chain instead of replacing previous interceptors.
 - **How do you ensure interceptors execute in a specific order?** Functional interceptors execute in the order listed in `withInterceptors([...])`. The first interceptor processes the request first and the response last.
 - **What's the difference between functional and class-based interceptors?** Functional interceptors are plain functions and are the recommended default in modern Angular. Class-based interceptors implement the `HttpInterceptor` interface and rely on DI multi providers, which is still valid for existing apps.
-- **How can you skip an interceptor for specific requests?** Prefer a custom `HttpContextToken` over a fake header so the flag does not get sent to the server:
-  ```ts
-  import { Injectable, inject } from '@angular/core';
-  import {
-    HttpClient,
-    HttpContext,
-    HttpContextToken,
-    HttpInterceptorFn
-  } from '@angular/common/http';
-  import { AuthService } from './auth.service';
+- **How can you skip an interceptor for specific requests?** Prefer a custom `HttpContextToken`, as in the example, over a fake header that would be sent to the server. A public request can pass `context: new HttpContext().set(SKIP_AUTH, true)`.
 
-  export const SKIP_AUTH = new HttpContextToken(() => false);
-
-  @Injectable({ providedIn: 'root' })
-  export class PublicApi {
-    private readonly http = inject(HttpClient);
-
-    getPublicData() {
-      return this.http.get('/public', {
-        context: new HttpContext().set(SKIP_AUTH, true)
-      });
-    }
-  }
-
-  export const authInterceptor: HttpInterceptorFn = (req, next) => {
-    if (req.context.get(SKIP_AUTH)) {
-      return next(req);
-    }
-
-    const token = inject(AuthService).getAccessToken();
-    if (!token) return next(req);
-
-    return next(req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }));
-  }
-  ```
-
-### Modules & Lazy Loading
+### Standalone Components, NgModules & Route Lazy Loading
 
 #### Definition
 
-NgModules are containers that group related Angular artifacts (components, directives, pipes, services) and define their compilation context. The @NgModule decorator specifies what belongs to the module and how it interacts with other modules. Lazy Loading is an optimization technique where features are loaded on-demand when the user navigates to their associated routes.
+Standalone components, directives, and pipes declare their own template dependencies without requiring an NgModule declaration. NgModules still define compilation and provider scopes in existing applications and libraries. Route lazy loading is a separate concern: `loadComponent` and `loadChildren` use dynamic imports so a routed feature can be split from the initial JavaScript path.
+
 #### Evolution Timeline
 
 - Angular 2 (2016): Introduced NgModules as the primary organizing structure
-- Angular 8 (2019): Ivy renderer introduced, paving the way for standalone components
-- Angular 14 (2022): Standalone components introduced as an alternative authoring model
-- Angular 16 (2023): Standalone APIs for bootstrapping and routing became stable
+- Angular 8 (2019): Ivy became available as an opt-in preview
+- Angular 9 (2020): Ivy became the default compiler and rendering pipeline
+- Angular 14 (2022): Standalone components introduced as a developer preview
+- Angular 15 (2022): Standalone components, directives, and pipes became stable
 - Angular 17 (2023): Standalone authoring became the default for new projects; NgModules remain supported
+
+#### Example — Task Board
+
+```ts
+export const routes: Routes = [
+  {
+    path: 'projects/:projectId/tasks',
+    providers: [TaskDraftStore],
+    loadChildren: () =>
+      import('./tasks/tasks.routes').then(module => module.TASK_ROUTES),
+  },
+  {
+    path: 'task/:taskId',
+    loadComponent: () =>
+      import('./task-details').then(module => module.TaskDetailsComponent),
+  },
+  {
+    path: 'legacy-reports',
+    loadChildren: () =>
+      import('./reports/reports.module').then(module => module.ReportsModule),
+  },
+];
+```
+
+**What it demonstrates:** The router can lazy-load a standalone component, a route array with route-scoped providers, or an existing NgModule.
+
 #### Common Interview Questions
 
-- **What is the difference between NgModule-based and standalone approaches?** NgModules require declaring components in modules and importing dependencies at module level. Standalone components manage their own dependencies and don't require NgModule wrappers.
-- **How does lazy loading work with standalone components?** Use `loadComponent` for a single routed standalone component or `loadChildren` with `import()` for a lazy route array. The Angular compiler creates separate chunks automatically.
-- **What are the benefits of standalone components over NgModules?** They make a component's template dependencies explicit, reduce module boilerplate, simplify lazy route configuration, and support incremental migration. Bundle size still depends on the dependency graph and build output; standalone authoring does not guarantee a smaller bundle by itself.
-- **Can standalone components and NgModules interoperate?** Yes. A standalone component can import an NgModule directly, and an NgModule can import and export standalone components, directives, and pipes. `importProvidersFrom()` has a narrower purpose: it extracts providers from NgModules for an environment injector; it is not required for template-level interoperability.
-- **How do you provide services in a standalone application?** Services can be provided with `@Injectable({ providedIn: 'root' })`, the `bootstrapApplication` / `ApplicationConfig` providers array, route-level `providers`, or component/directive providers when a local instance is intended.
-- **What happened to AOT compilation with standalone components?** AOT compilation still applies. Standalone changes how compilation scopes and dependencies are expressed; it does not replace AOT or inherently make AOT more capable.
-- **When would you choose NgModules today?** Existing NgModule applications and libraries can continue using them, and some teams retain them as organizational boundaries. Standalone is the recommended default for new Angular code, but NgModules are supported rather than deprecated.
+- **What is the difference between NgModule-based and standalone approaches?** NgModules declare components and collect template dependencies at module level. Standalone artifacts import their own template dependencies and do not require NgModule wrappers.
+- **How does modern Angular lazy-load a routed feature, and how does the NgModule pattern differ?** Use `loadComponent` for one standalone component and `loadChildren` for a lazy route array or an NgModule. Both commonly use dynamic `import()`, allowing the build to create a separate chunk.
+- **What are the benefits of standalone components over NgModules?** They make template dependencies explicit, reduce module boilerplate, simplify route configuration, and support incremental migration. Bundle size still depends on the dependency graph and build output; standalone authoring does not guarantee a smaller bundle by itself.
+- **Can standalone components and NgModules interoperate?** Yes. A standalone component can import an NgModule directly, and an NgModule can import and export standalone components, directives, and pipes. `importProvidersFrom()` only extracts providers from NgModules for an environment injector; it is not required for template-level interoperability.
+- **How do you provide services in a standalone application?** Use `providedIn: 'root'`, application-level providers, route providers, or component/directive providers according to the intended lifetime and sharing boundary.
+- **What happened to AOT compilation with standalone components?** AOT compilation still applies. Standalone authoring changes how compilation scopes and dependencies are expressed; it does not replace AOT.
+- **When would you choose NgModules today?** Existing NgModule applications and libraries can keep using them, and some teams retain them as organizational boundaries. Standalone is the recommended default for new Angular code, but NgModules remain supported.
+- **What is the difference between `RouterModule.forRoot()` and `RouterModule.forChild()`?** In NgModule-based applications, `forRoot()` configures routes and root router providers once, while `forChild()` contributes feature routes without creating another router service. Standalone applications normally use `provideRouter()` instead.
+- **How can you verify that lazy loading works?** Use the browser Network panel or a bundle analyzer and confirm that a separate JavaScript chunk loads when the route is first visited. Do not depend on a particular generated filename because production builds commonly hash and rename chunks.
+- **Can you preload lazy routes?** Yes. `PreloadAllModules` can request all eligible lazy routes after initial navigation, or a custom preloading strategy can select routes. Preloading changes download timing; it does not make the code part of the initial bundle.
+- **How do route-level providers work?** A route's `providers` array creates an environment injector for that routed subtree, which is useful for feature-scoped state such as `TaskDraftStore`.
+- **How do you combine guards with lazy loading?** Use functional `canMatch` when route matching or loading should depend on a condition, and `canActivate` when guarding activation. Client guards improve navigation behavior but never replace backend authentication and authorization.
+- **What are common lazy-loading pitfalls?** Over-splitting into many tiny sequential chunks, accidental eager imports, circular dependencies, duplicated providers, and missing loading or error states can erase the expected benefit.
+- **How does lazy loading affect SEO?** A lazy chunk does not inherently harm SEO. The risk appears when meaningful route content exists only after client-side JavaScript runs; use SSR or prerendering for crawlability-sensitive routes when appropriate.
 
-### Lazy Loading Modules
-
-#### Definition
-
-Lazy loading is an optimization technique where routed features are loaded on demand when the user navigates to their associated routes, rather than loading everything at application startup. This reduces the initial bundle size and improves application loading performance. Angular supports both modern standalone component/route lazy loading and traditional NgModule-based lazy loading.
-#### Common Interview Questions
-
-- **What is the difference between RouterModule.forRoot() and RouterModule.forChild()?** forRoot() is used in the root module to configure the router and provide router services. forChild() is used in feature modules to define additional routes without providing a new router instance.
-- **How can you verify that lazy loading is working correctly?** Open browser DevTools → Network tab and look for separate JavaScript chunks downloaded when navigating to lazy-loaded routes (e.g., customers-customers-module.js or admin-admin-component.js).
-- **What is the role of the import() function in Angular lazy loading?** The import() function is a modern JavaScript feature for dynamic imports. The Angular compiler sees this syntax and automatically creates a separate chunk for the referenced module or component.
-- **Can you preload lazy-loaded modules?** Yes. Use PreloadAllModules to load all lazy modules in the background after the main application stabilizes, or create a custom preloading strategy to load specific modules based on user behavior.
-- **What's the difference between lazy loading modules vs. standalone components?** Module-based loading uses an NgModule and `loadChildren`. Standalone routing can use `loadComponent` for one component or `loadChildren` for a route array. Both create lazy chunks; the final optimization depends on what each chunk imports.
-- **What is the modern standalone lazy loading pattern?** Use `loadComponent` by default for a single route:
-  ```ts
-  import { Routes } from '@angular/router';
-
-  export const routes: Routes = [
-    {
-      path: 'dashboard',
-      loadComponent: () =>
-        import('./dashboard/dashboard.component').then(c => c.DashboardComponent)
-    }
-  ];
-  ```
-- **How do route-level providers work with lazy routes?** Add a `providers` array to a route to scope services to that routed feature and its children. This is the modern standalone replacement for many lazy-module provider patterns.
-- **How do you handle authentication guards with lazy loading?** Apply guards to the lazy-loaded route. For modern standalone routes, prefer functional guards and `loadComponent`:
-  ```ts
-  import { Routes } from '@angular/router';
-  import { authGuard } from './auth.guard';
-
-  export const routes: Routes = [
-    {
-      path: 'dashboard',
-      loadComponent: () =>
-        import('./dashboard/dashboard.component').then(c => c.DashboardComponent),
-      canActivate: [authGuard]
-    }
-  ];
-  ```
-  NgModule-based legacy routes can still use `loadChildren: () => import('./dashboard/dashboard.module').then(m => m.DashboardModule)`.
-- **What are common lazy loading pitfalls?** Circular dependencies between modules, over-splitting (too many small chunks), forgetting to use forChild() in feature modules, or not handling loading states in the UI.
-- **How does lazy loading affect SEO?** Search engines may not execute JavaScript to load lazy content. Use SSR with @angular/ssr (historically Angular Universal) or ensure critical content is in the initial bundle for SEO-sensitive pages.
 ### New Control Flow (@if, @for, @switch) - Angular 17+
 
 #### Definition
 
-Built-in control flow is a declarative template syntax introduced in Angular 17 as the modern alternative to the structural directives `*ngIf`, `*ngFor`, and `*ngSwitch`, which remain supported. The compiler understands `@if`, `@for`, and `@switch` directly, improving type checking and removing the need to import the corresponding structural directives.
+Built-in control flow is a declarative template syntax introduced in Angular 17 as the modern replacement for `NgIf`, `NgFor`, and `NgSwitch`, which are deprecated since Angular 20. The compiler understands `@if`, `@for`, and `@switch` directly, improving type checking and removing the need to import the corresponding directives.
+
+#### Example — Task Board
+
+```html
+@if (loading()) {
+  <p>Loading tasks...</p>
+} @else {
+  <ul>
+    @for (task of filteredTasks(); track task.id) {
+      <li>
+        {{ task.title }}
+        @switch (task.status) {
+          @case ('blocked') { <span>Blocked</span> }
+          @case ('done') { <span>Done</span> }
+          @default { <span>Open</span> }
+        }
+      </li>
+    } @empty {
+      <li>No tasks match this filter.</li>
+    }
+  </ul>
+}
+```
+
+**What it demonstrates:** `@if` selects a UI state, `@for` preserves item identity with `track`, `@empty` handles an empty result, and `@switch` renders status-specific content.
+
 #### Common Interview Questions
 
 - **What are the performance benefits of the new control flow?** Because the compiler handles these blocks directly, Angular does not create directive instances for them and can use an optimized list-diffing implementation for `@for`. This can reduce overhead, but bundle and runtime gains depend on the template and application; measure rather than promising a fixed improvement.
-- **How does the track clause differ from trackBy?** The track clause is required and more intuitive. Instead of a function reference, you directly specify the property to track: @for (item of items; track item.id). This provides better type safety and performance.
+- **How does the `track` clause differ from `trackBy`?** `@for` requires a tracking expression, commonly a stable unique property such as `track item.id`. It can also invoke a method, such as `track trackItem(item)`; the important part is returning stable identity rather than an array index for changing collections.
 - **What is the @empty block and when is it useful?** The @empty block displays content when the collection is empty, eliminating the need for separate `*ngIf` checks. It's executed only when the array is empty, making it more declarative.
 - **Why was this change introduced in Angular 17?** To improve developer experience with more intuitive syntax, better performance through compile-time optimizations, enhanced type checking, and alignment with modern JavaScript frameworks.
 - **Do you need to import anything to use the new control flow?** No, the new control flow is built into the Angular template compiler starting from version 17. It works out of the box without any imports.
-- **Can you mix old and new control flow syntax?** Yes, Angular supports gradual migration. You can use both `*ngIf` and @if in the same template, but it's recommended to migrate consistently for better maintainability.
+- **Can you mix old and new control flow syntax?** Existing applications can migrate incrementally, so both forms may appear during transition. Because the legacy control-flow directives are deprecated since Angular 20, use built-in blocks for new code and migrate consistently.
 - **How does the new syntax handle template scoping?** Variables defined in control flow blocks are block-scoped, preventing accidental variable leakage and providing better isolation than the previous directive approach.
 - **What happened to ng-template with the new control flow?** The new syntax eliminates the need for most ng-template usage. The blocks are self-contained and don't require external template references, making the code more readable.
+
 ### Deferrable Views (@defer) - Angular 17+
 
 #### Definition
 
 Deferrable views are a performance feature introduced in Angular 17 that can split a template block and eligible dependencies into a lazily loaded chunk. With `@defer`, an application declares when that block should load. Deferring genuinely non-critical work can reduce the initial JavaScript path and improve metrics such as LCP or INP; deferring critical content can instead make the experience worse.
+
+#### Example — Task Board
+
+```html
+<div aria-live="polite" aria-atomic="true">
+  @defer (on viewport; prefetch on idle) {
+    <app-task-analytics />
+  } @placeholder {
+    <div class="chart-skeleton">Analytics preview</div>
+  } @loading (after 200ms; minimum 300ms) {
+    <p>Loading analytics...</p>
+  } @error {
+    <p>Analytics could not be loaded.</p>
+  }
+</div>
+```
+
+**What it demonstrates:** The analytics chunk is prefetched while the browser is idle, rendered near the viewport, and given explicit placeholder, loading, error, and announcement states. The `@error` block handles deferred dependency-loading failures, not every API failure inside the component.
+
 #### Common Interview Questions
 
 - **How do deferrable views improve Core Web Vitals?** Deferrable views reduce the initial JavaScript bundle by loading non-critical components only when needed. This can improve Largest Contentful Paint (LCP) and help Interaction to Next Paint (INP) by keeping non-critical JavaScript work out of the initial load path.
-- **What triggers can be used with @defer?** `on viewport`: When the observed placeholder or trigger enters the viewport
-  `on interaction`: On click or keydown of the trigger element
-  `on hover`: On mouseover or focusin of the trigger element
-  `on immediate`: As soon as Angular finishes the initial non-deferred rendering work
-  on timer(x): After a specified time delay
-  on idle: When the browser is idle
-  when condition: Based on a custom condition
+- **What triggers can be used with `@defer`?** Common triggers include:
+  - `on viewport`: the observed placeholder or trigger enters the viewport.
+  - `on interaction`: the user clicks or presses a key on the trigger.
+  - `on hover`: a mouseover or focus-in event occurs.
+  - `on immediate`: Angular finishes the initial non-deferred rendering work.
+  - `on timer(duration)`: the configured delay expires.
+  - `on idle`: the browser becomes idle.
+  - `when condition`: an application expression becomes truthy.
 - **What's the difference between @placeholder and @loading blocks?** @placeholder shows content before the deferred block starts loading. @loading shows content during the loading process. The placeholder is typically static content, while loading shows progress indicators.
 - **How does prefetching work with deferrable views?** Prefetching loads the deferred content in the background without rendering it. Use prefetch on trigger to start loading when a condition is met, then the main on trigger to actually display it.
-- **Can you defer content that depends on async data?** Yes, combine @defer with async pipes or use the when condition to defer based on data availability:
-  ```html
-  @defer (when dataLoaded) {
-    <app-data-view [data]="data" />
-  }
-  ```
-- **What error handling options are available?** The @error block displays when loading fails. You can also use error handling in the component's constructor or ngOnInit to manage failures gracefully.
+- **Can you defer content that depends on async data?** Yes. Use a `when` condition derived from application state, or let the deferred component render its own async loading, success, empty, and error states. Keep code loading and data loading as separate concerns.
+- **What error handling options are available?** The `@error` block handles failure to load a deferred dependency. If the component loads successfully but its data request or runtime work fails, the component must render and recover from that separate failure itself.
 - **How do deferrable views differ from traditional lazy loading?** Traditional lazy loading works at the route/component level, while deferrable views work at the template block level within a single component, providing more granular control.
 - **When should you avoid using @defer?** Avoid deferring content that's critical for initial rendering, above-the-fold content, or components needed for immediate user interaction. Also avoid over-deferring, which can cause too many sequential loads.
 
@@ -3445,48 +3609,129 @@ Deferrable views are a performance feature introduced in Angular 17 that can spl
 
 #### Definition
 
-Modern Angular documents `animate.enter` and `animate.leave` as compiler-supported APIs for applying CSS classes or callbacks when elements enter or leave the DOM. This is useful for common enter/leave transitions, while more complex animation systems may still use dedicated CSS or JavaScript animation libraries.
+Modern Angular documents `animate.enter` and `animate.leave` as compiler-supported APIs for applying CSS classes or callbacks when elements enter or leave the DOM. The legacy `@angular/animations` package is deprecated since Angular 20.2; more complex animation systems can use CSS or dedicated JavaScript animation libraries.
+
+#### Example — Task Board
+
+```html
+@for (task of tasks(); track task.id) {
+  <li animate.enter="task-enter" animate.leave="task-leave">
+    {{ task.title }}
+  </li>
+}
+```
+
+```css
+.task-enter { animation: fade-in 160ms ease-out; }
+.task-leave { animation: fade-out 120ms ease-in; }
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+}
+
+@keyframes fade-out {
+  to { opacity: 0; transform: translateY(-4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .task-enter, .task-leave { animation: none; }
+}
+```
+
+**What it demonstrates:** Angular applies CSS animation classes while an item enters and delays DOM removal until its leave animation finishes; the media query respects reduced-motion preferences.
+
 #### Common Interview Questions
 
 - **When would you use animate.enter and animate.leave?** Use them for focused enter/leave DOM animations where Angular should coordinate class application or element removal timing. Treat them as a useful modern Angular API, but a lower-priority interview topic than DI, Signals, forms, or change detection.
 
-### SSR & Hydration (Server-Side Rendering) - Angular 16+
+### SSR, Hybrid Rendering & Hydration
 
 #### Definition
 
 Server-Side Rendering (SSR) generates HTML on the server and sends it to the client. It can improve initial content delivery, crawlability, and social previews when server latency, caching and hydration are handled well. Hydration lets Angular reuse the server-rendered DOM on the client, attach behavior and make the application interactive. Modern Angular supports non-destructive hydration instead of discarding and recreating the server DOM.
 
 Since Angular 21, server bootstrap accepts a `BootstrapContext`. On the server, `getPlatform()` returns `null`, while `destroyPlatform()` is a no-op.
+
+#### Example — Task Board
+
+```ts
+import { ApplicationConfig, mergeApplicationConfig } from '@angular/core';
+import { provideClientHydration } from '@angular/platform-browser';
+import {
+  provideServerRendering,
+  RenderMode,
+  ServerRoute,
+  withRoutes,
+} from '@angular/ssr';
+
+export const serverRoutes: ServerRoute[] = [
+  { path: '', renderMode: RenderMode.Prerender },
+  { path: 'projects/:projectId', renderMode: RenderMode.Server },
+  { path: 'projects/:projectId/tasks', renderMode: RenderMode.Client },
+  { path: '**', renderMode: RenderMode.Server },
+];
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideClientHydration()],
+};
+
+export const serverConfig = mergeApplicationConfig(appConfig, {
+  providers: [provideServerRendering(withRoutes(serverRoutes))],
+});
+```
+
+**What it demonstrates:** The registered server routes prerender a static landing page, render a public project per request, and leave an authenticated workspace to CSR. Hydration reuses SSR/prerendered DOM, while backend authorization still protects data.
+
 #### Common Interview Questions
 
-- **What are the benefits of SSR over client-side rendering?** SSR improves SEO (search engines can crawl content), performance (faster First Contentful Paint), social media sharing (proper meta tags), and accessibility (content available without JavaScript).
+- **What are the benefits of SSR over client-side rendering?** SSR can deliver meaningful HTML earlier and help crawlability and social previews. It may improve initial rendering on some routes, but server latency, caching, client JavaScript, and hydration still determine real performance. Semantic HTML can be read before JavaScript loads, while interactive behavior still requires successful client startup.
 - **What is hydration and why is it important?** Hydration is the process where Angular "revives" server-rendered HTML on the client by attaching event listeners and making it interactive. Modern Angular uses non-destructive hydration that preserves server-rendered content without flickering.
-- **What common issues occur with SSR and how do you solve them?** Window/Document references: Use isPlatformBrowser() check or PLATFORM_ID injection
-  Third-party browser libraries: Use lazy loading or conditional imports
-  Authentication tokens: Use cookies instead of localStorage for server compatibility
-  API calls: Ensure URLs are absolute and work in server environment
+- **What common issues occur with SSR and how do you solve them?** Common examples include:
+  - Browser-only side effects: keep the initial rendered DOM consistent and use `afterNextRender()` or platform-specific providers.
+  - Third-party browser libraries: defer initialization or load them only in the browser without changing the initial hydrated structure.
+  - Authentication state: use a server-readable session architecture when SSR must render user-specific content; never serialize secrets into hydration data.
+  - API calls: use URLs and credentials appropriate to both server and browser execution.
 - **How do you handle authentication in SSR applications?** Prefer a server-managed session with a `Secure`, `HttpOnly`, appropriately `SameSite` cookie when the architecture allows it. The server can read the cookie while client JavaScript cannot. Because cookies are sent automatically, also apply CSRF defenses, origin validation, narrow cookie scope, session rotation and authorization checks; do not serialize secrets into hydration state.
 - **What is the difference between prerendering and SSR?** Prerendering generates HTML at build time for routes known to the build and can fetch data while generating them. It is not limited to hard-coded content, but it cannot use request-specific state and requires a strategy for dynamic route parameters. SSR renders on demand for each request and can use request data.
 - **How does Angular Universal differ from modern Angular SSR?** Angular Universal was the original SSR solution/name. Modern Angular SSR is centered on @angular/ssr, is integrated into the framework, has better hydration, and uses the same application configuration as client-side rendering.
-- **What are hydration errors and how do you avoid them?** Hydration errors occur when server-rendered HTML doesn't match client-rendered HTML. Avoid by:
-  Not manipulating DOM directly in components
-  Using isPlatformBrowser() for browser-specific code
-  Ensuring async operations resolve consistently on server and client
-- **How do you optimize SSR performance?** Implement caching strategies for rendered pages
-  Use TransferState to avoid duplicate API calls
-  Optimize bundle size with lazy loading
-  Use CDN for static assets
-- **What is incremental hydration in Angular?** Incremental hydration builds on SSR, hydration, and `@defer`. Enable it with provideClientHydration(withIncrementalHydration()), then use `@defer` hydrate triggers such as `hydrate on interaction`, `hydrate on viewport`, `hydrate when condition`, or `hydrate never` to delay hydration of selected subtrees.
+- **What are hydration errors and how do you avoid them?** They occur when the server and client DOM structures differ. Keep initial template output deterministic, avoid direct DOM manipulation before hydration, use valid HTML, and move browser-only side effects to `afterNextRender()`. An `@if (isPlatformBrowser(...))` branch that changes initial markup can itself create a mismatch.
+- **How do you optimize SSR performance?** Cache safe rendered responses, use transfer caching to avoid duplicate reads, keep server work bounded, optimize client bundles, and serve static assets through an appropriate cache or CDN. Measure server latency and hydration cost rather than assuming SSR is automatically faster.
+- **What is incremental hydration in Angular?** It builds on SSR, hydration, and `@defer`. In Angular 22 it is enabled by default through `provideClientHydration()` and can be disabled with `withNoIncrementalHydration()`. Hydrate triggers such as `hydrate on interaction`, `hydrate on viewport`, `hydrate when condition`, and `hydrate never` control selected subtrees.
 - **How does zoneless SSR know when async work is done?** Use PendingTasks for async work that must finish before server serialization. In zoneless apps, Angular cannot rely on Zone.js stability signals, so PendingTasks lets SSR wait for relevant data loading or rendering work.
 
-### Angular Aria (Angular 22 Status Caveat)
+### Angular Aria
 
 #### Definition
 
-Introduced as a developer preview in Angular 21, `@angular/aria` has conflicting official status labels as of July 12, 2026. The [Angular 22 release announcement](https://blog.angular.dev/announcing-angular-v22-c52bb83a4664) says its APIs were stabilized and all twelve patterns are production-ready, while the current [roadmap](https://angular.dev/roadmap) and [API reference](https://angular.dev/reference) still show Developer Preview language or badges for individual `aria/*` symbols. The patterns cover autocomplete, listbox, select, multiselect, combobox, menu, menubar, toolbar, accordion, tabs, tree, and grid interactions. They supply accessible interaction primitives, not styling or automatic application-wide WCAG conformance.
+Introduced as a developer preview in Angular 21, `@angular/aria` is stable in Angular 22 according to the [release announcement](https://blog.angular.dev/announcing-angular-v22-c52bb83a4664), [current guide](https://angular.dev/guide/aria/overview), and [API reference](https://angular.dev/api/aria/listbox/Listbox). Some [roadmap](https://angular.dev/roadmap) wording still describes stabilization as future work, so use the release and API documentation for the installed package version. Its twelve patterns cover autocomplete, listbox, select, multiselect, combobox, menu, menubar, toolbar, accordion, tabs, tree, and grid interactions. They supply accessible interaction primitives, not styling or automatic application-wide WCAG conformance.
+
+#### Example — Task Board
+
+```ts
+import { Listbox, Option } from '@angular/aria/listbox';
+
+@Component({
+  imports: [Listbox, Option],
+  template: `
+    <ul ngListbox aria-label="Filter tasks by status"
+        selectionMode="explicit" multi [(value)]="selectedStatuses">
+      @for (status of statuses; track status) {
+        <li ngOption [value]="status">{{ status }}</li>
+      }
+    </ul>
+  `,
+})
+export class StatusFilterComponent {
+  readonly statuses: TaskStatus[] = ['todo', 'in-progress', 'blocked', 'done'];
+  selectedStatuses: TaskStatus[] = ['todo'];
+}
+```
+
+**What it demonstrates:** Angular Aria supplies keyboard navigation, selection state, and screen-reader semantics, while the application still owns styling, filtering behavior, labels, and end-to-end accessibility testing.
+
 #### Common Interview Questions
 
-- **Can Angular Aria be treated as stable in Angular 22?** The v22 release announcement says the collection is stable and production-ready, but current per-symbol API badges have not been made consistent with that announcement. Check the exact installed version and symbol documentation before relying on normal stable-API compatibility guarantees.
+- **Can Angular Aria be treated as stable in Angular 22?** Yes. The v22 release announcement and current guide/API treat all twelve patterns as stable and production-ready. Check the installed package's API when targeting another version; roadmap prose may lag the released status.
 - **When would you use `@angular/aria` instead of Angular Material?** Use `@angular/aria` when you need low-level accessible behavior while owning all rendering, styling, and application semantics yourself. Use Angular Material when you want complete, styled UI components.
 
 ## Modern JavaScript Deep Dive
@@ -4400,7 +4645,7 @@ The following comparisons summarize key differences between Angular, React, and 
 | Architecture & Philosophy | Full-featured, "batteries-included" framework with strong opinions. | Lean UI library focused on flexibility, requiring choices for routing, state, etc. | Progressive framework; can be used for simple enhancement or full SPAs with official libraries. |
 | Building Blocks | Components, templates, and directives compose the UI; services provide logic. | Function components and hooks compose the UI; logic is encapsulated in custom hooks. | Single-File Components (SFCs) with templates, script, and style; logic via Options API or Composition API. |
 | Template Syntax | HTML templates with built-in control flow (`@if`, `@for`, `@switch`), bindings such as `[(ngModel)]`, and pipes; legacy structural directives remain supported. | JSX with JavaScript expressions, conditions and array operations. | HTML-based templates with directives (`v-if`, `v-for`, `v-model`) and template expressions. |
-| Loops & Conditionals | Prefer `@for`, `@if` and `@switch` in modern Angular; `*ngFor`, `*ngIf` and `*ngSwitch` remain relevant in older code. | Use array methods such as `map` plus JavaScript conditions, short-circuit expressions or ternaries. | Use `v-for`, `v-if`, `v-else-if`, `v-else` and `v-show`. |
+| Loops & Conditionals | Prefer `@for`, `@if` and `@switch` in modern Angular; `*ngFor`, `*ngIf` and `[ngSwitch]` remain relevant in older code. | Use array methods such as `map` plus JavaScript conditions, short-circuit expressions or ternaries. | Use `v-for`, `v-if`, `v-else-if`, `v-else` and `v-show`. |
 | Styling & Classes | Binding syntax: [ngClass], [ngStyle]. | Use className, conditional expressions, or libraries like classnames. | Direct class/style binding, :class (object/array), :style (object/array) bindings. |
 | Local State & Reactivity | Signals and RxJS; zoneless is the default for new projects since Angular 21, and new Angular 22 applications default components to OnPush. | `useState` and `useReducer`; state updates schedule rendering work. | `ref()` and `reactive()` in Composition API, or `data()` in Options API, with automatic dependency tracking. |
 | Global State Management | Services + RxJS, NgRx (Redux), NgRx/ComponentStore, Akita. | Context API, Redux Toolkit, Zustand, Jotai, MobX; Recoil only in legacy codebases. | Pinia (official, modern), Vuex (legacy). Composables for shared stateful logic. |

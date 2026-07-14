@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.0] - 2026-07-14
+
+### Added
+- Added a shared Task Board scenario and focused code examples across every Angular topic.
+
+### Changed
+- Consolidated overlapping Angular lazy-loading sections and aligned the examples with current standalone, signals, forms, hybrid-rendering, and accessibility APIs.
+
 ## [1.9.0] - 2026-07-13
 
 ### Added
