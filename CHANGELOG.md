@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.0] - 2026-07-14
+
+### Added
+- Added a shared Task Board scenario and focused code examples across every React topic.
+
+### Changed
+- Clarified state ownership, Context, Effects, forms, routing, remote caching, HTTP transport, SSR/hydration, framework boundaries, code splitting, class-only capabilities, and portals for modern React 19.2 applications.
+- Standardized current terminology such as Function Components, Compound Components, TanStack Query, React 19 ref handling, and the distinction between Hooks and related React APIs.
+
 ## [1.10.0] - 2026-07-14
 
 ### Added

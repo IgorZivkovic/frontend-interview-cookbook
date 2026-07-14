@@ -1775,29 +1775,77 @@ AsyncLocalStorage (async_hooks) – per-request context storage across async bou
   Bottleneck detection in async pipelines
 
 ## React Deep Dive
+
 This section explores advanced React concepts beyond basic hooks and components. As of July 2026, React 19.2.x is the current stable line; npm's latest stable patch is 19.2.7. React Server Components and Server Functions should use the latest patched 19.2.x packages because earlier React 19 RSC packages were affected by security vulnerabilities; 19.2.4 was the minimum fixed version in the January 2026 advisory, but 19.2.7 is the current recommendation.
+
+### Running Example: Task Board
+
+The examples below are focused excerpts from one Task Board application. Imports, API helpers, and styling unrelated to the concept are omitted. Representative files include `task-types.ts`, `task-api.ts`, `task-board.tsx`, `task-card.tsx`, `task-editor.tsx`, and `tasks-route.tsx`.
+
+```tsx
+export type TaskStatus = 'todo' | 'in-progress' | 'blocked' | 'done';
+
+export interface Task {
+  readonly id: string;
+  readonly title: string;
+  readonly status: TaskStatus;
+  readonly assigneeId: string | null;
+}
+
+export interface TaskDraft {
+  title: string;
+}
+```
 
 ### State vs Props
 
 #### Definition
 
 State and props are the two fundamental data sources for React components, but their relationship and usage patterns have evolved significantly across React versions, particularly with the introduction of hooks and modern state management patterns.
+
 #### Evolution of State Management
 
 - React 0.14-16.7: State only available in class components via this.state and this.setState()
-- React 16.8 (2019): useState hook brings state to functional components
+- React 16.8 (2019): useState brings local state to function components
 - React 18 (2022): Automatic batching, concurrent state updates with startTransition
 - React 19 (2024): Enhanced state patterns with useOptimistic and form state hooks
+
 #### Props Evolution
 
 - Early React: Props primarily for parent-child communication
 - React 16.3 (2018): New Context API enables prop drilling avoidance
 - Modern React: Props combined with composition patterns and state management libraries
 
+#### Example — Task Board
+
+```tsx
+function TaskCard({ task }: { task: Task }) {
+  const [expanded, setExpanded] = useState(false);
+  const detailsId = `task-${task.id}-details`;
+
+  return (
+    <article>
+      <h3>{task.title}</h3>
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-controls={detailsId}
+        onClick={() => setExpanded((value) => !value)}
+      >
+        {expanded ? 'Hide details' : 'Show details'}
+      </button>
+      {expanded && <p id={detailsId}>Status: {task.status}</p>}
+    </article>
+  );
+}
+```
+
+**What it demonstrates:** `task` is an immutable input snapshot, while `expanded` is private UI memory owned by this card instance.
+
 #### Common Interview Questions
 
-- **How has the relationship between state and props evolved since early React versions?** Early React had a clear separation: props for external data flow, state for internal management. Modern React blurs these lines with context, state management libraries, and patterns like lifting state up, making data flow more flexible but requiring clearer architectural decisions.
-- **What are the key differences in state management between class and functional components?** Class components use this.setState() which merges updates, while functional components use state setters that replace values. Functional components also enable more granular state through multiple useState calls and better encapsulation with custom hooks.
+- **How has the relationship between state and props evolved since early React versions?** The distinction remains precise: props are immutable input snapshots from a parent, while state is memory owned by a component position. Context and external stores change how values are distributed, not whether they are props or state.
+- **What are the key differences in state management between class and function components?** Class `setState` shallow-merges object updates, while a Hook setter replaces that state value. Function components can split independent values across Hooks and extract related behavior into custom Hooks.
 - **How do React 18's concurrent features affect state updates?** startTransition allows marking state updates as non-urgent, enabling React to interrupt rendering and keep the UI responsive during heavy state transitions.
 - **When should state be lifted up to a parent component versus kept local?** Lift state up when multiple components need to share and synchronize the same data. Keep state local when it's only relevant to a single component or its immediate children. Modern state management libraries often provide alternative patterns via context or global stores.
 - **How has the "props down, events up" pattern evolved with hooks and context?** While the fundamental pattern remains, context API and state management libraries now provide alternatives to prop drilling. However, explicit props are still preferred for component reusability and clarity.
@@ -1809,15 +1857,37 @@ State and props are the two fundamental data sources for React components, but t
 #### Definition
 
 React emphasizes unidirectional data flow and explicit communication patterns. Components communicate through props, callbacks, and shared state, with Context API and custom hooks providing solutions for complex scenarios. Understanding React's composition model is key to effective component communication.
+
+#### Example — Task Board
+
+```tsx
+function TaskBoard({ tasks }: { tasks: readonly Task[] }) {
+  const [status, setStatus] = useState<TaskStatus | 'all'>('all');
+  const visibleTasks =
+    status === 'all' ? tasks : tasks.filter((task) => task.status === status);
+
+  return (
+    <>
+      <TaskFilters value={status} onChange={setStatus} />
+      <TaskList tasks={visibleTasks} />
+    </>
+  );
+}
+```
+
+**What it demonstrates:** The parent lifts shared filter state above two siblings, passes data down as props, and receives the child event through `onChange`.
+
 #### Common Interview Questions
 
 - **What are the main component communication patterns in React and when should you use each?** Use Props for parent-to-child data flow, Callback Functions for child-to-parent communication, Context API for sharing data across many components, Lifting State Up for sibling communication, Custom Hooks for logic sharing, and State Management Libraries (Redux, Zustand) for complex global state.
-- **How do you choose between Context API and prop drilling?** Use prop drilling for 2-3 levels of component hierarchy where the data flow is clear. Use Context API when you have deeply nested components that need the same data, or when intermediate components don't need the data (prop drilling becomes messy).
+- **How do you choose between Context API and prop drilling?** There is no fixed depth threshold. Prefer explicit props or composition while the ownership remains clear; use Context for cross-cutting or deeply needed values whose intermediate components should not participate in the contract.
 - **What is the difference between lifting state up and using Context API?** Lifting state up moves shared state to the nearest common ancestor, making data flow explicit but potentially causing prop drilling. Context API allows components to access state directly without passing props through every level, but can make data flow less transparent.
-- **How do custom hooks help with component communication?** Custom hooks encapsulate and share stateful logic between components, allowing multiple components to use the same logic without sharing the actual state instance. Each component gets its own isolated state from the hook.
-- **When should you upgrade from local state to a state management library?** Move to state management when: multiple unrelated components need the same data, you need time-travel debugging, state logic becomes complex and hard to test, or when prop drilling and context become unmanageable.
-- **What changed about refs in React 19?** React 19 supports ref as a prop for function components, so new components usually do not need `forwardRef`. It also supports callback ref cleanup functions that React calls when the DOM node is removed. `forwardRef` remains supported and common in existing code.
+- **How do custom hooks help with component communication?** Custom Hooks share behavior, not automatically one state instance. State declared inside a Hook is isolated per call, but a Hook can intentionally connect callers to the same Context or external store.
+- **When should you upgrade from local state to a state management library?** Consider one when state ownership spans unrelated subtrees and you need selective subscriptions, centralized transitions, persistence, or specialized tooling. First separate client state from remote server state and keep state as local as its consumers allow.
+- **What changed about refs in React 19?** Function components can receive `ref` as a prop, and callback refs can return cleanup functions. New React 19 code normally does not need `forwardRef`; it remains available for compatibility, while React documentation says it will be deprecated in a future release.
+
 #### Communication Patterns Reference
+
 1. Props (Parent -> Child)
    - Step 1: Parent passes data to child via props: `<Child data={value} />`.
    - Step 2: Child receives props as function parameters: function Child({ data }).
@@ -1834,10 +1904,10 @@ React emphasizes unidirectional data flow and explicit communication patterns. C
    - Step 3: Pass state and callbacks down as props to child components.
    - Note: This makes data flow explicit but can lead to prop drilling in deep hierarchies.
 4. Context API (Any components)
-   - Step 1: Create context: const MyContext = createContext().
-   - Step 2: Wrap components with Provider: `<MyContext.Provider value={data}>`.
-   - Step 3: Consume context in children: const data = useContext(MyContext).
-   - Note: Context value changes trigger re-renders in all consuming components. Optimize with memoization.
+   - Step 1: Create a typed nullable context: `const MyContext = createContext<MyValue | null>(null)`.
+   - Step 2: In React 19, provide it with `<MyContext value={data}>`; `.Provider` remains the compatible older form.
+   - Step 3: Read and validate it in a child with `useContext(MyContext)`.
+   - Note: A changed provider value re-renders consumers of that context. Stabilize semantically unchanged object/function values, and split contexts or use a selector-capable store when consumers need different update frequencies.
 5. useReducer + Context (Global state)
    - Step 1: Create reducer function and initial state.
    - Step 2: Use useReducer hook in parent component.
@@ -1847,29 +1917,60 @@ React emphasizes unidirectional data flow and explicit communication patterns. C
    - Step 1: Create hook that uses built-in hooks: function useCustomHook() { ... }.
    - Step 2: Multiple components use the same custom hook.
    - Step 3: Each component gets isolated state instance from the hook.
-   - Note: Hooks share logic but not state. For shared state, combine with Context or state management.
+   - Note: State created inside the Hook is per call. A Hook can still read a shared Context or external store when shared state is intentional.
 7. Refs as props / forwardRef (Parent accessing Child)
    - Step 1: In React 19+ code, let the child accept `ref` as a prop: `function Child({ ref }) { ... }`.
    - Step 2: Attach the ref to a DOM element or expose a limited imperative API with `useImperativeHandle`.
    - Step 3: Parent creates ref and passes to child: `<Child ref={childRef} />`.
-   - Note: `forwardRef()` is still supported for compatibility and pre-React 19 patterns. Use refs sparingly as they break component encapsulation; prefer declarative props when possible.
+   - Note: `forwardRef()` still works for compatibility and pre-React 19 code, but React documentation says it will be deprecated in a future release. Prefer declarative props when an imperative escape hatch is unnecessary.
 8. State Management Libraries (Global)
    - Step 1: Choose library (Redux Toolkit, Zustand, Jotai) and set up store.
    - Step 2: Create slices/stores with state and actions.
    - Step 3: Components use hooks to access state and dispatch actions.
-   - Note: Redux Toolkit is recommended for Redux; Zustand is simpler for most use cases.
-### Built-in hooks
+   - Note: Redux Toolkit is the standard way to write Redux; smaller external stores expose different trade-offs in API size, subscriptions, middleware, and tooling.
+
+### Built-in Hooks & React APIs
 
 #### Definition
 
-Hooks are functions that enable functional components to use React features like state, lifecycle, and context that were previously only available in class components. Introduced in React 16.8, hooks represent a fundamental shift in React's architecture towards functional programming patterns.
+Hooks let function components use React state, context, refs, Effects, and concurrent features. This section also includes related built-ins such as `use()` and `<Activity>`; despite its name, `use()` is a React API with different call rules rather than a Hook.
+
 #### Version Evolution Timeline
 
 - React 16.8 (2019): Basic Hooks - useState, useEffect, useContext, useReducer, useCallback, useMemo, useRef, useImperativeHandle, useLayoutEffect
 - React 18 (2022): Concurrent Hooks - useId, useSyncExternalStore, useTransition, useDeferredValue
-- React 19 (2024): Action Hooks - use hook, useOptimistic, useActionState, and react-dom's useFormStatus
-- React 19.2 (2025): Latest stable 19.2.x line - useEffectEvent, `<Activity>`, cacheSignal for React Server Components, Performance Tracks, and partial prerendering APIs
+- React 19 (2024): Action and resource APIs - `use()`, useOptimistic, useActionState, and react-dom's useFormStatus
+- React 19.2 (2025): useEffectEvent plus related stable APIs such as `<Activity>`, cacheSignal for React Server Components, Performance Tracks, and partial prerendering support
 - React 19.x APIs listed above are stable in the React 19 line; `<ViewTransition>` and addTransitionType remain Canary APIs and should not be described as stable.
+
+#### Example — Task Board
+
+```tsx
+const DeferredTaskList = memo(TaskList);
+
+function SearchableTaskList({ tasks }: { tasks: readonly Task[] }) {
+  const [query, setQuery] = useState('');
+  const deferredQuery = useDeferredValue(query);
+  const visibleTasks = useMemo(
+    () => tasks.filter((task) => task.title.includes(deferredQuery)),
+    [tasks, deferredQuery],
+  );
+
+  return (
+    <>
+      <input
+        aria-label="Search tasks"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+      />
+      <DeferredTaskList tasks={visibleTasks} />
+    </>
+  );
+}
+```
+
+**What it demonstrates:** The input update stays urgent, while `useDeferredValue` lets an expensive result list lag behind it; `useMemo` avoids recalculating that list for unrelated renders.
+
 #### Common Interview Questions
 
 - **How did hooks change React development patterns since their introduction in 16.8?** Hooks made function components the standard choice for state, effects, context, reusable stateful logic, and concurrent features. Classes remain supported, and React still has no direct function-component equivalents for Error Boundaries or `getSnapshotBeforeUpdate`.
@@ -1901,12 +2002,28 @@ Hooks are functions that enable functional components to use React features like
 #### Definition
 
 The React component lifecycle refers to the series of phases a component goes through from creation to removal from the DOM. Function components use Hooks, but an Effect should be understood as synchronization with an external system rather than as a one-to-one replacement for class lifecycle methods: one synchronization process may start, clean up, and restart several times while a component remains mounted.
+
 #### Lifecycle Phases
 
 - **Mounting** - Component is created and inserted into DOM
 - **Updating** - Component re-renders due to state or prop changes
 - **Unmounting** - Component is removed from DOM
-- **Error Handling** - Catching errors in child components
+
+#### Example — Task Board
+
+```tsx
+function TaskLiveUpdates({ boardId }: { boardId: string }) {
+  useEffect(() => {
+    const connection = createTaskConnection(boardId);
+    connection.connect();
+    return () => connection.disconnect();
+  }, [boardId]);
+
+  return <p>Live task updates enabled.</p>;
+}
+```
+
+**What it demonstrates:** An Effect starts one external synchronization process and returns symmetrical cleanup before a dependency-driven restart or unmount.
 
 #### Common Interview Questions
 
@@ -1925,24 +2042,52 @@ The React component lifecycle refers to the series of phases a component goes th
 #### Definition
 
 Context provides a way to pass data through the component tree without having to pass props down manually at every level. The Context API has undergone significant evolution, from an experimental feature to a core React pattern for state distribution.
+
 #### Version Evolution Timeline
 
 - React 0.14 (2015): Experimental context (unstable, undocumented)
 - React 16.3 (2018): New Context API - stable, documented API with createContext, Provider, Consumer
 - React 16.8 (2019): useContext hook simplifies context consumption
 - React 18 (2022): Concurrent rendering compatibility
-- React 19 (2024): use hook can consume context; `<Context value={...}>` can be used as a provider shorthand
+- React 19 (2024): the `use()` API can consume Context; `<Context value={...}>` is the provider shorthand
+
+#### Example — Task Board
+
+```tsx
+type TaskApi = {
+  list: (projectId: string, signal?: AbortSignal) => Promise<readonly Task[]>;
+  create: (
+    projectId: string,
+    draft: TaskDraft,
+    signal?: AbortSignal,
+  ) => Promise<Task>;
+};
+
+const TaskApiContext = createContext<TaskApi | null>(null);
+
+function TaskApiProvider({ api, children }: PropsWithChildren<{ api: TaskApi }>) {
+  return <TaskApiContext value={api}>{children}</TaskApiContext>;
+}
+
+function useTaskApi() {
+  const api = useContext(TaskApiContext);
+  if (!api) throw new Error('TaskApiProvider is missing');
+  return api;
+}
+```
+
+**What it demonstrates:** React 19's provider shorthand distributes one scoped service dependency without prop drilling, while the custom consumer fails clearly when provider wiring is missing.
+
 #### Common Interview Questions
 
-- **How has the Context API evolved from its experimental beginnings to the current stable API?** The API moved from an unstable, type-unsafe pattern using contextTypes to a first-class, type-safe API with createContext, explicit Providers, and multiple consumption methods (Consumer render prop, useContext hook).
+- **How has the Context API evolved from its experimental beginnings to the current stable API?** It moved from the legacy `contextTypes` mechanism to `createContext`, explicit providers, Consumers, and `useContext`. TypeScript generics can add static type checking, but Context itself is a runtime transport mechanism.
 - **What changed for Context providers in React 19?** New code can render the context object directly as a provider, for example `<ThemeContext value={theme}>...</ThemeContext>`. `<ThemeContext.Provider>` remains supported and common in existing codebases.
-- **What performance improvements were introduced in React 16.3+ context compared to the legacy context?** The new Context API uses reference identity for value propagation, enabling better optimizations and more predictable re-render behavior compared to the legacy context's experimental implementation.
+- **How does modern Context propagation decide whether to update consumers?** React compares the previous and next provider values with `Object.is`. When that value changes, consumers of that Context re-render even if an ancestor is memoized.
 - **How does the useContext hook (16.8+) improve upon the Consumer render prop pattern?** useContext provides a more ergonomic, hook-based consumption method that avoids nested render props, improves code readability, and works better with TypeScript and custom hooks.
 - **What are common performance pitfalls with Context, and how have modern patterns addressed them?** Pitfall: Providing a new object value on every render causes all consumers to re-render. Solutions: useMemo for object stabilization, splitting context into state/dispatch, using selectors with libraries like use-context-selector.
 - **How does context work with React 18's concurrent features?** Context values are properly propagated through concurrent renders, and context consumers respect suspense boundaries and transition priorities, maintaining consistent state across interrupted renders.
-- **What's the difference between using context and prop drilling?** When is each appropriate?
-  Context is ideal for truly global data (theme, auth, localization) or deep prop drilling. Explicit props are better for component composition and when data flow needs to be clear and traceable.
-- **How has the role of context evolved with the rise of state management libraries?** Context shifted from being a potential state management solution to primarily a dependency injection mechanism. Modern patterns often combine context with libraries like Redux Toolkit or Zustand for complex state needs.
+- **What's the difference between using context and prop drilling? When is each appropriate?** Context is scoped to the nearest provider and works well for cross-cutting or deeply needed values such as theme, authentication, or localization. Explicit props are better when ownership and data flow should remain visible at the call site.
+- **Is Context a state manager?** Context transports a value; it does not define state transitions, persistence, selectors, or side effects. It can distribute state from `useState`, `useReducer`, or an external store, and it is also useful for dependency injection.
 - **What are the limitations of context compared to dedicated state management solutions?** Context triggers re-renders for all consumers when value changes (no selective subscriptions), lacks built-in devtools, middleware, or performance optimizations that state libraries provide.
 
 ### Error Boundaries
@@ -1950,28 +2095,60 @@ Context provides a way to pass data through the component tree without having to
 #### Definition
 
 Error Boundaries are React components that catch errors thrown while React renders or processes supported lifecycle work in their descendant tree, log those errors, and display fallback UI instead of the crashed subtree. They do not act as a general JavaScript exception handler for every callback or asynchronous task.
+
 #### Version Evolution Timeline
 
 - React 16 (2017): Error Boundaries introduced as class components with componentDidCatch
-- React 16.2+: Community libraries emerge for functional component error boundaries
-- React 18 (2022): Improved error recovery and development error overlay
+- React 16.2+: Community libraries add function-oriented wrappers around class boundaries
 - React 19 (2024): Continued class-component requirement for Error Boundary fallback UI, plus root error logging options
+
+#### Example — Task Board
+
+```tsx
+type BoundaryState = { failed: boolean };
+
+class TaskPanelBoundary extends Component<PropsWithChildren, BoundaryState> {
+  state: BoundaryState = { failed: false };
+
+  static getDerivedStateFromError(): BoundaryState {
+    return { failed: true };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('Task panel failed', error, info.componentStack);
+  }
+
+  render() {
+    return this.state.failed
+      ? <p role="alert">This task panel could not be displayed.</p>
+      : this.props.children;
+  }
+}
+
+<TaskPanelBoundary>
+  <TaskAnalytics />
+</TaskPanelBoundary>
+```
+
+**What it demonstrates:** The class boundary replaces only the failed feature subtree and reports render/lifecycle errors after React commits the fallback.
+
 #### Common Interview Questions
 
 - **Why are Error Boundaries still implemented as class components in modern React?** A boundary uses static `getDerivedStateFromError` to derive fallback state during rendering and `componentDidCatch` for commit-time reporting. React 19 has no direct Hook equivalent, although libraries can wrap the class implementation in a function-oriented API.
 - **How has error handling evolved with community solutions despite the class component requirement?** Libraries like react-error-boundary provide functional-style APIs that wrap the class component implementation, offering better developer experience with features like error resetting, recovery callbacks, and more flexible fallback UIs.
 - **What types of errors do Error Boundaries catch versus what they miss?** Caught: errors during rendering, constructors, supported lifecycle methods, and errors thrown from a Transition function. Not caught: event handlers, detached asynchronous callbacks such as `setTimeout` or unhandled Promise work, server-side rendering errors, and errors thrown by the boundary itself.
-- **How do you handle errors that Error Boundaries can't catch?** Use window.onerror for global errors, window.addEventListener('unhandledrejection') for promise rejections, and try/catch blocks in event handlers and async operations.
+- **How do you handle errors that Error Boundaries can't catch?** Handle event and asynchronous failures close to the operation with `try`/`catch`, explicit rejection state, or the data layer's error model. Use `window.onerror` and `unhandledrejection` as last-resort telemetry for otherwise uncaught failures, not as the normal UI recovery path.
 - **What root-level error options did React 19 add?** `createRoot()` and `hydrateRoot()` support `onCaughtError` for errors caught by Error Boundaries, `onUncaughtError` for errors not caught by an Error Boundary, and `onRecoverableError` for errors React can automatically recover from. These are for production logging/reporting and do not replace Error Boundary fallback UI.
-- **What improvements did React 18 and 19 bring to error handling?** React 18 improved component stacks and recovery in concurrent rendering. React 19 improved error logging and added root-level reporting hooks for caught, uncaught, and recoverable errors.
+- **What did React 19 add for root error reporting?** Root creation accepts separate callbacks for caught, uncaught, and recoverable errors, letting production telemetry distinguish those paths without replacing feature-level Error Boundary fallbacks.
 - **How would you implement error boundaries for a large application?** Use a hierarchical approach: a top-level boundary for critical errors, feature-level boundaries for sections of the app, and component-level boundaries for isolated features. Each level can have different fallback strategies.
 - **What's the difference between getDerivedStateFromError and componentDidCatch?** Static `getDerivedStateFromError` is a pure render-phase state derivation used to choose fallback UI. `componentDidCatch` runs after React commits the fallback and is the place for side effects such as error reporting.
 
-### Render Props / HOCs / Composite components
+### Render Props / HOCs / Compound Components
 
 #### Definition
 
-These were the primary composition patterns before hooks revolutionized React component reuse. Understanding their evolution shows how React's composition model progressed from complex patterns to simpler hook-based solutions.
+HOCs and render props were common ways to reuse stateful logic before Hooks, while compound components solve a different problem: designing coordinated, composable UI APIs. All remain supported, but modern code usually chooses a custom Hook for logic reuse and composition for markup ownership.
+
 #### Version Evolution Timeline
 
 - React 0.14-15 (2015-2016): HOCs dominate - the primary reuse pattern (influenced by React-Redux connect)
@@ -1979,6 +2156,49 @@ These were the primary composition patterns before hooks revolutionized React co
 - React 16.3 (2018): Context API enables compound components without prop drilling
 - React 16.8 (2019): Custom hooks largely replace both HOCs and render props for logic reuse
 - React 18+ (2022): Patterns coexist with hooks, each serving specific use cases
+
+#### Example — Task Board
+
+```tsx
+type TaskStatusPickerValue = {
+  active: TaskStatus;
+  select: (status: TaskStatus) => void;
+};
+
+const TaskStatusPickerContext = createContext<TaskStatusPickerValue | null>(null);
+
+function TaskStatusPicker({
+  active,
+  select,
+  children,
+}: PropsWithChildren<TaskStatusPickerValue>) {
+  const value = useMemo(() => ({ active, select }), [active, select]);
+
+  return (
+    <TaskStatusPickerContext value={value}>
+      <div role="group" aria-label="Task status">{children}</div>
+    </TaskStatusPickerContext>
+  );
+}
+
+function TaskStatusOption({ status }: { status: TaskStatus }) {
+  const picker = useContext(TaskStatusPickerContext);
+  if (!picker) throw new Error('TaskStatusOption requires TaskStatusPicker');
+
+  return (
+    <button
+      type="button"
+      aria-pressed={picker.active === status}
+      onClick={() => picker.select(status)}
+    >
+      {status}
+    </button>
+  );
+}
+```
+
+**What it demonstrates:** A compound component exposes a declarative UI API while sharing private coordination state through context; Hooks usually replace HOCs/render props when only reusable logic is needed.
+
 #### Common Interview Questions
 
 - **How did the introduction of hooks change the prevalence of HOCs and render props?** Hooks provided a simpler, more direct way to reuse stateful logic, making complex HOC chains and render prop nesting largely unnecessary for logic reuse. However, each pattern still has specific use cases.
@@ -1994,6 +2214,7 @@ These were the primary composition patterns before hooks revolutionized React co
 #### Definition
 
 React Hook Form emerged as a performance-focused alternative to existing form libraries, leveraging uncontrolled inputs, refs, and granular subscriptions to minimize rendering work. Browser-native constraint validation is optional through `shouldUseNativeValidation`; RHF otherwise uses registered rules or schema resolvers.
+
 #### Version Evolution Timeline
 
 - v2-v5 (2019-2020): Early releases establish the uncontrolled-input and subscription-based performance model
@@ -2001,13 +2222,46 @@ React Hook Form emerged as a performance-focused alternative to existing form li
 - v7 (April 2021): Smaller API, stronger TypeScript inference, and migration changes from v6
 - v7.20-v7.40 (November 2021-November 2022): Continued `useFieldArray`, validation, typing, and subscription improvements
 - v7.81.0 (July 2026): Current stable release on the actively maintained v7 line; v8 remains prerelease
+
+#### Example — Task Board
+
+```tsx
+function TaskForm({ onCreate }: {
+  onCreate: (draft: TaskDraft) => Promise<void>;
+}) {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<TaskDraft>({ defaultValues: { title: '' } });
+
+  return (
+    <form onSubmit={handleSubmit(onCreate)}>
+      <label htmlFor="rhf-task-title">Title</label>
+      <input
+        id="rhf-task-title"
+        aria-invalid={!!errors.title}
+        aria-describedby={errors.title ? 'rhf-title-error' : undefined}
+        {...register('title', { required: 'Title is required' })}
+      />
+      {errors.title && (
+        <p id="rhf-title-error" role="alert">{errors.title.message}</p>
+      )}
+      <button type="submit" disabled={isSubmitting}>Add task</button>
+    </form>
+  );
+}
+```
+
+**What it demonstrates:** React Hook Form registers a native input, validates typed values, and lets the component subscribe only to the form state it renders.
+
 #### Common Interview Questions
 
 - **How has React Hook Form's performance story evolved across versions?** Early versions focused heavily on uncontrolled inputs for minimal re-renders. Recent versions maintain performance while adding features like real-time validation, without sacrificing the core performance benefits.
 - **What significant improvements did v7 bring compared to v6?** Complete TypeScript rewrite providing excellent type inference, better developer experience with improved error messages, enhanced useFieldArray for dynamic forms, and more flexible validation strategies.
 - **How does React Hook Form integrate with modern validation libraries like Zod and Yup?** Through resolver adapters (yupResolver, zodResolver) that allow using schema-based validation while maintaining RHF's performance characteristics. The library converts schema errors to RHF's error format.
-- **What's the evolution of the Controller component and when should it be used?** Initially for integrating controlled components, now also handles complex UI libraries. Use Controller for third-party components that don't expose refs, or when you need fine-grained control over re-renders.
-- **How has React Hook Form adapted to React 18+ concurrent features?** Better handling of concurrent renders, proper cleanup of effects, and compatibility with concurrent mode patterns. The library respects React's rendering priorities.
+- **When should `Controller` be used?** Use it to adapt controlled or non-native components whose value and change contract does not match a registered native input. The existence of a ref alone is not the deciding factor.
+- **How does React Hook Form fit modern React rendering?** It supports current React releases and narrows updates through field/form-state subscriptions. Actual render behavior still depends on validation mode, `Controller`, `useWatch`, and which `formState` properties a component reads.
 - **What are the main differences between React Hook Form's approach and Formik's?** React Hook Form favors uncontrolled native inputs and granular subscriptions, while Formik keeps form values in React state and exposes controlled-form helpers. RHF can minimize per-keystroke rendering, but validation mode, `Controller`, `useWatch`, and `formState` subscriptions can still cause renders; Formik can also limit updates with field-level composition and `FastField`.
 - **How does useFormContext enable better form composition in complex applications?** Allows deeply nested form components to access form methods without prop drilling, enabling better component separation and reuse in large form architectures.
 - **What performance optimizations has React Hook Form maintained throughout its evolution?** Minimal re-renders through uncontrolled inputs, optimized validation execution, smart subscription management to formState, and efficient dirty field tracking.
@@ -2017,6 +2271,7 @@ React Hook Form emerged as a performance-focused alternative to existing form li
 #### Definition
 
 Formik was one of the first comprehensive form libraries for React, pioneering the controlled component approach to form management. Its evolution reflects the React ecosystem's journey from class-based forms to hooks, and eventually to more performance-focused alternatives.
+
 #### Version Evolution Timeline
 
 - v1 (2017): Initial release with render props and HOC patterns
@@ -2024,6 +2279,45 @@ Formik was one of the first comprehensive form libraries for React, pioneering t
 - v2.1+ (2020): useField hook, better TypeScript support
 - v2.4.x (2023-2025): Incremental fixes and compatibility releases; 2.4.9 is the current stable release
 - Current State: Mature and still widely used; compare its state-driven model with React Hook Form rather than treating either library as a universal replacement
+
+#### Example — Task Board
+
+```tsx
+function FormikTaskForm({ onCreate }: {
+  onCreate: (draft: TaskDraft) => Promise<void>;
+}) {
+  return (
+    <Formik<TaskDraft>
+      initialValues={{ title: '' }}
+      validate={({ title }) =>
+        title.trim() ? {} : { title: 'Title is required' }
+      }
+      onSubmit={onCreate}
+    >
+      {({ errors, touched, isSubmitting }) => (
+        <Form>
+          <label htmlFor="formik-task-title">Title</label>
+          <Field
+            id="formik-task-title"
+            name="title"
+            aria-invalid={!!(touched.title && errors.title)}
+            aria-describedby={
+              touched.title && errors.title ? 'formik-title-error' : undefined
+            }
+          />
+          {touched.title && errors.title && (
+            <p id="formik-title-error" role="alert">{errors.title}</p>
+          )}
+          <button type="submit" disabled={isSubmitting}>Add task</button>
+        </Form>
+      )}
+    </Formik>
+  );
+}
+```
+
+**What it demonstrates:** The same form uses Formik's state-driven provider, `Field`, validation, touched state, and submission lifecycle, making the architectural contrast with React Hook Form explicit.
+
 #### Common Interview Questions
 
 - **How did Formik's architecture evolve from render props to hooks?** Formik started with a render props pattern (v1) which was familiar to React developers at the time. With the introduction of hooks in React 16.8, Formik added useFormik and useField hooks (v2) to provide a more modern API while maintaining backward compatibility.
@@ -2031,8 +2325,8 @@ Formik was one of the first comprehensive form libraries for React, pioneering t
 - **Why might a team choose React Hook Form over Formik?** RHF's uncontrolled-input and subscription model can reduce rendering work in large forms and offers strong schema-resolver and TypeScript support. Formik remains a reasonable choice when a team values its state-driven mental model, established Yup integration, or existing component ecosystem; profile complex forms rather than assuming either approach is always faster.
 - **What is the purpose of FastField and how does it optimize performance?** `FastField` uses shallow comparisons to avoid updates caused by unrelated Formik state. It still re-renders when its own value, error, touched state, `name`, or props change, and when global state it observes such as `isSubmitting` changes.
 - **How does Formik's validation approach differ from React Hook Form's?** Formik commonly stores controlled form state in React and supports field, form-level, or optional schema validation such as Yup. RHF commonly uses registered rules or resolver adapters with granular subscriptions; native browser validation is opt-in through `shouldUseNativeValidation`. Both libraries let you configure validation timing.
-- **What are Formik's strengths compared to React Hook Form?** More intuitive for developers familiar with controlled components, excellent Yup integration, simpler mental model for basic forms, and better support for complex conditional logic in some cases.
-- **How did Formik handle the transition to TypeScript?** Formik v2 included significant TypeScript improvements with better type inference for form values, field names, and error types, though it never achieved the same level of type safety as RHF v7+.
+- **What are Formik's strengths compared to React Hook Form?** Its explicit state-driven model, established Yup integration, and mature component APIs can fit teams and codebases already built around them. Compare update scope, field typing, validation needs, bundle constraints, and migration cost rather than assuming one library is universally simpler.
+- **How did Formik handle the transition to TypeScript?** Formik v2 improved generic typing for values, helpers, and errors. Field names are still commonly string-based, so teams should test the specific nested-field and schema inference they depend on instead of ranking libraries by one broad “type safety” label.
 - **What is Formik's current status in the React ecosystem?** Formik is a mature library on the 2.4.x line and remains used in existing and new applications, although its release pace is slower than React Hook Form's. Choose based on rendering behavior, API fit, validation needs, bundle constraints, and team familiarity.
 
 ### React Router
@@ -2040,6 +2334,7 @@ Formik was one of the first comprehensive form libraries for React, pioneering t
 #### Definition
 
 React Router has been the standard routing solution for React applications since the early days of the ecosystem. Its evolution mirrors React's own journey from class components to hooks, and from simple SPA routing to full-stack application patterns.
+
 #### Version Evolution Timeline
 
 - v1-2 (2015-2016): Early versions with basic routing, mixin-based patterns
@@ -2053,6 +2348,28 @@ React Router has been the standard routing solution for React applications since
 - v7.9+ (2025): React Server Components support remains preview/unstable
 - v8 (June 2026): ESM-only major requiring React 19.2.7+ and Node.js 22.22+, with `react-router-dom` removed; Framework Mode uses a Vite 7+ baseline
 - v8.2.0 (July 2026): Current stable release; Declarative, Data, and Framework modes continue
+
+#### Example — Task Board
+
+```tsx
+async function tasksLoader({ params, request }: LoaderFunctionArgs) {
+  return taskApi.list(params.projectId!, request.signal);
+}
+
+function TaskBoardRoute() {
+  const tasks = useLoaderData<typeof tasksLoader>();
+  return <TaskBoard tasks={tasks} />;
+}
+
+const router = createBrowserRouter([{
+  path: '/projects/:projectId/tasks',
+  loader: tasksLoader,
+  Component: TaskBoardRoute,
+}]);
+```
+
+**What it demonstrates:** The URL selects the resource, the loader participates in the navigation lifecycle, and `request.signal` cancels work for an obsolete navigation.
+
 #### Common Interview Questions
 
 - **How did React Router's architecture change from v3 to v4?** v3 used a configuration-based approach with a central route config. v4 introduced a declarative, component-based approach where routes are components that render based on the current location, enabling more dynamic routing patterns.
@@ -2062,15 +2379,16 @@ React Router has been the standard routing solution for React applications since
 - **What problem do loaders and actions solve in modern React Router?** Loaders coordinate route data with navigation and can start before route UI renders; actions integrate mutations and form submissions with revalidation. They reduce component-level fetching boilerplate, but applications still need pending UI through navigation state, Suspense, or hydrate fallbacks.
 - **How has React Router's approach to code splitting evolved?** Early versions required manual code splitting. v6+ integrates with React.lazy and Suspense, Framework Mode handles route module splitting, and v7.5+ Data Mode supports granular `route.lazy` objects so loaders, actions, Components, and hydrate fallbacks can be loaded separately.
 - **What's the difference between useNavigate and the old useHistory?** useNavigate returns a function that can be called with a path or numerical delta, while useHistory returned an object with methods like push, replace, and goBack. useNavigate is more concise and consistent.
-- **How does React Router handle authentication and protected routes in modern versions?** Through loader functions that can redirect or throw errors for unauthorized access, combined with route-level error boundaries to handle authentication failures gracefully.
+- **How does React Router handle authentication and protected routes in modern versions?** Data and Framework Mode loaders can redirect unauthenticated navigation or return route errors for UX. That client/route guard is not a security boundary: the backend, loader running on the server, or Server Function must independently authenticate and authorize every protected operation.
 - **What is the status of React Router's RSC support?** React Router v8 retains preview/unstable React Server Components support. It is not the default stable routing model, and RSC-specific APIs may change outside normal semver guarantees.
-- **What are the performance implications of React Router's evolution?** v6's relative paths and improved matching algorithm improved routing performance. v7 Data and Framework modes reduce waterfalls by loading route data before render, splitting route modules, and enabling stronger server integration patterns.
+- **What are the performance implications of modern React Router modes?** Data and Framework modes can start route data work with navigation and split route modules, which helps avoid some component-fetch waterfalls. Results still depend on route nesting, data dependencies, caching, bundle boundaries, and deployment architecture.
 
-### React Query
+### TanStack Query (formerly React Query)
 
 #### Definition
 
-TanStack Query (formerly React Query) revolutionized server state management in React applications by introducing sophisticated caching, background synchronization, and mutation handling. Its evolution reflects the React ecosystem's shift from client-state-centric solutions (like Redux) to specialized server-state management.
+TanStack Query (formerly React Query) manages asynchronous server state through caching, freshness policies, background refetching, and mutation workflows. It complements client-state tools by giving remotely owned data a separate lifecycle.
+
 #### Version Evolution Timeline
 
 - v1 (2019): Initial release with basic query caching and mutations
@@ -2079,13 +2397,37 @@ TanStack Query (formerly React Query) revolutionized server state management in 
 - v4 (2022): Renamed to TanStack Query, framework-agnostic core
 - v5 (2023): Modernized API - removed deprecated features, better error handling
 - v5.40+ (2024): Pending-query dehydration improves framework streaming and Server Component integration; v5 remains the current major in July 2026
+
+#### Example — Task Board
+
+```tsx
+function useProjectTasks(projectId: string) {
+  const queryClient = useQueryClient();
+  const tasks = useQuery({
+    queryKey: ['tasks', projectId],
+    queryFn: ({ signal }) => taskApi.list(projectId, signal),
+    staleTime: 30_000,
+  });
+  const createTask = useMutation({
+    mutationFn: (draft: TaskDraft) => taskApi.create(projectId, draft),
+    onSuccess: () => queryClient.invalidateQueries({
+      queryKey: ['tasks', projectId],
+    }),
+  });
+
+  return { tasks, createTask };
+}
+```
+
+**What it demonstrates:** TanStack Query owns remote-cache identity, freshness, cancellation, and targeted invalidation; it delegates the actual HTTP request to `taskApi`.
+
 #### Common Interview Questions
 
 - **How has TanStack Query's caching strategy evolved across versions?** Early releases accepted simple string or array keys; v4 made query keys arrays consistently. v5 refined cache timing, structural sharing, hydration, and TypeScript behavior while retaining hierarchical array keys and targeted invalidation.
 - **What problem does TanStack Query solve that traditional useState/useEffect patterns struggle with?** It handles complex server-state concerns like caching, background updates, pagination, deduplication, error retries, and optimistic updates that are tedious to implement manually.
 - **How has the mutation API evolved from v1 to v5?** Early releases had basic mutation callbacks, later versions added richer optimistic-update and rollback patterns, and v5 standardized object configuration and refined error handling. Suspense-specific Hooks are query APIs; mutations can opt into Error Boundary propagation with `throwOnError`.
 - **What's the difference between useQuery and useSuspenseQuery in v5?** useQuery provides traditional loading states via isLoading/isError props. useSuspenseQuery throws promises for Suspense boundaries to catch, enabling more declarative loading states.
-- **How does TanStack Query handle real-time data synchronization?** Through background refetching (window focus, network reconnect), staleTime configurations, and WebSocket integrations that update cache directly, ensuring UI consistency with server state.
+- **How can TanStack Query work with real-time data?** Focus/reconnect refetching is built in, but WebSocket handling is application code. Validate each event and deliberately call `setQueryData` or `invalidateQueries`; `staleTime` controls freshness policy and does not synchronize a socket by itself.
 - **What are the key differences between client state (Redux/Zustand) and server state (TanStack Query)?** Client state is owned by the application and may be synchronous, ephemeral, or optionally persisted. Server state is owned remotely and needs asynchronous fetching, caching, freshness, synchronization, and mutation handling.
 - **How has TypeScript support evolved across versions?** v1 had basic TypeScript support. v3 significantly improved type inference. v5 provides excellent type safety with query key inference and mutation type propagation.
 - **What performance optimizations does TanStack Query provide?** Request deduplication, smart background refetching, garbage collection, pagination/infinite query optimizations, and efficient cache updates through structural sharing.
@@ -2095,20 +2437,47 @@ TanStack Query (formerly React Query) revolutionized server state management in 
 #### Definition
 
 Server-Side Rendering has evolved from basic string rendering to sophisticated hybrid approaches that balance performance, SEO, and developer experience. React core now provides streaming SSR, selective hydration, Server Components integration points, and framework-facing prerender/resume APIs, while higher-level routing and rendering strategies are usually handled by frameworks.
+
 #### SSR Evolution Timeline
 
 - React 0.14 (2015): Basic ReactDOMServer.renderToString() introduced
-- React 15-16 (2016-2017): ReactDOM.hydrate() replaces render() for SSR
+- React 16 (2017): ReactDOM.hydrate() adds the dedicated client hydration entry point
 - Next.js 1-8 (2016-2019): Framework-level SSR abstractions
 - React 18 (2022): Streaming SSR with renderToPipeableStream()
 - React 19.2 (2025): Resume/prerender APIs for partial prerendering and Node Web Streams support
 - Next.js 13+ (2022): App Router, React Server Components, nested layouts, and streaming-first data boundaries
 - Next.js 16 (2025-2026): Cache Components and Partial Prerendering as an opt-in framework model; 16.2.10 is the current stable patch in July 2026
 - Modern Era (2023+): Streaming SSR, selective hydration, RSC, partial prerendering, and framework-managed client/server boundaries
+
+#### Example — Task Board
+
+```tsx
+// server.tsx
+const { pipe } = renderToPipeableStream(
+  <Document initialTasks={tasks} />,
+  {
+    bootstrapModules: ['/client.js'],
+    onShellReady() {
+      response.setHeader('content-type', 'text/html');
+      pipe(response);
+    },
+  },
+);
+
+// client.tsx
+hydrateRoot(
+  document,
+  <Document initialTasks={readHydrationData()} />,
+  { onRecoverableError: reportError },
+);
+```
+
+**What it demonstrates:** The server streams the document shell and the client hydrates the same initial tree and data. Hydration data must be serialized safely, with the application's XSS and CSP model in mind.
+
 #### Common Interview Questions
 
 - **How has SSR evolved from basic string rendering to modern streaming approaches?** `renderToString` waits for a complete render and cannot progressively reveal Suspense content. React 16 also offered a basic Node stream, while React 18's Suspense-aware streaming can send a shell and progressively reveal boundaries as they resolve, often improving perceived performance.
-- **What problem does React 18's streaming SSR solve?** It eliminates the "waterfall" problem where servers wait for all data before sending HTML. Now, the shell can be sent immediately while dynamic content streams in later.
+- **What problem does React 18's streaming SSR solve?** Suspense-aware streaming can send the shell before every boundary is ready and progressively reveal later content. It reduces HTML-delivery blocking, but dependent data requests can still form waterfalls and must be designed separately.
 - **What do the React 19.2 resume/prerender APIs enable?** They let frameworks pause a prerender and later resume it to a stream (`resume*`), which supports partial prerendering and more flexible streaming/hydration workflows on both Web Streams and Node streams. Most app components should treat these as framework/server integration APIs, not everyday client component APIs.
 - **How do React Server Components change the SSR landscape?** Server Component module code does not ship to the browser, so moving suitable work to the server can reduce client JavaScript. The rendered tree may still contain Client Components and requires the framework's RSC payload/runtime; RSC also enables direct server data access when supported by the framework or bundler.
 - **What security context matters for React Server Components?** RSC and Server Functions depend on framework/bundler integration. React 19.2.4 was the minimum fixed version in the January 2026 advisory, but applications should install the latest coordinated React/RSC packages—19.2.7 as of July 2026—because older React 19 RSC packages had critical security fixes.
@@ -2124,6 +2493,7 @@ Server-Side Rendering has evolved from basic string rendering to sophisticated h
 #### Definition
 
 The React ecosystem has evolved from library-only solutions to full-stack frameworks that provide opinionated, production-ready architectures. Next.js and React Router Framework Mode represent two common approaches to solving production concerns such as routing, data loading, rendering, deployment, performance, SEO, and developer experience.
+
 #### Framework Evolution Timeline
 
 - Pre-Framework Era (2015-2016): Manual React + Router + Webpack setups
@@ -2134,17 +2504,57 @@ The React ecosystem has evolved from library-only solutions to full-stack framew
 - Next.js 13+ (2022): App Router, React Server Components
 - React Router v7 (2024): Framework Mode absorbs Remix-style full-stack routing into React Router
 - Next.js 16 (2025): Turbopack stable by default, React Compiler integration, Cache Components / PPR direction
-- Modern Era (2023+): Full-stack React dominance, meta-frameworks, RSC-capable routing and rendering
+- Modern Era (2023+): Full-stack React frameworks, meta-frameworks, RSC-capable routing, and hybrid rendering
+
+#### Example — Task Board
+
+```tsx
+// app/projects/[projectId]/tasks/page.tsx — Server Component
+import InteractiveTaskBoard from './interactive-task-board';
+
+export default async function TasksPage({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
+  const { projectId } = await params;
+  const tasks = await listTasks(projectId);
+  return <InteractiveTaskBoard tasks={tasks} />;
+}
+```
+
+```tsx
+// interactive-task-board.tsx — Client Component
+'use client';
+
+export default function InteractiveTaskBoard({
+  tasks,
+}: {
+  tasks: readonly Task[];
+}) {
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  return (
+    <TaskList
+      tasks={tasks}
+      selectedTaskId={selectedTaskId}
+      onSelect={setSelectedTaskId}
+    />
+  );
+}
+```
+
+**What it demonstrates:** A Next.js route keeps data access in a Server Component and sends serializable task snapshots across a narrow Client Component boundary; only local selection state lives on the client.
+
 #### Common Interview Questions
 
 - **How has the React ecosystem evolved from library to framework approach?** Early React required assembling many pieces manually. Modern frameworks provide integrated solutions for routing, data fetching, rendering, and deployment, reducing configuration complexity.
 - **What are the key philosophical differences between Next.js and Remix/React Router Framework Mode?** Next.js focuses on integrated full-stack React with App Router, RSC, caching, and deployment optimizations. Remix's ideas now live primarily in React Router v8 Framework Mode (introduced in v7), emphasizing web standards, progressive enhancement, nested routing, loaders, and actions.
 - **How does the App Router in Next.js 13+ differ from the Pages Router?** App Router uses React Server Components by default, enables nested layouts, supports parallel data fetching, and provides more fine-grained loading states through the file system. Pages Router is still supported but is no longer the path for React's latest server features.
-- **What problem do meta-frameworks solve that vanilla React doesn't?** They provide production-ready solutions for SSR/SSG, image optimization, font loading, performance monitoring, and deployment that would require significant manual configuration.
+- **What problem do React frameworks solve beyond the core library?** They coordinate routing, route data, rendering modes, bundling, and deployment conventions. Features such as image/font optimization or monitoring are framework- and platform-specific rather than guarantees of every framework.
 - **How has data fetching evolved across React frameworks?** From manual useEffect calls to getServerSideProps/getStaticProps in Next.js Pages Router, to Server Components and Server Actions in App Router, to loaders/actions in React Router/Remix.
 - **What's the current framework direction with React Server Components?** RSC removes Server Component module code from the client bundle and enables server data access, but Client Components and the RSC transport/runtime still contribute client-side code. Adoption is framework-driven: Next.js App Router is a stable path, while React Router RSC support remains preview/unstable.
 - **What changed in Next.js 16?** Next.js 16 made Turbopack the default stable bundler, added stable React Compiler integration, and introduced Cache Components / Partial Prerendering as an opt-in caching and rendering model enabled with `cacheComponents: true`.
-- **When would you choose a meta-framework vs vanilla React + Vite?** Meta-frameworks for production applications needing SEO, performance, and complex features. Vanilla React + Vite for SPAs, internal tools, or when you need maximum control.
+- **When would you choose a framework versus a client React app built with Vite?** Base the choice on rendering and SEO requirements, route-data ownership, deployment target, caching, progressive enhancement, and team constraints. Either can power production software; a framework adds conventions and server capabilities, while a client app can be the smaller fit for an SPA.
 - **How do modern frameworks handle the trade-offs between developer experience and performance?** They use compiler optimizations, intelligent bundling, route-level data APIs, resource preloading, and runtime/server analysis to provide good DX without sacrificing performance.
 
 ### Axios & Data Fetching
@@ -2152,18 +2562,47 @@ The React ecosystem has evolved from library-only solutions to full-stack framew
 #### Definition
 
 The evolution of data fetching in React applications mirrors the broader JavaScript ecosystem's journey from XMLHttpRequest to modern fetch API and specialized HTTP clients. Axios emerged as a feature-rich alternative to native fetch, while recent trends show a move toward simpler, more integrated solutions.
+
 #### Data Fetching Evolution Timeline
 
 - jQuery Era (2010-2015): $.ajax() dominated frontend HTTP requests
 - Native Fetch API (2015): Standards-based alternative to XMLHttpRequest
 - Axios Rise (2016-2018): Feature-rich HTTP client gaining popularity
-- React Query Era (2019+): Specialized server state management reduces Axios usage
+- Server-State Era (2019+): Cache managers such as TanStack Query complement transport clients
 - Modern Patterns (2022+): Framework-integrated fetching (Next.js, React Router/Remix), React Server Components
+
+#### Example — Task Board
+
+```ts
+const browserApi = axios.create({ baseURL: '/api', timeout: 5_000 });
+
+export const taskApi: TaskApi = {
+  async list(projectId, signal) {
+    const { data } = await browserApi.get<Task[]>(
+      `/projects/${encodeURIComponent(projectId)}/tasks`,
+      { signal },
+    );
+    return data;
+  },
+
+  async create(projectId, draft, signal) {
+    const { data } = await browserApi.post<Task>(
+      `/projects/${encodeURIComponent(projectId)}/tasks`,
+      draft,
+      { signal },
+    );
+    return data;
+  },
+};
+```
+
+**What it demonstrates:** Axios is a typed, cancellable browser transport adapter. A client Data Router loader or TanStack Query `queryFn` can call it while retaining ownership of navigation or caching; server code needs an absolute upstream URL or a server data layer.
+
 #### Common Interview Questions
 
 - **How has data fetching evolved from jQuery AJAX to modern patterns?** jQuery provided a unified API but was heavy. Native fetch emerged as a standards-based solution. Axios added convenience features. Modern patterns integrate fetching with state management and framework routing.
 - **What are the key differences between Axios and native fetch?** Axios includes interceptors, request/response transforms, configured timeouts, and rejects responses outside its `validateStatus` range. Native `fetch` is built into modern runtimes, supports cancellation through `AbortController` and timeouts through `AbortSignal.timeout()`, and resolves normally for HTTP 4xx/5xx responses, so callers must check `response.ok`.
-- **How did AbortController change request cancellation in modern JavaScript?** AbortController provided a standards-based way to cancel requests, replacing library-specific solutions like Axios CancelToken. It works consistently across fetch and Axios.
+- **How did AbortController change request cancellation in modern JavaScript?** `AbortSignal` provides a shared cancellation mechanism for both fetch and modern Axios, replacing library-specific patterns such as Axios CancelToken. Their cancellation error shapes still differ (`AbortError`/`DOMException` versus Axios `CanceledError`), so normalize them only when the application needs one error contract.
 - **What role does Axios play in modern React applications with tools like React Query?** Axios serves as the HTTP transport layer, while React Query handles caching, background updates, and state management. They complement each other rather than compete.
 - **How do framework-integrated data fetching solutions (Next.js, React Router/Remix) change the game?** They move data fetching closer to routes or components, enable server-side rendering with data, provide built-in loading states, and reduce client-side JavaScript through Server Components where supported.
 - **What are the performance implications of different data fetching strategies?** Client-side fetching can delay useful content and add JavaScript work that affects responsiveness, but it can make subsequent navigation flexible. Server-side fetching improves initial HTML and SEO but requires server resources. Hybrid approaches balance LCP, INP, cacheability, and freshness.
@@ -2175,6 +2614,7 @@ The evolution of data fetching in React applications mirrors the broader JavaScr
 #### Definition
 
 Custom hooks represent one of the most significant evolutionary steps in React's composition model. They emerged as the primary pattern for logic reuse after the introduction of hooks in React 16.8, fundamentally changing how developers share functionality across components.
+
 #### Evolution Timeline
 
 - Pre-Hooks Era (2015-2018): Logic reuse via HOCs, render props, mixins (deprecated)
@@ -2182,29 +2622,84 @@ Custom hooks represent one of the most significant evolutionary steps in React's
 - Early Adoption (2019-2020): Community discovers custom hook patterns
 - Maturity (2021-2022): Best practices emerge, hook libraries proliferate
 - Modern Era (2023+): Custom hooks as standard practice, framework-integrated hooks
+
+#### Example — Task Board
+
+```tsx
+function subscribeToOnlineStatus(notify: () => void) {
+  window.addEventListener('online', notify);
+  window.addEventListener('offline', notify);
+  return () => {
+    window.removeEventListener('online', notify);
+    window.removeEventListener('offline', notify);
+  };
+}
+
+function useOnlineStatus() {
+  return useSyncExternalStore(
+    subscribeToOnlineStatus,
+    () => navigator.onLine,
+    () => true,
+  );
+}
+
+function SaveTaskButton() {
+  const online = useOnlineStatus();
+  return (
+    <button type="button" disabled={!online}>
+      {online ? 'Save task' : 'Offline'}
+    </button>
+  );
+}
+```
+
+**What it demonstrates:** The custom Hook gives components a reusable, SSR-aware subscription contract; each caller reuses the logic while React coordinates one consistent external snapshot.
+
 #### Common Interview Questions
 
 - **How did custom hooks solve problems that HOCs and render props couldn't?** Custom hooks avoid wrapper hell, provide better TypeScript support, enable easier composition, and don't interfere with the component hierarchy. They're just functions, not components.
 - **What's the evolution of custom hook testing practices?** Early testing required wrapper components, and older projects used a separate hooks-testing package. For React 18+ and modern Testing Library, import `renderHook` from `@testing-library/react`; the separate hooks package is no longer the default.
 - **How do custom hooks work with React's rules of hooks?** Custom Hooks must call regular Hooks at the top level and only during React rendering. The linter recognizes custom Hooks by the `use` prefix. React 19's `use()` is a special exception that can be conditional or inside a loop, but it must still run in a component or Hook and cannot be wrapped in `try`/`catch`.
-- **What's the difference between a custom hook and a regular utility function?** Custom hooks can use other hooks, have access to React's lifecycle, and can cause re-renders. Utility functions are pure and don't interact with React's internals.
+- **What's the difference between a custom Hook and a regular utility function?** A custom Hook can compose other Hooks and subscribe to React-managed state or external systems. State/subscription updates—not the fact that a function is a Hook—schedule renders, and Effects model synchronization rather than exposing a generic component lifecycle.
 - **How has TypeScript support for custom hooks evolved?** Early hook typing was basic. Modern TypeScript provides excellent inference for hook return types, generic constraints, and proper typing of complex hook patterns.
-- **What are common pitfalls when creating custom hooks?** Forgetting dependency arrays, not handling cleanup, over-abstraction, creating hooks that are too specific, and not considering re-render optimization.
-- **How do custom hooks integrate with React 18's concurrent features?** They can use useTransition, useDeferredValue, and other concurrent features to build hooks that are aware of React's rendering priorities and can avoid blocking the main thread.
-- **What's the future of custom hooks with React Server Components?** Custom hooks that rely on browser APIs won't work in Server Components. The trend is toward separating client-side and server-side logic, with hooks specifically designed for each environment.
+- **What are common pitfalls when creating custom Hooks?** Premature generic abstractions, incorrect or incomplete reactive dependencies, suppressing the Hooks linter, missing external-resource cleanup, and returning an unstable or confusing API. Concrete high-level Hooks are often easier to understand than lifecycle-shaped wrappers.
+- **How do custom Hooks integrate with React 18's concurrent features?** They can expose transitions or deferred values so React treats some rendering as non-urgent and interruptible. This does not move CPU-heavy JavaScript off the main thread; use a Worker or different algorithm when computation itself is the bottleneck.
+- **How do custom Hooks relate to React Server Components?** Hooks that use state, Effects, browser APIs, or client Context belong in Client Components. Server Components instead use async rendering and framework/server primitives; shared pure utilities need not be Hooks.
 
 ### Virtual DOM
 
 #### Definition
 
 The Virtual DOM is the in-memory element-tree representation React reconciles before committing changes to a host environment such as the browser DOM. React's Fiber reconciler and Scheduler—not the Virtual DOM representation by itself—enable interruptible rendering, priorities, and concurrent features.
+
 #### Virtual DOM Evolution Timeline
 
 - React 0.3 (2013): Initial VDOM implementation - basic tree diffing
 - React 15 (2016): Stack Reconciler - recursive tree traversal
-- React 16 (2017): Fiber Architecture - incremental rendering, time slicing
+- React 16 (2017): Fiber Architecture - units of work that laid the foundation for interruptible rendering
 - React 18 (2022): Concurrent Features - interruptible rendering, priorities
 - React Compiler v1.0 (2025): Stable production-ready build-time auto-memoization that reduces manual React.memo/useMemo/useCallback boilerplate
+
+#### Example — Task Board
+
+```tsx
+function TaskList({ tasks }: { tasks: readonly Task[] }) {
+  const orderedTasks = [...tasks].sort((a, b) =>
+    a.title.localeCompare(b.title),
+  );
+
+  return (
+    <ul>
+      {orderedTasks.map((task) => (
+        <TaskRow key={task.id} task={task} />
+      ))}
+    </ul>
+  );
+}
+```
+
+**What it demonstrates:** Rendering describes a new element tree without mutating props, while stable task IDs let reconciliation preserve each row's identity and local state across reordering.
+
 #### Common Interview Questions
 
 - **How has the Virtual DOM's role evolved from React's early versions to today?** React has always used element trees to describe UI and reconciliation to compute updates. Fiber replaced the stack reconciler with units of work, while the Scheduler coordinates priorities; together they enable interruptible rendering and Suspense. The Virtual DOM itself is the representation being reconciled, not the scheduling system.
@@ -2214,14 +2709,15 @@ The Virtual DOM is the in-memory element-tree representation React reconciles be
 - **What's the significance of the key prop in VDOM diffing, and how has its importance evolved?** Keys help React identify which items have changed, been added, or removed. Their importance increased with dynamic lists and reordering capabilities. Modern React uses keys for more efficient reconciliation and state preservation.
 - **What does React Compiler v1.0 change about performance optimization?** React Compiler is a stable build-time optimizer that automatically memoizes components and hooks when code follows the Rules of React. It supports incremental adoption and compiler-powered lint rules, but it does not remove the Virtual DOM or replace the need to understand rendering costs.
 - **How do React 19.2 Performance Tracks help debugging?** They add React-specific Scheduler and Components tracks to Chrome DevTools performance profiles, making it easier to connect browser work with React rendering and scheduling behavior.
-- **What's the difference between VDOM reconciliation and actual DOM manipulation performance?** VDOM reconciliation is JavaScript execution (generally fast). DOM manipulation is browser-native (potentially slow). The VDOM optimizes by minimizing expensive DOM operations through batching and diffing.
-- **How does Suspense integrate with the VDOM and reconciliation process?** Suspense allows React to "pause" rendering of components that are waiting for data, showing fallback UI instead. The VDOM tracks which parts of the tree are suspended and resumes them when data is ready.
+- **What's the difference between reconciliation and browser DOM performance?** Reconciliation consumes JavaScript time, while commits can trigger DOM mutation, style, layout, paint, and compositing work. Neither side is inherently cheap: performance depends on tree size, update granularity, browser read/write patterns, and how much work React can skip or batch.
+- **How does Suspense integrate with reconciliation?** A Suspense-enabled source—such as `lazy`, a cached Promise read with `use()`, or a framework integration—can suspend rendering. React shows the nearest fallback and retries the tree when the resource is ready; ordinary fetches started in Effects or event handlers do not activate Suspense by themselves.
 
 ### Lazy Loading & Code Splitting
 
 #### Definition
 
 Code splitting has evolved from manual script management to sophisticated framework-integrated patterns that automatically optimize bundle delivery. This evolution reflects the JavaScript ecosystem's growing complexity and the need for performance optimization in modern web applications.
+
 #### Code Splitting Evolution Timeline
 
 - Early Web (2000s): Manual script tags with dependency management
@@ -2229,61 +2725,136 @@ Code splitting has evolved from manual script management to sophisticated framew
 - Webpack 1-2 (2014-2016): Static code splitting with require.ensure
 - Webpack 3+ (2017): Dynamic import() syntax support
 - React 16.6 (2018): React.lazy() and Suspense for components
-- Modern Era (2020+): Framework-level splitting (Next.js, Vite), React Server Components
+- Modern Era (2020+): Framework route splitting, bundler dynamic-import chunks, and React Server Components
 - React Router v7.5+ (2025): Granular `route.lazy` in Data Mode for lazy-loading route properties separately
+
+#### Example — Task Board
+
+```tsx
+// task-analytics.tsx must default-export the component loaded by lazy().
+const TaskAnalytics = lazy(() => import('./task-analytics'));
+
+function AnalyticsPanel({ open }: { open: boolean }) {
+  if (!open) return null;
+
+  return (
+    <TaskPanelBoundary>
+      <Suspense fallback={<AnalyticsSkeleton />}>
+        <TaskAnalytics />
+      </Suspense>
+    </TaskPanelBoundary>
+  );
+}
+```
+
+**What it demonstrates:** A top-level `lazy` call creates a dynamic-import split point, Suspense owns the loading fallback, and the previously defined Error Boundary handles a rejected module load.
+
 #### Common Interview Questions
 
 - **How has code splitting evolved from manual script tags to modern frameworks?** We've moved from manual dependency management to build-tool automation, then to framework-level optimizations, and now to hybrid server-client splitting strategies.
 - **What's the difference between static imports and dynamic code splitting?** Static imports join the eager module graph and normally load with the entry or parent chunk. A dynamic `import()` creates an asynchronous split point that the bundler analyzes at build time and the runtime loads on demand, for example after navigation or interaction.
 - **How does React.lazy() differ from direct dynamic imports?** React.lazy() wraps dynamic imports with React component semantics, integrates with Suspense for loading states, and works with React's reconciliation process.
-- **What problems did Suspense solve for code splitting?** Suspense provides a declarative way to handle loading states, avoids callback hell, enables better error boundaries, and allows for more sophisticated loading patterns.
+- **What problem does Suspense solve for code splitting?** Suspense declaratively coordinates the loading fallback while a lazy component's module Promise is pending. A rejected import is a separate error path handled by the nearest Error Boundary.
 - **How do modern frameworks like Next.js change code splitting strategies?** Next.js automates route-based splitting, provides built-in loading states, enables hybrid rendering, and optimizes chunk delivery through framework intelligence.
 - **What's the impact of React Server Components on code splitting?** Server Component module code is excluded from the client bundle, which shifts client code-splitting attention toward Client Components and third-party browser code. The application still sends an RSC payload/runtime and any Client Component bundles required by the rendered tree.
 - **How does React Router v7.5+ improve route code splitting?** Data Mode can use a granular `route.lazy` object so route properties like `loader`, `action`, `Component`, and hydrate fallback code can load separately instead of waiting for one large lazy route module.
 - **How do you decide what to code split in a modern React application?** Split routes, heavy components, below-the-fold content, features behind authentication, and third-party libraries. Use analytics to identify slow-loading components.
-- **What are common pitfalls with code splitting and how have solutions evolved?** Early pitfalls: Flash of loading content, poor error handling. Modern solutions: Skeleton screens, error boundaries, preloading strategies, selective hydration, and framework-level route splitting.
+- **What are common code-splitting pitfalls?** Over-splitting can create request waterfalls and fallback flashes, while an oversized split point delays the feature. Use measured route/feature boundaries, deliberate preloading, stable Suspense placement, and Error Boundaries for failed chunk loads; selective hydration is specifically an SSR concern.
 
-### Functional Components
+### Function Components
 
 #### Definition
 
 A function component is a JavaScript function that returns a React node, commonly written with JSX but also able to return strings, numbers, arrays, `null`, or values created with `createElement`. The evolution of function components mirrors React's shift from class-based to function-based architecture.
+
 #### Version Evolution Timeline
 
-- React 0.14 (2015): Functional components introduced as "stateless functional components" - could only receive props and return JSX, no state or lifecycle.
+- React 0.14 (2015): Function components introduced as "stateless functional components" - they received props and returned UI without local state or lifecycle methods
 - React 16.8 (2019): Hooks introduced - function components gained state, Effects, context, refs, and reusable stateful logic
-- React 18 (2022): Concurrent Features - functional components work seamlessly with concurrent rendering, transitions, and Suspense.
-- React 19 (2024): Actions and Optimistic Updates - new hooks like useOptimistic and useActionState further enhance functional components.
+- React 18 (2022): Concurrent Features - function components use transitions, deferred values, and Suspense integrations
+- React 19 (2024): Actions and Optimistic Updates - new hooks like useOptimistic and useActionState further enhance function components.
+
+#### Example — Task Board
+
+```tsx
+function TaskSummary({ tasks }: { tasks: readonly Task[] }) {
+  const done = tasks.filter((task) => task.status === 'done').length;
+
+  return (
+    <p>
+      {done} of {tasks.length} tasks complete
+    </p>
+  );
+}
+```
+
+**What it demonstrates:** A function component derives its output directly from props during render, without redundant state or an Effect.
+
 #### Common Interview Questions
 
 - **How has the role of function components evolved across React versions?** They progressed from simple presentational components to React's recommended model for most new code through Hooks and concurrent APIs. A few class-only capabilities remain, notably defining an Error Boundary and `getSnapshotBeforeUpdate`.
-- **What capabilities were added to functional components in React 16.8 vs React 18 vs React 19?** 16.8: State (useState), effects (useEffect), context (useContext), refs (useRef)
-  18: Concurrent features (useTransition, useDeferredValue), useId, useSyncExternalStore
-  19: use hook, useOptimistic, useActionState, better Suspense integration
+- **What capabilities were added to function components in React 16.8 vs React 18 vs React 19?** React 16.8 added state, Effects, context, and refs through Hooks; React 18 added Hooks for transitions, deferred rendering, IDs, and external stores; React 19 added Actions, `useOptimistic`, `useActionState`, and the special `use()` API.
 - **Why did React shift from class components to function components as the preferred approach?** Function components with Hooks avoid `this` binding and compose reusable stateful logic through custom Hooks. They are the recommended style for new code and align with modern React APIs, but they are not inherently faster or more tree-shakeable merely because they are functions.
 - **Can function components handle all use cases that class components could?** They cover almost all everyday component work, but React still has no direct Hook equivalents for Error Boundaries or `getSnapshotBeforeUpdate`. Libraries that expose function-oriented Error Boundary APIs wrap a class boundary internally.
-- **How do functional components work with React's concurrent features?** Functional components seamlessly integrate with concurrent rendering through hooks like useTransition and useDeferredValue, allowing non-blocking state updates and improved user experience during heavy rendering.
+- **How do function components work with concurrent features?** Hooks such as `useTransition` and `useDeferredValue` mark rendering as non-urgent so React may interrupt it for urgent input. They do not move computation off the main thread, so expensive CPU work still needs separate optimization or a Worker.
 
 ### Controlled vs Uncontrolled Components
 
 #### Definition
 
-The debate between controlled and uncontrolled components represents a fundamental design decision in React forms that has evolved with the ecosystem's growing sophistication. This choice reflects the balance between React's declarative philosophy and practical performance considerations.
+A controlled component receives important behavior or state through props and reports requested changes to its owner; an uncontrolled component keeps that state internally or in the host DOM. Most real components mix both models, and form fields are the most common interview example.
+
 #### Evolution Timeline
 
-- React 0.14 (2015): Controlled components introduced as React's declarative approach
-- Early React: Uncontrolled components common for simple forms and file inputs
+- Early React: Controlled and uncontrolled patterns documented for native form inputs
 - React 16.8 (2019): Hooks make controlled components more ergonomic
 - Form Library Era (2019+): React Hook Form popularizes uncontrolled approach for performance
 - Modern Era (2022+): Hybrid approaches, framework-integrated solutions
+
+#### Example — Task Board
+
+```tsx
+function TaskEditor({ saveTask }: {
+  saveTask: (data: FormData) => Promise<void>;
+}) {
+  const [title, setTitle] = useState('');
+
+  async function submit(formData: FormData) {
+    await saveTask(formData);
+    setTitle('');
+  }
+
+  return (
+    <form action={submit}>
+      <label htmlFor="task-title">Title</label>
+      <input
+        id="task-title"
+        name="title"
+        value={title}
+        maxLength={80}
+        aria-describedby="task-title-count"
+        onChange={(event) => setTitle(event.target.value)}
+      />
+      <span id="task-title-count">{title.length}/80</span>
+
+      <label htmlFor="task-attachment">Attachment</label>
+      <input id="task-attachment" name="attachment" type="file" />
+      <button type="submit" disabled={!title.trim()}>Create task</button>
+    </form>
+  );
+}
+```
+
+**What it demonstrates:** React controls the title because the UI derives from every edit, while the browser owns the file input and includes its value in the submitted `FormData`.
+
 #### Common Interview Questions
 
 - **How has the controlled vs uncontrolled debate evolved with React's maturity?** Early React strongly favored controlled components for their declarative nature. As applications grew more complex, uncontrolled components gained popularity for performance. Modern libraries like React Hook Form show that both approaches have their place.
 - **What performance concern can arise with controlled forms?** A controlled input schedules a React update for each edit. That is usually fine, but broad subscriptions or expensive parent rendering can make large forms slow. Uncontrolled inputs can keep the current DOM value outside React state and let a library notify only interested consumers.
 - **How do modern form libraries like React Hook Form bridge the controlled/uncontrolled gap?** They favor uncontrolled native inputs and granular subscriptions while exposing declarative validation and form-state APIs. Components using `Controller`, `useWatch`, or subscribed `formState` can still rerender, so the benefit is reduced update scope rather than zero rendering.
-- **What's the impact of React Server Components on form patterns?** Server Components enable forms that submit directly to server actions, reducing client-side JavaScript and blurring the line between controlled and uncontrolled approaches.
-- **When are controlled components still preferable despite performance concerns?** For real-time validation, complex conditional logic, immediate UI feedback, and when integrating with state management systems that require full control over form state.
-- **How do React 19's new hooks like useActionState change form handling?** They provide built-in support for server actions with loading states and error handling, making it easier to build forms that work well with both client and server rendering.
+- **How do React 19 Actions affect form patterns?** A form `action` can receive `FormData`, and supporting frameworks can connect it to a Server Function. This can reduce custom submit plumbing, but it is an Action capability rather than something Server Components provide by themselves.
+- **When are controlled fields useful?** Use them when every edit directly drives React UI or application behavior and that update scope remains affordable. Uncontrolled subscription-based libraries can also provide live validation and conditional UI, so the choice is architectural rather than a feature checklist.
+- **How does `useActionState` change form handling?** It couples an Action with its latest result and pending state and works with client Actions as well as Server Functions in supporting frameworks. It does not decide whether individual input values are controlled.
 - **What are the accessibility considerations for each approach?** Accessibility is largely orthogonal to where the value is stored. Both approaches need native labels, instructions, error association, focus management and appropriate live announcements. Controlled state can make immediate derived feedback convenient, while uncontrolled fields retain native browser behavior by default.
 - **How should developers choose between approaches?** Choose controlled state when the UI must derive behavior from every edit and the update cost is acceptable. Choose uncontrolled or subscription-based state when native form behavior and narrower updates fit better. Hybrid forms are common; profile large forms instead of deciding from ideology.
 
@@ -2292,49 +2863,108 @@ The debate between controlled and uncontrolled components represents a fundament
 #### Definition
 
 A class component is an ES6 class that extends `React.Component` (or `React.PureComponent`) and implements a `render()` method returning a React node. Before React 16.8, classes were the built-in component model for local state and lifecycle methods; refs also existed for other component patterns, while Error Boundaries remain class-based in React 19.
+
 #### Evolution Context
 
 - React 0.13 (2015): Class components introduced as primary component type
 - React 16.8 (2019): Hooks made function components the recommended model for most stateful component work
-- React 18+ (2022+): Functional components become recommended approach
+- React 18+ (2022+): Function components are the recommended approach
 - Current Status: Class components remain supported but are not recommended for new code; they are common in existing codebases and still provide Error Boundaries and `getSnapshotBeforeUpdate`
+
 #### Modern Usage Perspective
 
-- While class components are no longer the recommended approach for new development, understanding them remains valuable for:
-- Maintaining legacy codebases (many enterprise applications still use class components)
-#### Understanding React's evolution and architectural decisions
+- Maintaining existing class-based applications
+- Understanding React's evolution and architectural decisions
+- Recognizing lifecycle and migration questions in interviews
 
-Interview contexts where knowledge of lifecycle methods and historical patterns is tested
+#### Example — Task Board
+
+```jsx
+class TaskActivityLog extends Component {
+  listRef = createRef();
+
+  getSnapshotBeforeUpdate(previousProps) {
+    const previousFirstId = previousProps.entries[0]?.id;
+    const entriesWerePrepended = previousFirstId
+      && this.props.entries[0]?.id !== previousFirstId;
+
+    return entriesWerePrepended
+      ? this.listRef.current.scrollHeight
+      : null;
+  }
+
+  componentDidUpdate(_previousProps, _previousState, previousHeight) {
+    if (previousHeight !== null) {
+      const list = this.listRef.current;
+      list.scrollTop += list.scrollHeight - previousHeight;
+    }
+  }
+
+  render() {
+    return (
+      <ul ref={this.listRef}>
+        {this.props.entries.map((entry) => (
+          <li key={entry.id}>{entry.text}</li>
+        ))}
+      </ul>
+    );
+  }
+}
+```
+
+**What it demonstrates:** When activity entries are prepended, this supported legacy class reads layout immediately before the commit and restores the viewer's scroll position afterward; new application components normally use functions.
+
 #### Common Interview Questions
 
-- **When would you choose class components over functional components today?** Primarily for maintaining existing codebases or in rare cases where error boundaries are needed without external libraries. For new development, functional components with hooks are recommended.
+- **When would you choose class components over function components today?** Primarily for maintaining existing codebases or for class-only capabilities such as defining an Error Boundary or `getSnapshotBeforeUpdate`. Function components with Hooks are the normal choice for new application code.
 - **What are the key differences in lifecycle management between class and function components?** Classes split work across methods such as `componentDidMount`, `componentDidUpdate`, and `componentWillUnmount`. Function components model independent synchronization processes with Effects; cleanup can run before dependency-driven re-synchronization as well as on unmount, so Effects are not one-to-one lifecycle translations.
 - **Why did the React team shift towards function components with Hooks?** They provide direct composition through custom Hooks, avoid `this` binding, and are the model used by modern React APIs. Runtime performance still depends on component work, state placement, and rendering behavior rather than component syntax alone.
 - **Can function components completely replace class components?** They replace classes for most application components. Native Error Boundaries and `getSnapshotBeforeUpdate` still require a class; libraries such as `react-error-boundary` provide a function-oriented interface over a class implementation.
-- **What should developers know about class components when working with legacy code?** Understanding lifecycle methods, this binding patterns, legacy context API, and how to gradually migrate class components to functional components using equivalent hook patterns.
-- **How do PureComponent and React.memo differ?** PureComponent is a class component that implements shallow prop/state comparison in shouldComponentUpdate, while React.memo is the functional component equivalent that memoizes based on prop changes.
+- **What should developers know about class components when working with legacy code?** Understand lifecycle methods, `this` binding, legacy Context, and state update semantics. During migration, re-express each synchronization responsibility with focused Effects or custom Hooks instead of translating lifecycle methods one-for-one.
+- **How do `PureComponent` and `memo` differ?** `PureComponent` shallow-compares a class component's props and state. `memo` compares a function component's props; its own state changes and consumed Context can still render it. Both are performance optimizations and rely on immutable updates.
 
 ### React Portals
 
 #### Definition
 
-React Portals enable rendering React components into DOM nodes outside their parent hierarchy while preserving React's component relationships. This feature has evolved from a solution for specific UI challenges to a fundamental tool for building accessible, well-structured applications.
+React Portals render children into a different DOM node while keeping them in the same React tree. They are an escape hatch for DOM placement constraints; accessibility, focus, styling, and target-node lifecycle still require explicit design.
+
 #### Evolution Timeline
 
 - React 16 (2017): Portals introduced as stable API with ReactDOM.createPortal()
 - Early Use Cases: Primarily for modals, tooltips, and overlays
-- React 17 (2020): Event delegation changes improve portal behavior
-- Modern Era (2022+): Portals for microfrontends, accessibility, and complex layouts
+- React 17 (2020): Event delegation moves from `document` to each React root container
+- Modern Era (2022+): Portals for overlays, notifications, and complex layout boundaries
+
+#### Example — Task Board
+
+```tsx
+function TaskSavedToast({
+  task,
+  portalRoot,
+}: {
+  task: Task;
+  portalRoot: HTMLElement;
+}) {
+  return createPortal(
+    <div className="toast" role="status"><strong>{task.title}</strong> saved.</div>,
+    portalRoot,
+  );
+}
+```
+
+**What it demonstrates:** The toast is placed in a separate DOM container while remaining in the same React tree for context and event propagation; the target node must already exist.
+
 #### Common Interview Questions
 
-- **How have portals evolved from React 16 to modern versions?** Portals started as a basic escape hatch for DOM rendering. Modern usage includes accessibility patterns, microfrontend integration, SSR compatibility, and complex event handling scenarios.
-- **What problem do portals solve that couldn't be handled with CSS positioning?** While CSS can visually position elements anywhere, portals solve React-specific issues: context preservation, event bubbling through React tree, and component hierarchy maintenance despite DOM location.
+- **How are portals used in modern React applications?** They remain a targeted DOM-placement escape hatch for overlays, floating UI, and global notifications. A portal preserves React Context and event ancestry, but does not provide accessibility or architectural isolation by itself.
+- **What problem do portals solve beyond CSS positioning?** Ordinary CSS already preserves the React tree, Context, and event behavior. A portal is useful when content must escape an ancestor's clipping, overflow, stacking context, or required DOM container while still belonging to the same React owner.
 - **How do portals handle React context and event bubbling differently from regular components?** Portals render to different DOM locations but maintain their position in the React component tree. Context flows normally, and events bubble through React's synthetic event system, not the DOM hierarchy.
-- **What are the accessibility considerations when using portals for modals?** Must manage focus trapping, ARIA attributes, keyboard navigation (Escape to close, Tab trapping), screen reader announcements, and ensuring the underlying page is properly hidden.
-- **How do portals work with server-side rendering?** Portals are client-side only. SSR must render fallback content or nothing, then hydrate appropriately on the client. This requires careful handling to avoid hydration mismatches.
-- **What are modern use cases for portals beyond modals and tooltips?** Microfrontend integration, third-party widget embedding, notification systems, complex layout management, and rendering into iframes or shadow DOM.
-- **How can portals be used in microfrontend architectures?** Portals allow microfrontends to render components into designated slots in the host application while maintaining their own state management and lifecycle.
-- **What performance considerations should be made when using portals?** Portal creation/cleanup overhead, memory leaks from improper cleanup, excessive re-renders affecting portal content, and impact on React's reconciliation process.
+- **What are the accessibility considerations when using portals for modals?** Provide an accessible name and description, move and contain focus, return focus on close, support Escape, and make background content inert or hidden. Prefer native `<dialog>` or a tested accessible dialog primitive over an incomplete custom trap.
+- **How do portals work with server-side rendering?** `createPortal` needs an existing DOM node and is not emitted directly by React's server renderer. An SSR application can render an inline/server fallback and portal after mount, but it must account for hydration and possible remounting.
+- **What are modern use cases for portals beyond modals and tooltips?** Global notifications, floating controls, overlays that escape clipping, and integrations that require a designated DOM slot. Rendering into an iframe or shadow root also introduces separate styling and focus concerns.
+- **Are portals a microfrontend isolation boundary?** No. Portal content remains part of the same React root/tree and does not create independent versions, deployment, state, or failure isolation; a separately deployed microfrontend commonly owns a separate root.
+- **What implementation details matter for portal performance and correctness?** Keep the target node stable because changing it recreates the portal subtree, remember that events bubble through the React tree, and manage the external container's lifecycle, styles, and focus behavior explicitly.
 
 ## Vue Deep Dive
 
