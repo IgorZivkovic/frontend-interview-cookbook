@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.0] - 2026-07-14
+
+### Added
+- Added a shared framework-free Task Board scenario and focused examples across all 25 JavaScript Fundamentals topics and all 10 Modern JavaScript Deep Dive topics.
+
+### Changed
+- Clarified JavaScript value and reference semantics, prototypes, functions, immutability, event-loop ordering, DOM safety, modules, iteration, scoping, collections, Promises, and current ECMAScript built-ins.
+- Updated the JavaScript edition guidance to the published ECMAScript 2026 (ECMA-262, 17th edition) snapshot and identified runtime compatibility checks for newly standardized APIs.
+- Moved the Modern JavaScript Deep Dive directly after JavaScript Fundamentals so the shared Task Board progression reads continuously.
+
 ## [1.12.1] - 2026-07-14
 
 ### Changed

@@ -20,19 +20,19 @@
 
 **No fluff. Just what helps you pass the interview.**
 
-> **Last content verification:** July 12, 2026. Frontend patch releases and support windows change quickly, so confirm exact versions in the official documentation before upgrading a production project.
+> **Last content verification:** July 14, 2026. Frontend patch releases and support windows change quickly, so confirm exact versions in the official documentation before upgrading a production project.
 
 ## Table of Contents
 
 - [Frontend Interview Questions (Q&A)](#frontend-interview-questions-qa)
 - [JavaScript Fundamentals](#javascript-fundamentals)
+- [Modern JavaScript Deep Dive](#modern-javascript-deep-dive)
 - [Markup (Modern HTML)](#markup-modern-html)
 - [Styling](#styling)
 - [Node.js Fundamentals](#nodejs-fundamentals)
 - [React Deep Dive](#react-deep-dive)
 - [Vue Deep Dive](#vue-deep-dive)
 - [Angular Deep Dive](#angular-deep-dive)
-- [Modern JavaScript Deep Dive](#modern-javascript-deep-dive)
 - [TypeScript Deep Dive](#typescript-deep-dive)
 - [Bundlers & Compilers](#bundlers--compilers)
 - [Threading & Data Streams](#threading--data-streams)
@@ -53,45 +53,107 @@
 
 ## JavaScript Fundamentals
 
+### Running Example: Task Board
+
+The JavaScript examples below are focused, independent excerpts from one framework-free Task Board application. Each snippet starts with fresh fixture data when it mutates state; imports, API implementations, and markup unrelated to the concept are omitted. Representative files include `task-data.js`, `task-api.js`, `task-query.js`, `task-board.js`, and `task-view.js`.
+
+```js
+export const taskSeed = [
+  {
+    id: 'TASK-101',
+    title: 'Fix login redirect',
+    status: 'todo',
+    priority: 2,
+    assigneeId: null,
+    tags: ['auth'],
+  },
+  {
+    id: 'TASK-102',
+    title: 'Add empty state',
+    status: 'in-progress',
+    priority: 1,
+    assigneeId: 'USER-7',
+    tags: ['ui'],
+  },
+  {
+    id: 'TASK-103',
+    title: 'Write board tests',
+    status: 'done',
+    priority: 3,
+    assigneeId: 'USER-7',
+    tags: ['testing'],
+  },
+];
+```
+
 ### Type system
 
 #### Definition
 
 JavaScript is dynamically typed and permits implicit type coercion; the informal “weakly typed” label is common but not a standardized classification. Variables are not bound to a type - instead, values carry one of the seven primitive types (undefined, null, boolean, number, bigint, string, symbol) or an object type (which includes arrays, dates, etc.). Functions are callable objects. Type checks happen at runtime and you may freely assign different kinds of values to the same variable without a compile-time error.
-#### Example
+
+#### Example — Task Board
 
 ```js
-let x = 42;     // number
-x = "answer";   // string
-x = { value: 42 }; // object
-console.log(typeof x); // "object"
+let selectedTask = "TASK-101"; // string
+
+selectedTask = {
+  id: "TASK-101",
+  title: "Add keyboard navigation",
+  status: "in-progress",
+  priority: 1,
+  assigneeId: null,
+  tags: ["accessibility", "frontend"]
+};
+
+console.log(typeof selectedTask); // "object"
+console.log(typeof selectedTask.priority); // "number"
+console.log(Array.isArray(selectedTask.tags)); // true
+console.log(typeof selectedTask.assigneeId); // "object" (the historical null quirk)
 ```
+
+**What it demonstrates:** Values carry types at runtime, a variable can be reassigned to a different type, and arrays and `null` need checks beyond `typeof`.
 
 #### Common Interview Questions
 
-- **How many primitive types does JavaScript have and why are both null and undefined needed?** Seven primitives: undefined, null, boolean, number, bigint, string, symbol. undefined means “variable declared but no value assigned”; null is an intentional assignment of “no value”.
-- **What is the difference between primitive values and objects with respect to mutability and comparison?** Primitives are immutable and compared by value (=== compares the actual data), whereas objects are mutable and compared by reference (=== checks if two variables point to the same object in memory).
+- **How many primitive types does JavaScript have and why are both null and undefined needed?** Seven primitives: undefined, null, boolean, number, bigint, string, symbol. `undefined` is the default absence value for uninitialized bindings, missing properties, omitted arguments, and functions without an explicit return; `null` is commonly used to express an intentional absence.
+- **What is the difference between primitive values and objects with respect to mutability and comparison?** Primitives are immutable and compared by value. Objects have identity, are commonly mutable, and `===` checks whether both operands refer to the same object—even when two separate objects contain equal data.
 - **How do typeof and instanceof work?** typeof returns a string indicating the operand’s type (with a quirk: typeof null is ‘object’). instanceof checks if an object is an instance of a constructor by traversing its prototype chain.
 - **Explain why typeof null === "object" returns true. Is this a bug?** It is a long-standing quirk in JavaScript’s implementation stemming from the original 32-bit tagged representation of values. null has its type tag set to 0, which was interpreted as “object”. It’s officially recognized as a historical bug but kept for backward compatibility.
-- **What is the difference between null and undefined?** undefined indicates a variable has been declared but not assigned a value and is the default return value of functions. null is an assignment value representing the intentional absence of any object.
+- **What is the difference between null and undefined?** `undefined` is JavaScript's default absence value and can also be assigned explicitly. `null` must be supplied explicitly and conventionally represents an intentional absence; both are primitive values.
 
 ### Type coercion
 
 #### Definition
 
 Type coercion is JavaScript’s conversion of a value from one type to another. It can be implicit (done automatically, e.g., in ==, arithmetic, or string concatenation) or explicit (developer-initiated with helpers like Number(), String(), Boolean()).
-#### Example
+
+#### Example — Task Board
 
 ```js
-console.log(5 + "10");   // "510" (number → string, concatenation)
-console.log("5" * 2);    // 10    (string → number)
-console.log(5 == "5");   // true  (loose equality after coercion)
-console.log(5 === "5");  // false (strict equality, no coercion)
+const formValues = {
+  id: "TASK-101",
+  title: "Add keyboard navigation",
+  status: "todo",
+  priority: "1",
+  assigneeId: "",
+  tags: "accessibility,frontend"
+};
 
-// Special cases
-console.log(null == undefined); // true (special == rule)
-console.log(null == 0);         // false
+const task = {
+  ...formValues,
+  priority: Number(formValues.priority),
+  assigneeId: formValues.assigneeId || null,
+  tags: formValues.tags.split(",").map((tag) => tag.trim())
+};
+
+console.log(task.priority + 1); // 2 (explicit numeric conversion)
+console.log(formValues.priority + 1); // "11" (implicit string coercion)
+console.log(task.priority === 1); // true
+console.log(task.priority == formValues.priority); // true, but relies on coercion
 ```
+
+**What it demonstrates:** Browser form values arrive as strings, so converting at the boundary keeps the task model predictable and allows strict equality checks.
 
 #### Common Interview Questions
 
@@ -106,25 +168,33 @@ console.log(null == 0);         // false
 #### Definition
 
 JavaScript uses prototype-based inheritance: every object has an internal `[[Prototype]]` link, inspected with `Object.getPrototypeOf(obj)`, to another object or `null`. When a property is not found on the object itself, lookup follows that chain. Functions are callable objects, but only constructable functions (such as ordinary function declarations/expressions and classes) have `[[Construct]]` and can be used with `new`; arrow and method functions are not constructors.
-#### Example
+
+#### Example — Task Board
 
 ```js
-function Animal(name) {
-  this.name = name;
+function Task({ id, title, status, priority, assigneeId, tags }) {
+  Object.assign(this, { id, title, status, priority, assigneeId, tags });
 }
-Animal.prototype.speak = function () {
-  return `${this.name} makes a noise`;
+
+Task.prototype.summary = function () {
+  return `${this.id}: ${this.title} [${this.status}]`;
 };
 
-const dog = new Animal("Rex");
-console.log(dog.speak()); // "Rex makes a noise"
+const task = new Task({
+  id: "TASK-101",
+  title: "Add keyboard navigation",
+  status: "in-progress",
+  priority: 1,
+  assigneeId: null,
+  tags: ["accessibility", "frontend"]
+});
 
-// Modern best practice:
-console.log(Object.getPrototypeOf(dog) === Animal.prototype); // true
-
-// Legacy (still works, but discouraged):
-console.log(dog.__proto__ === Animal.prototype); // true
+console.log(task.summary());
+console.log(Object.hasOwn(task, "summary")); // false
+console.log(Object.getPrototypeOf(task) === Task.prototype); // true
 ```
+
+**What it demonstrates:** Instances hold their own task data while sharing `summary` through `Task.prototype`; missing own properties are resolved along the prototype chain.
 
 #### Common Interview Questions
 
@@ -135,7 +205,7 @@ console.log(dog.__proto__ === Animal.prototype); // true
   - Object literals: `const obj = {};`
   - Constructor functions: `function Car() {}; const myCar = new Car();`.
   - `Object.create(proto)`: creates an object with a specified prototype.
-  - ES6 classes: syntactic sugar over prototypes: `class Car {}; const myCar = new Car();`.
+  - Classes: dedicated syntax built on the prototype model, with additional semantics such as strict class bodies: `class Car {}; const myCar = new Car();`.
 
 ### Pass by value/reference
 
@@ -144,25 +214,37 @@ console.log(dog.__proto__ === Animal.prototype); // true
 In JavaScript all function arguments are passed by value.
 
 - For primitive variables the actual data is copied, so the callee can’t affect the caller’s variable.
-- For object variables the reference value (a pointer) is copied. The callee can mutate the same underlying object through that reference, but reassigning the parameter only changes the local copy of the reference, leaving the caller’s variable untouched.
-#### Example
+- For object variables the reference value that identifies the object is copied. The callee can mutate the same underlying object through that reference, but reassigning the parameter only changes the local copy of the reference, leaving the caller’s variable untouched.
+
+#### Example — Task Board
 
 ```js
-function demo(num, obj) {
-  num += 1;            // local change
-  obj.count += 1;      // mutates shared object
-  obj = { count: 0 };  // re‑binds local reference
+const task = {
+  id: "TASK-101",
+  title: "Add keyboard navigation",
+  status: "todo",
+  priority: 1,
+  assigneeId: null,
+  tags: ["accessibility", "frontend"]
+};
+let selectedStatus = "todo";
+
+function attemptUpdates(status, taskRef) {
+  status = "done"; // reassigns only the local primitive parameter
+  taskRef.status = "in-progress"; // mutates the shared object
+  taskRef = { ...taskRef, status: "blocked" }; // rebinds only the local parameter
 }
-let n   = 5;
-let box = { count: 5 };
-demo(n, box);
-console.log(n);   // 5  (unchanged)
-console.log(box); // { count: 6 } (mutated)
+
+attemptUpdates(selectedStatus, task);
+console.log(selectedStatus); // "todo"
+console.log(task.status); // "in-progress"
 ```
+
+**What it demonstrates:** JavaScript passes both arguments by value; for an object, the copied value is a reference that can still be used to mutate the shared object.
 
 #### Common Interview Questions
 
-- **What actually gets copied when you pass an object to a function in JavaScript?** The variable’s reference value - a pointer to the object - is copied. Both caller and callee now hold separate references to the same object in memory.
+- **What actually gets copied when you pass an object to a function in JavaScript?** The variable’s reference value is copied. The caller and callee hold separate copies of a reference that identifies the same object.
 - **Why does reassigning an object parameter inside a function not affect the original object?** Reassignment simply changes the local parameter to point elsewhere; it doesn’t modify the original reference held by the caller.
 - **How can you protect an object argument from unintended mutation inside a function?** Choose the copy depth deliberately. `{...obj}` protects only top-level properties because nested objects remain shared. `structuredClone(obj)` creates a deep clone for supported structured-clone values and handles cycles. A library may be appropriate for custom instances or domain-specific rules; the JSON stringify/parse trick is lossy, rejects cycles and BigInt, and is not a general deep-clone API.
 
@@ -170,51 +252,39 @@ console.log(box); // { count: 6 } (mutated)
 
 #### Definition
 
-The this keyword in JavaScript refers to the execution context of a function and is determined by how the function is called, not where it's defined. JavaScript has four main binding rules that determine what this references, plus special behavior for arrow functions. Understanding these rules is crucial for predicting function behavior in different calling contexts.
-#### Example
+The `this` keyword exposes a special receiver value. For regular functions it is generally determined by how the function is called, not where it is defined; arrow functions instead capture `this` lexically. Understanding the binding rules is crucial for predicting function behavior in different calling contexts.
+
+#### Example — Task Board
 
 ```js
-// 1. Default binding (standalone function call)
-function standAlone() {
-    console.log(this); // globalThis in sloppy mode; undefined in strict mode
-}
-standAlone();
+"use strict";
 
-// 2. Implicit binding (method call)
-const obj = {
-    name: "Alice",
-    greet() {
-        console.log(`Hello, ${this.name}`); // "Hello, Alice"
-    }
+const taskBoard = {
+  tasks: [{
+    id: "TASK-101",
+    title: "Add keyboard navigation",
+    status: "in-progress",
+    priority: 1,
+    assigneeId: null,
+    tags: ["accessibility", "frontend"]
+  }],
+  findTask(id) {
+    // The regular method receives `this` from the call site; the arrow callback
+    // captures that same `this` instead of creating a new binding.
+    return this.tasks.find((task) => task.id === id);
+  }
 };
-obj.greet();
 
-// 3. Explicit binding (call/apply/bind)
-function introduce() {
-    console.log(`I'm ${this.name}`);
-}
-const person = { name: "Bob" };
-introduce.call(person); // "I'm Bob"
+console.log(taskBoard.findTask("TASK-101")?.title); // implicit binding
 
-// 4. new binding (constructor call)
-function Person(name) {
-    this.name = name;
-}
-const john = new Person("John");
-console.log(john.name); // "John"
+const detachedFind = taskBoard.findTask;
+console.log(detachedFind.call(taskBoard, "TASK-101")?.status); // explicit binding
 
-// 5. Arrow functions capture `this` from the enclosing scope
-const arrowObj = {
-    name: "Carol",
-    greet() {
-        const sayHello = () => {
-            console.log(`Hello, ${this.name}`);
-        };
-        sayHello();
-    }
-};
-arrowObj.greet(); // "Hello, Carol"
+const boundFind = taskBoard.findTask.bind(taskBoard);
+console.log(boundFind("TASK-101")?.priority); // permanently bound receiver
 ```
+
+**What it demonstrates:** Regular-function `this` depends on the call site, `call`/`bind` can supply the receiver explicitly, and an inner arrow function captures the method's `this`.
 
 #### Common Interview Questions
 
@@ -222,28 +292,47 @@ arrowObj.greet(); // "Hello, Carol"
 - **What is the difference between arrow functions and regular functions regarding this?** Arrow functions inherit this from their surrounding (lexical) scope at the time they are defined, while regular functions have their own this binding determined by how they are called.
 - **How does strict mode affect this binding?** In strict mode, default binding sets this to undefined instead of the global object, preventing accidental pollution of the global scope.
 - **What is the precedence order of the this binding rules?** new binding > explicit binding (call/apply/bind) > implicit binding (method call) > default binding (standalone function).
-- **Why might this be undefined or unexpected in callback functions?** When passing a method as a callback, it loses its original context and this defaults to the global object or undefined. Solutions include using bind(), arrow functions, or passing wrapper functions.
+- **Why might `this` be undefined or unexpected in callback functions?** Passing a bare method does not preserve its original receiver. `this` then depends on how the receiving API invokes the callback—often as a plain function (`undefined` in strict mode), although some APIs supply a receiver. Use `bind()`, an arrow wrapper, or an API's documented `thisArg` when the original object is required.
 
 ### Object configuration
 
 #### Definition
 
 Object configuration is the practice of controlling how an object and its properties behave by using property descriptors and extensibility helpers. With Object.defineProperty/defineProperties you set the attributes value, writable, enumerable, and configurable, and with helpers such as Object.preventExtensions, Object.seal, and Object.freeze you restrict whether new properties can be added, existing ones removed, or values modified.
-#### Example
+
+#### Example — Task Board
 
 ```js
-const user = {};
-Object.defineProperty(user, 'id', {
-  value: 123,
+"use strict";
+
+const task = {
+  title: "Add keyboard navigation",
+  status: "todo",
+  priority: 1,
+  assigneeId: null,
+  tags: ["accessibility"]
+};
+
+Object.defineProperty(task, "id", {
+  value: "TASK-101",
   writable: false,
-  enumerable: false,
+  enumerable: true,
   configurable: false
 });
-console.log(user.id);           // 123
-user.id = 456;                  // ignored in sloppy mode; TypeError in strict mode
-console.log(Object.keys(user)); // []
-Object.freeze(user);            // shallowly freezes this object's own properties
+Object.freeze(task); // freezes this object, but not its nested tags array
+
+try {
+  task.status = "done";
+} catch (error) {
+  console.log(error.name); // "TypeError"
+}
+
+task.tags.push("frontend");
+console.log(Object.isFrozen(task)); // true
+console.log(task.tags); // ["accessibility", "frontend"]
 ```
+
+**What it demonstrates:** A descriptor can make the task ID read-only, strict mode exposes failed writes, and `Object.freeze` is shallow unless nested values are frozen separately.
 
 #### Common Interview Questions
 
@@ -256,49 +345,69 @@ Object.freeze(user);            // shallowly freezes this object's own propertie
 #### Definition
 
 JavaScript supports accessor properties - functions that run when a property is read (getter) or assigned (setter). They are declared with the get and set keywords (shorthand) or via Object.defineProperty. Accessor properties store no value themselves; they compute or validate on access while appearing like “regular” fields to callers.
-#### Example
+
+#### Example — Task Board
 
 ```js
-const account = {
-  _balance: 0,
-  get balance() {
-    return this._balance.toFixed(2);
+const allowedStatuses = new Set(["todo", "in-progress", "blocked", "done"]);
+const task = {
+  id: "TASK-101",
+  title: "Add keyboard navigation",
+  _status: "todo",
+  priority: 1,
+  assigneeId: null,
+  tags: ["accessibility", "frontend"],
+  get status() {
+    return this._status;
   },
-  set balance(amount) {
-    if (amount < 0) throw Error('negative');
-    this._balance = Number(amount);
+  set status(nextStatus) {
+    if (!allowedStatuses.has(nextStatus)) {
+      throw new TypeError(`Unknown task status: ${nextStatus}`);
+    }
+    this._status = nextStatus;
   }
 };
-account.balance = 50;
-console.log(account.balance); // "50.00"
+
+Object.defineProperty(task, "_status", { enumerable: false });
+task.status = "in-progress";
+console.log(task.status); // "in-progress"
+console.log(Object.keys(task).includes("status")); // true
 ```
+
+**What it demonstrates:** The `status` accessor looks like a normal property while its setter validates writes and its getter reads non-enumerable backing state.
 
 #### Common Interview Questions
 
 - **What is the practical difference between a data property and an accessor property?** A data property holds a value directly (value, writable flags), whereas an accessor property defines get/set functions and stores no value - logic runs on every read or write.
 - **Why might you choose Object.defineProperty over the get/set shorthand?** Object.defineProperty lets you also set descriptor flags (enumerable, configurable) and attach getters/setters to an object after creation, useful for libraries or meta-programming.
 - **Can a property have both a value and a get/set in its descriptor?** No. A property descriptor is either a data descriptor (value, writable) or an accessor descriptor (get, set). Mixing them throws a TypeError.
+
 ### Higher-order functions
 
 #### Definition
 
 A higher-order function (HOF) is any function that takes one or more functions as arguments, returns a function, or both. HOFs enable functional patterns such as callbacks, currying, composition, and lazy evaluation.
-#### Example
+
+#### Example — Task Board
 
 ```js
-const once = (fn) => {
-  let called = false;
-  return (...args) => {
-    if (!called) {
-      called = true;
-      return fn(...args);
-    }
-  };
-};
-const logOnce = once(console.log);
-logOnce("Hello"); // prints "Hello"
-logOnce("Hi");    // does nothing
+const tasks = [
+  { id: "TASK-101", title: "Add keyboard navigation", status: "in-progress", priority: 1, assigneeId: null, tags: ["accessibility"] },
+  { id: "TASK-102", title: "Document filters", status: "todo", priority: 2, assigneeId: "USER-7", tags: ["docs"] },
+  { id: "TASK-103", title: "Archive completed cards", status: "done", priority: 3, assigneeId: null, tags: ["cleanup"] }
+];
+
+const hasStatus = (status) => (task) => task.status === status;
+const filterTasks = (items, predicate) => items.filter(predicate);
+
+const openTasks = filterTasks(tasks, (task) => task.status !== "done");
+const todoTasks = filterTasks(tasks, hasStatus("todo"));
+
+console.log(openTasks.map((task) => task.id)); // ["TASK-101", "TASK-102"]
+console.log(todoTasks.map((task) => task.id)); // ["TASK-102"]
 ```
+
+**What it demonstrates:** `filterTasks` accepts behavior as a callback, while `hasStatus` returns a reusable predicate—both forms make a function higher-order.
 
 #### Common Interview Questions
 
@@ -311,15 +420,41 @@ logOnce("Hi");    // does nothing
 #### Definition
 
 Recursion is a programming technique in which a function calls itself to solve a problem that can be broken down into similar sub-problems. A recursive algorithm needs a base case (to stop recursing) and a recursive case (that reduces the problem size and calls itself).
-#### Example
+
+#### Example — Task Board
 
 ```js
-function factorial(n) {
-  if (n === 0) return 1;        // base case
-  return n * factorial(n - 1);  // recursive case
+const tasks = [
+  { id: "TASK-101", title: "Create task model", status: "done", priority: 1, assigneeId: null, tags: ["data"] },
+  { id: "TASK-102", title: "Render task cards", status: "in-progress", priority: 1, assigneeId: "USER-7", tags: ["frontend"] },
+  { id: "TASK-103", title: "Add board filters", status: "blocked", priority: 2, assigneeId: null, tags: ["frontend"] }
+];
+const taskById = new Map(tasks.map((task) => [task.id, task]));
+const dependencies = new Map([
+  ["TASK-102", ["TASK-101"]],
+  ["TASK-103", ["TASK-102"]]
+]);
+
+function collectDependencies(taskId, visited = new Set()) {
+  if (visited.has(taskId)) return []; // base case also prevents cycles
+  visited.add(taskId);
+
+  return (dependencies.get(taskId) ?? []).flatMap((dependencyId) => {
+    const dependency = taskById.get(dependencyId);
+    if (!dependency || visited.has(dependencyId)) return [];
+
+    return [
+      dependency,
+      ...collectDependencies(dependencyId, visited)
+    ];
+  });
 }
-console.log(factorial(5)); // 120
+
+console.log(collectDependencies("TASK-103").map((task) => task.id));
+// ["TASK-102", "TASK-101"]
 ```
+
+**What it demonstrates:** Each call resolves one task's direct dependencies and recursively handles the smaller dependency subgraph, with a base case that also guards against cycles.
 
 #### Common Interview Questions
 
@@ -328,12 +463,14 @@ console.log(factorial(5)); // 120
 - **Explain tail recursion and its potential benefit.** A function is tail-recursive when its recursive call is the last operation it performs. This allows the engine (if optimized) to reuse the same stack frame instead of growing the stack.
   Example:
   ```js
+  "use strict";
+
   function factorial(n, acc = 1) {
     if (n === 0) return acc;        // base case
     return factorial(n - 1, n * acc); // tail call
   }
   ```
-  ECMAScript specifies Tail Call Optimization (TCO), but most JavaScript engines (e.g., V8 in Chrome/Node) do not implement it, mainly for debugging/stack-trace reasons. Safari’s JavaScriptCore supports it.
+  ECMAScript specifies proper tail calls for calls in strict-mode tail position, but most JavaScript engines (including V8 in Chrome/Node) do not implement them. Safari’s JavaScriptCore does.
 
 ### Closures & scope
 
@@ -342,41 +479,37 @@ console.log(factorial(5)); // 120
 Scope is the set of rules that determines where identifiers (variables, functions) are visible. JavaScript uses lexical (static) scope: visibility is decided by where code is written, not where it runs.
 
 A closure is a function that keeps access to its lexical environment - all the variables that were in scope when the function was created - even after the outer function has finished executing. This lets inner functions remember and interact with private data.
-#### Example
+
+#### Example — Task Board
 
 ```js
-let planet = "Earth";
-function showScopes() {
-  let continent = "Europe";
-  if (true) {
-    let country = "Serbia";
-    console.log("Inside block:", planet, continent, country);
-  }
-  console.log("Inside function:", planet, continent);
+function createTaskIdGenerator(start = 101) {
+  let nextNumber = start;
 
-  // country is block-scoped  -  not accessible here
-  // console.log(country); // ReferenceError
+  return () => `TASK-${nextNumber++}`;
 }
-showScopes();
-console.log("Global only:", planet);
+
+const nextTaskId = createTaskIdGenerator();
+
+const firstTask = {
+  id: nextTaskId(),
+  title: 'Add keyboard navigation',
+  status: 'todo',
+  priority: 1,
+  assigneeId: null,
+  tags: ['accessibility']
+};
+
+console.log(firstTask.id); // TASK-101
+console.log(nextTaskId()); // TASK-102
 ```
 
-Closures capture variables:
-
-```js
-function makeCounter() {
-  let count = 0;
-  return () => ++count;
-}
-const counter = makeCounter();
-console.log(counter()); // 1
-console.log(counter()); // 2
-```
+**What it demonstrates:** `nextNumber` is scoped to the factory yet remains available to the returned function, giving each generator private persistent state.
 
 #### Common Interview Questions
 
 - **What practical problem do closures solve?** Give one real-world use-case. Closures enable data privacy and stateful functions. Example: a module that exposes increment and get methods but hides the internal count variable, preventing external tampering.
-  Contrast var, let, and const in terms of scope. var is function-scoped and hoisted; let and const are block-scoped (limited to {}) and are not initialized until their declaration is evaluated (temporal dead zone). This makes let/const safer for loops/closures because each iteration can capture a unique binding.
+- **Contrast `var`, `let`, and `const` in terms of scope.** `var` is function-scoped and initialized to `undefined` when its declaration is instantiated. `let` and `const` are block-scoped and remain uninitialized in the temporal dead zone until evaluation reaches their declarations. A `let` declaration in a `for` loop can create a fresh binding for each iteration, which closures capture independently.
 - **How can poorly managed closures cause memory leaks, and how do you prevent them?** If a closure holds references to large objects (e.g., DOM nodes) that are no longer needed, the garbage collector cannot reclaim them until the closure is released. Mitigation: null out unused references, remove event listeners, or structure code so closures don’t outlive their useful scope.
 - **How do closures behave in loops with var vs let?** With var, closures share the same binding and often read the final value; with let, each iteration gets a new binding. Use let or an IIFE to capture the current value.
 
@@ -384,21 +517,42 @@ console.log(counter()); // 2
 
 #### Definition
 
-A callback is a function passed as an argument to another function so that it can be invoked at a later time - after a task finishes, at every iteration, in response to an event, etc. Callbacks enable flexible control-flow, especially for asynchronous operations such as timers, I/O, and network requests.
-#### Example
+A callback is a function passed to other code so that the receiving code can invoke it. Invocation may be synchronous, such as an array-method callback, or asynchronous, such as a timer or I/O callback. Callbacks also handle events and make control flow configurable.
+
+#### Example — Task Board
 
 ```js
-function readFile(path, callback) {
+function saveTask(task, callback) {
   setTimeout(() => {
-    if (path === 'data.txt') callback(null, 'file contents');
-    else callback(new Error('Not found'));
-  }, 100);
+    if (!task.title.trim()) {
+      callback(new Error('A task title is required'));
+      return;
+    }
+
+    callback(null, { ...task, status: 'in-progress' });
+  }, 0);
 }
-readFile('data.txt', (err, data) => {
-  if (err) return console.error(err);
-  console.log('Got:', data);
+
+const task = {
+  id: 'TASK-101',
+  title: 'Add keyboard navigation',
+  status: 'todo',
+  priority: 1,
+  assigneeId: null,
+  tags: ['accessibility']
+};
+
+saveTask(task, (error, savedTask) => {
+  if (error) {
+    console.error(error.message);
+    return;
+  }
+
+  console.log(savedTask.status); // in-progress
 });
 ```
+
+**What it demonstrates:** `saveTask` accepts an asynchronous error-first callback and invokes exactly one success or failure path after the simulated save finishes.
 
 #### Common Interview Questions
 
@@ -411,21 +565,58 @@ readFile('data.txt', (err, data) => {
 #### Definition
 
 Method chaining is a design pattern in which each method returns an object that exposes more methods, allowing multiple operations to be performed in a single, fluent statement (e.g., obj.doA().doB().doC()). Most chains return this (the same instance) or a new wrapper object so the chain can continue.
-#### Example
+
+#### Example — Task Board
 
 ```js
-class Counter {
-  #value = 0;
-  inc(n = 1) { this.#value += n; return this; }
-  dec(n = 1) { this.#value -= n; return this; }
-  log()      { console.log(this.#value); return this; }
+class TaskBuilder {
+  #task;
+
+  constructor(id, title) {
+    this.#task = {
+      id,
+      title,
+      status: 'todo',
+      priority: 3,
+      assigneeId: null,
+      tags: []
+    };
+  }
+
+  priority(value) {
+    this.#task.priority = value;
+    return this;
+  }
+
+  assignTo(assigneeId) {
+    this.#task.assigneeId = assigneeId;
+    return this;
+  }
+
+  addTag(tag) {
+    this.#task.tags.push(tag);
+    return this;
+  }
+
+  build() {
+    return { ...this.#task, tags: [...this.#task.tags] };
+  }
 }
-new Counter().inc(3).dec().log(); // 2
+
+const task = new TaskBuilder('TASK-101', 'Add keyboard navigation')
+  .priority(1)
+  .assignTo('user-42')
+  .addTag('accessibility')
+  .build();
+
+console.log(task);
 ```
+
+**What it demonstrates:** Each configuration method returns the same builder, enabling a fluent chain; `build` returns a separate task value instead of exposing its internal object.
 
 #### Common Interview Questions
 
-- **How do you make a method chainable?** Ensure the method returns an object with the next callable methods - most commonly return this; inside class methods so the same instance is passed along.
+- **How do you make a method chainable?** Return an object that exposes the next callable method. A mutating instance API most commonly returns `this`, while an immutable chain returns a new wrapper or value with the same fluent surface.
 - **What are the benefits and potential drawbacks of method chaining?** Benefits: concise, readable “fluent” API, fewer temporary variables. Drawbacks: harder debugging if a link returns undefined, risk of hidden side-effects when chaining mutating methods, and chains can become hard to break across lines for error handling.
 - **When would you return a new object instead of this in a chain?** If you want an immutable API (e.g., many functional libraries), each call returns a fresh object with the updated state, leaving previous links unchanged. This avoids shared-state bugs at the cost of extra allocations.
 
@@ -434,20 +625,31 @@ new Counter().inc(3).dec().log(); // 2
 #### Definition
 
 JavaScript arrays inherit a rich set of prototype methods that let you add/remove elements, iterate, transform, query, and aggregate data. Methods fall into two broad camps: mutating (change the original array, e.g., push, pop, splice) and non-mutating (return a new array or value, e.g., map, filter, slice).
-#### Example
+
+#### Example — Task Board
 
 ```js
-const nums = [1, 2, 3, 4, 5];
-// Non‑mutating chain
-const squaredEvens = nums
-  .filter(n => n % 2 === 0) // [2, 4]
-  .map(n => n ** 2);        // [4, 16]
-console.log(nums);         // [1, 2, 3, 4, 5]
-console.log(squaredEvens); // [4, 16]
-// Mutating method
-nums.splice(2, 1);         // remove element at index 2
-console.log(nums);         // [1, 2, 4, 5]
+const tasks = [
+  { id: 'TASK-101', title: 'Add keyboard navigation', status: 'todo', priority: 1, assigneeId: null, tags: ['accessibility'] },
+  { id: 'TASK-102', title: 'Cache board filters', status: 'done', priority: 2, assigneeId: 'user-42', tags: ['performance'] },
+  { id: 'TASK-103', title: 'Fix drag preview', status: 'blocked', priority: 1, assigneeId: 'user-17', tags: ['ui'] }
+];
+
+const urgentOpenTaskLabels = tasks
+  .filter(task => task.status !== 'done' && task.priority === 1)
+  .map(task => `${task.id}: ${task.title}`);
+
+const countByStatus = tasks.reduce((counts, task) => {
+  counts[task.status] = (counts[task.status] ?? 0) + 1;
+  return counts;
+}, {});
+
+console.log(urgentOpenTaskLabels);
+console.log(countByStatus);
+console.log(tasks.length); // 3: filter, map and reduce did not mutate it
 ```
+
+**What it demonstrates:** `filter` selects matching tasks, `map` transforms them, and `reduce` aggregates status counts while leaving the source array unchanged.
 
 #### Common Interview Questions
 
@@ -465,13 +667,25 @@ console.log(nums);         // [1, 2, 4, 5]
 #### Definition
 
 Currying is the technique of transforming a function that takes multiple arguments at once (f(a, b, c)) into a sequence of nested, unary functions (f(a)(b)(c)), each capturing one argument and returning another function until all arguments are provided. The final call returns the result. Currying is useful for partial application, function composition, and creating specialized helpers.
-#### Example
+
+#### Example — Task Board
 
 ```js
-const curriedAdd = a => b => c => a + b + c;
-const addFive = curriedAdd(2)(3);
-console.log(addFive(4)); // 9
+const hasStatus = status => task => task.status === status;
+
+const tasks = [
+  { id: 'TASK-101', title: 'Add keyboard navigation', status: 'todo', priority: 1, assigneeId: null, tags: ['accessibility'] },
+  { id: 'TASK-102', title: 'Cache board filters', status: 'done', priority: 2, assigneeId: 'user-42', tags: ['performance'] },
+  { id: 'TASK-103', title: 'Fix drag preview', status: 'blocked', priority: 1, assigneeId: 'user-17', tags: ['ui'] }
+];
+
+const isBlocked = hasStatus('blocked');
+const blockedTasks = tasks.filter(isBlocked);
+
+console.log(blockedTasks.map(task => task.id)); // ['TASK-103']
 ```
+
+**What it demonstrates:** The curried function captures a status first, producing a reusable one-argument predicate that can be passed directly to `filter`.
 
 #### Common Interview Questions
 
@@ -483,26 +697,50 @@ console.log(addFive(4)); // 9
 
 #### Definition
 
-Memoization is an optimization technique where a function caches the result of expensive computations keyed by its argument values. On subsequent calls with the same inputs, the function returns the cached value instead of recalculating, improving performance for pure or mostly-pure functions.
-#### Example
+Memoization is an optimization technique where a function caches computation results by input. A later call with an equivalent cache key can reuse the result instead of recalculating it. This is safe when the result is determined by that key for the cache's lifetime; changing dependencies require invalidation or a different key.
+
+#### Example — Task Board
 
 ```js
-const memoizeOne = (fn) => {
-  const cache = new Map();
-  return (arg) => {
-    if (cache.has(arg)) return cache.get(arg);
-    const result = fn(arg);
-    cache.set(arg, result);
-    return result;
-  };
-};
+function memoizeLast(fn) {
+  let hasCachedValue = false;
+  let lastInput;
+  let lastResult;
 
-let fib;
-fib = memoizeOne((n) => (
-  n < 2 ? n : fib(n - 1) + fib(n - 2)
-));
-console.log(fib(40));
+  return (input) => {
+    if (hasCachedValue && input === lastInput) return lastResult;
+
+    lastInput = input;
+    lastResult = fn(input);
+    hasCachedValue = true;
+    return lastResult;
+  };
+}
+
+const countByStatus = memoizeLast((tasks) =>
+  tasks.reduce((counts, task) => {
+    counts[task.status] = (counts[task.status] ?? 0) + 1;
+    return counts;
+  }, {})
+);
+
+const tasks = [
+  { id: 'TASK-101', title: 'Add keyboard navigation', status: 'todo', priority: 1, assigneeId: null, tags: ['accessibility'] },
+  { id: 'TASK-102', title: 'Cache board filters', status: 'done', priority: 2, assigneeId: 'user-42', tags: ['performance'] }
+];
+
+const firstCounts = countByStatus(tasks);
+const cachedCounts = countByStatus(tasks);
+console.log(cachedCounts === firstCounts); // true: same cached result
+
+const nextTasks = tasks.map(task =>
+  task.id === 'TASK-101' ? { ...task, status: 'in-progress' } : task
+);
+const nextCounts = countByStatus(nextTasks);
+console.log(nextCounts === firstCounts); // false: new input reference
 ```
+
+**What it demonstrates:** A one-entry memoization cache reuses work for the same array reference and recomputes after an immutable update creates a new reference.
 
 #### Common Interview Questions
 
@@ -515,24 +753,43 @@ console.log(fib(40));
 #### Definition
 
 A regular expression (RegExp) is a concise pattern-language for matching, searching, and replacing text. In JavaScript you create them with literals (/pattern/flags) or the RegExp constructor, and use them with string methods (match, replace, search, split) or RegExp methods (test, exec). Common flags include i (ignore case), g (global – find all matches), m (multiline anchors), and u (Unicode).
-#### Example
+
+#### Example — Task Board
 
 ```js
-const yearRE = /\b(\d{4})\b/g;
-const str = "2019 was wet, 2025 is sunny";
-console.log(str.match(yearRE)); // ["2019", "2025"]
+const taskIdPattern = /^TASK-(\d{3,})$/;
+
+function parseTaskNumber(taskId) {
+  const match = taskIdPattern.exec(taskId);
+  return match ? Number(match[1]) : null;
+}
+
+const task = {
+  id: 'TASK-101',
+  title: 'Add keyboard navigation',
+  status: 'todo',
+  priority: 1,
+  assigneeId: null,
+  tags: ['accessibility']
+};
+
+console.log(parseTaskNumber(task.id)); // 101
+console.log(parseTaskNumber('BUG-101')); // null
 ```
+
+**What it demonstrates:** Anchors validate the complete task ID, a capture group extracts its numeric part, and `exec` exposes that captured value.
 
 #### Common Interview Questions
 
 - **Explain the difference between test and exec.** Both belong to a RegExp instance. test(str) returns a boolean (was there a match?). exec(str) returns the match object (array of matched text plus captured groups) or null. When the regex has the g or y flag, successive calls to exec continue from the previous match thanks to the regex’s internal lastIndex pointer.
 - **Why might /foo/gi.test("FOO") return false on the second call?** With the g flag, test also advances lastIndex. After the first successful match lastIndex sits at the end of the string; the next test starts there and fails. Reset lastIndex = 0 or omit g when you need a simple boolean check.
 - **How do lookaheads and lookbehinds help build zero-width assertions?** Give an example. Lookaheads `(?=...)` and lookbehinds `(?<=...)` assert surrounding text without consuming it. `/\d+(?=%)/` matches `15` before the percent sign in `"up 15%"`. To match an integer token that does not begin after a dot, `/(?<![\d.])\d+/` checks before the first digit and also prevents the engine from taking a partial match later in the same digit sequence; it matches `5` but not `3` in `"version 5.3"`.
+
 ### Modern JavaScript (ECMAScript 2015–2026)
 
 #### Definition
 
-ES6 is the historical name for ECMAScript 2015. JavaScript has shipped in annual ECMAScript editions since then; as of July 2026, the current published snapshot is ECMAScript 2026 (ECMA-262, 17th edition). Important additions across those editions include:
+ES6 is the historical name for ECMAScript 2015. JavaScript has shipped in annual ECMAScript editions since then; as of July 2026, the current published snapshot is [ECMAScript 2026](https://ecma-international.org/publications-and-standards/standards/ecma-262/) (ECMA-262, 17th edition). Important additions across those editions include:
 
 - Block scope & bindings: let, const
 - Arrow functions & lexical this
@@ -546,47 +803,74 @@ ES6 is the historical name for ECMAScript 2015. JavaScript has shipped in annual
 - Reflect & Proxy meta-programming APIs
 - New operators: exponentiation `**`, optional chaining `?.`, nullish coalescing `??`, and logical assignment `&&=`, `||=`, `??=`.
 - Recent standardized APIs: iterator helpers and new Set methods (ES2025); `Array.fromAsync`, `Iterator.concat`, `Math.sumPrecise`, `Error.isError`, Uint8Array Base64/hex conversion, JSON parse source access, and Map/WeakMap get-or-insert methods (ES2026).
-#### Example
+
+#### Example — Task Board
 
 ```js
-import fetchData from './api.js';
-const getUser = async (id) => {
-  const { data } = await fetchData(`/users/${id}`);
-  return {
-    id,
-    ...data,
-    fullName: `${data.first} ${data.last}`
-  };
+const describeTask = ({ id, title, assigneeId, ...metadata }) => ({
+  label: `${id}: ${title}`,
+  owner: assigneeId ?? 'unassigned',
+  metadata
+});
+
+const task = {
+  id: 'TASK-101',
+  title: 'Add keyboard navigation',
+  status: 'todo',
+  priority: 1,
+  assigneeId: null,
+  tags: ['accessibility']
 };
-getUser(1).then(console.log);
+
+console.log(describeTask(task));
 ```
+
+**What it demonstrates:** One small overview combines an arrow function, parameter destructuring, object rest/shorthand, a template literal, and nullish coalescing without reproducing the later deep-dive examples.
 
 #### Common Interview Questions
 
 - **Why are `let` and `const` preferable to `var`, and when would you choose `let` over `const`?** `let` and `const` are block-scoped and remain in the temporal dead zone until initialization; their declarations are still hoisted, but they avoid `var`'s function scope and pre-initialization `undefined` behavior. `const` prevents rebinding, not mutation of an object value. Use `let` when the binding genuinely needs reassignment.
 - **How does spread differ in array and object literals?** Array spread iterates its operand and inserts those values into the surrounding array; it does not recursively flatten nested arrays. Object spread copies own enumerable properties into a new object, shallowly. Typical uses include `const combined = [...a, ...b]` and `const options = {...defaults, ...overrides}`.
-- **What problem did async/await solve over plain Promises, and how does it work under the hood?** async/await lets asynchronous code look synchronous, improving readability and error handling (try/catch). Under the hood the async function returns a Promise; each await pauses execution until the awaited value resolves, then resumes by chaining .then behind the scenes.
+- **What problem did async/await solve over plain Promises, and how does it work under the hood?** `async`/`await` lets asynchronous control flow read more like sequential code and works naturally with `try`/`catch`. An async function always returns a Promise. At each `await`, evaluation suspends; after the awaited value settles, the continuation is scheduled through the Promise job machinery as a microtask.
 
 ### Event loop
 
 #### Definition
 
-The browser event loop coordinates JavaScript tasks, microtasks and rendering opportunities. It selects a runnable task from one of several task queues/sources (timers, user interaction, networking and others), runs it to completion, and then drains the microtask queue (`Promise` reactions, `queueMicrotask`, `MutationObserver`). The browser may then update rendering when appropriate; a repaint is not guaranteed after every task. Node.js has a different phase-based event loop.
-#### Example
+The browser event loop coordinates tasks, microtasks, and rendering opportunities. It selects a runnable task from one of several task queues/sources (timers, user interaction, networking, and others) and runs that task to completion. At microtask checkpoints it processes queued microtasks (`Promise` reactions, `queueMicrotask`, and `MutationObserver` delivery), including newly queued ones, before the browser can select another task. The browser may update rendering when appropriate; a repaint is not guaranteed after every task. Node.js has a different, phase-based event loop.
+
+#### Example — Task Board
 
 ```js
-console.log('sync');       // (1)
-setTimeout(() => console.log('timeout'), 0); // macro‑task
-Promise.resolve().then(() => console.log('promise')); // micro‑task
-console.log('end');        // (2)
-// Output: sync → end → promise → timeout
+const task = {
+  id: 'TASK-101',
+  title: 'Add keyboard navigation',
+  status: 'todo',
+  priority: 1,
+  assigneeId: null,
+  tags: ['accessibility']
+};
+
+console.log(`1: start ${task.id}`);
+
+setTimeout(() => {
+  console.log(`4: timer task persists ${task.id}`);
+}, 0);
+
+Promise.resolve().then(() => {
+  console.log(`3: microtask updates counts for ${task.id}`);
+});
+
+console.log(`2: finish synchronous work for ${task.id}`);
 ```
+
+**What it demonstrates:** Synchronous code finishes first, the Promise reaction runs at the following microtask checkpoint, and the zero-delay timer callback runs in a later task.
 
 #### Common Interview Questions
 
-- **Why does a resolved Promise callback run before a setTimeout(..., 0) callback?** Because Promise reactions are micro-tasks and are flushed immediately after the current script finishes, before the event loop picks the next macro-task such as the timer.
-- **What happens if a micro-task continuously enqueues more micro-tasks?** The event loop will keep executing them in the same tick, potentially starving rendering and I/O because the browser/Node cannot proceed to the next macro-task until the micro-task queue is empty.
-- **How do requestAnimationFrame and requestIdleCallback fit into the event loop?** requestAnimationFrame callbacks run before repaint in the render phase of a tick, ideal for visual updates. requestIdleCallback runs after rendering when the loop is otherwise idle, letting you schedule low-priority work without jank.
+- **Why does a resolved Promise callback run before a setTimeout(..., 0) callback?** Promise reactions are microtasks processed at a microtask checkpoint after the current task finishes and before another task is selected. A timer callback is scheduled as a task once its delay threshold has elapsed; a zero delay is not a promise of immediate execution.
+- **What happens if a microtask continuously enqueues more microtasks?** The runtime continues processing the microtask queue until it is empty, so an unbounded chain can delay later tasks, browser rendering, and other work.
+- **How do requestAnimationFrame and requestIdleCallback fit into the event loop?** In a browser, `requestAnimationFrame` callbacks run as part of a rendering update before painting. Where supported, `requestIdleCallback` lets the browser invoke low-priority callbacks during idle periods, subject to an optional timeout; neither is an ordinary task-queue substitute.
 - **What is the difference between `window.load` and `DOMContentLoaded`?** `DOMContentLoaded` fires after parsing and after deferred/module scripts have executed. It does not directly wait for images or every stylesheet, although a stylesheet can delay a deferred script and therefore indirectly delay the event. `load` waits for the page's dependent resources such as images and stylesheets.
 
 ### Iterators
@@ -594,24 +878,38 @@ console.log('end');        // (2)
 #### Definition
 
 An iterator is an object that implements the iterator protocol: it has a next() method that returns an object with { value, done }. If done is false the value is the next item; when done becomes true, the iteration ends. Objects that expose an iterator via a Symbol.iterator method are iterables and work with language constructs like for…of, spread (...), array destructuring, and Array.from().
-#### Example
+
+#### Example — Task Board
 
 ```js
-function count(n) {
+const tasks = [
+  { id: 'TASK-101', title: 'Add status filter', status: 'todo', priority: 2, assigneeId: 'user-7', tags: ['ui'] },
+  { id: 'TASK-102', title: 'Handle empty state', status: 'done', priority: 3, assigneeId: null, tags: ['ux'] },
+  { id: 'TASK-103', title: 'Retry failed request', status: 'blocked', priority: 1, assigneeId: 'user-9', tags: ['api'] }
+];
+
+function openTasks(taskList) {
   return {
     [Symbol.iterator]() {
-      let i = 0;
+      const open = taskList.filter((task) => task.status !== 'done');
+      let index = 0;
+
       return {
         next() {
-          i++;
-          return { value: i, done: i > n };
+          if (index >= open.length) return { done: true, value: undefined };
+          return { done: false, value: open[index++] };
         }
       };
     }
   };
 }
-for (const num of count(3)) console.log(num); // 1 2 3
+
+for (const task of openTasks(tasks)) {
+  console.log(task.id, task.status);
+}
 ```
+
+**What it demonstrates:** The collection is iterable because it exposes `Symbol.iterator`; each `for...of` loop requests a fresh iterator whose `next()` method yields only open tasks.
 
 #### Common Interview Questions
 
@@ -623,21 +921,33 @@ for (const num of count(3)) console.log(num); // 1 2 3
 
 #### Definition
 
-Immutable data cannot be changed after it’s created; any “update” produces a new value. Mutable data can be altered in-place. In JavaScript, all primitive values (undefined, null, boolean, number, bigint, string, symbol) are inherently immutable, while objects (including arrays, functions, dates, maps, sets) are mutable unless you deliberately freeze or clone them.
-#### Example
+Immutable data cannot be changed after it’s created; any “update” produces a new value. Mutable data can be altered in-place. In JavaScript, all primitive values (undefined, null, boolean, number, bigint, string, symbol) are inherently immutable, while objects (including arrays, functions, dates, maps, sets) are mutable. You can restrict some mutation with `Object.freeze()` or model updates as new copies, but cloning alone does not make an object immutable.
+
+#### Example — Task Board
 
 ```js
-// Immutable primitive
-let a = 'Hi';
-a[0] = 'h';  // ignored in sloppy mode; TypeError in strict mode
-a = 'Hello'; // creates a new string
-// Mutable object
-const user = { name: 'Ann' };
-user.name = 'Ana';
-// Forcing immutability
-const frozen = Object.freeze({ year: 2025 });
-frozen.year = 2030; // ignored in sloppy mode; TypeError in strict mode
+const tasks = [
+  { id: 'TASK-101', title: 'Add status filter', status: 'todo', priority: 2, assigneeId: 'user-7', tags: ['ui'] },
+  { id: 'TASK-102', title: 'Handle empty state', status: 'blocked', priority: 3, assigneeId: null, tags: ['ux'] }
+];
+
+function completeTask(taskList, taskId) {
+  return taskList.map((task) =>
+    task.id === taskId
+      ? { ...task, status: 'done', tags: [...task.tags, 'verified'] }
+      : task
+  );
+}
+
+const nextTasks = completeTask(tasks, 'TASK-101');
+
+console.log(tasks[0].status);           // "todo"
+console.log(nextTasks[0].status);       // "done"
+console.log(nextTasks !== tasks);       // true
+console.log(nextTasks[1] === tasks[1]); // true: unchanged task is shared
 ```
+
+**What it demonstrates:** An immutable update copies the array, the changed task, and its changed `tags` array while preserving references to unchanged tasks through structural sharing.
 
 #### Common Interview Questions
 
@@ -651,54 +961,88 @@ frozen.year = 2030; // ignored in sloppy mode; TypeError in strict mode
 #### Definition
 
 A pure function is a function that, for the same input arguments, always returns the same output and has no observable side-effects (doesn’t modify external state, perform I/O, mutate its parameters, log, etc.). Its behavior is entirely determined by its inputs, which makes it predictable, testable, and cache-friendly (memoizable).
-#### Example
+
+#### Example — Task Board
 
 ```js
-const add = (a, b) => a + b;
-let counter = 0;
-const increment = () => ++counter; // impure – relies on external state
+const tasks = [
+  { id: 'TASK-101', title: 'Add status filter', status: 'todo', priority: 2, assigneeId: 'user-7', tags: ['ui'] },
+  { id: 'TASK-102', title: 'Handle empty state', status: 'done', priority: 3, assigneeId: null, tags: ['ux'] },
+  { id: 'TASK-103', title: 'Retry failed request', status: 'blocked', priority: 1, assigneeId: 'user-9', tags: ['api'] }
+];
+
+function selectOpenTasksByPriority(taskList) {
+  return taskList
+    .filter((task) => task.status !== 'done')
+    .slice()
+    .sort((left, right) => left.priority - right.priority);
+}
+
+const firstResult = selectOpenTasksByPriority(tasks);
+const secondResult = selectOpenTasksByPriority(tasks);
+
+console.log(firstResult.map((task) => task.id));  // ["TASK-103", "TASK-101"]
+console.log(secondResult.map((task) => task.id)); // same output
+console.log(tasks.map((task) => task.id));        // original order is unchanged
 ```
+
+**What it demonstrates:** The selector depends only on its argument, returns the same ordered values for the same input, and avoids side effects by sorting a copied array rather than mutating `tasks`.
 
 #### Common Interview Questions
 
 - **Why are pure functions easier to test than impure functions?** They rely solely on input parameters and return a value without side-effects, so you can assert “given X expect Y” without setting up or mocking global state, timers, I/O, or random data.
 - **Explain how pure functions enable memoization and give a practical benefit.** Because a pure function’s output depends only on its inputs, you can safely cache results keyed by arguments. Repeated calls with identical inputs bypass expensive recalculation - useful for CPU-heavy tasks like formatting large datasets in UI rendering.
-- **Can a function that throws errors be considered pure?** Yes - throwing is not a side-effect if the error depends solely on the inputs (e.g., sqrt(-1) throws). The key is that no external state is mutated and identical inputs always either return the same value or throw the same error.
+- **Can a function that throws errors be considered pure?** It depends on the definition. A deterministic throw does not mutate external state and can be modeled as a stable outcome of a partial function, but exceptions are observable control-flow effects and many JavaScript teams therefore exclude throwing functions from “pure” code. State the convention you are using.
 
 ### Hoisting
 
 #### Definition
 
-Hoisting is JavaScript’s compilation-time behavior that registers declarations before code execution.
+“Hoisting” is informal shorthand for the observable effects of declaration instantiation before a scope or body is evaluated; declarations are not literally moved in the source, and an implementation does not have to compile the code first.
 
-- var declarations are hoisted and automatically initialized to undefined.
-- let / const declarations are hoisted without initialization; accessing them before the declaration line triggers a Temporal Dead Zone (TDZ) ReferenceError.
-- Function declarations are hoisted with their full body, so they’re callable earlier in the scope.
-- Function expressions / arrow functions behave like variables: only the variable name is hoisted, not the value.
-#### Example
+- `var` bindings are created and initialized to `undefined` before statement evaluation.
+- `let` / `const` bindings are created without initialization; accessing them before their declaration is evaluated triggers a Temporal Dead Zone (TDZ) `ReferenceError`.
+- Function declarations are initialized with their function object during declaration instantiation, so they are callable earlier in the scope.
+- A function expression or arrow function is just the value assigned to a binding; access before its declaration depends on whether that binding uses `var` (`undefined`) or `let` / `const` (TDZ).
+
+#### Example — Task Board
 
 ```js
-console.log(foo); // undefined
+const task = {
+  id: 'TASK-101',
+  title: 'Add status filter',
+  status: 'todo',
+  priority: 2,
+  assigneeId: 'user-7',
+  tags: ['ui']
+};
+
+console.log(formatTask(task)); // "TASK-101: Add status filter"
+console.log(statusFilter);     // undefined
 
 try {
-  console.log(bar);
+  console.log(selectedTaskId);
 } catch (error) {
-  console.log(error.name); // "ReferenceError" (TDZ)
+  console.log(error.name);     // "ReferenceError" (TDZ)
 }
 
-speak(); // "Hi!"
-var foo = 1;
-let bar = 2;
-function speak() { console.log('Hi!'); }
+var statusFilter = task.status;
+let selectedTaskId = task.id;
+
+function formatTask({ id, title }) {
+  return `${id}: ${title}`;
+}
 ```
+
+**What it demonstrates:** The function declaration is callable before its source line, `var` is initialized to `undefined` when its scope starts, and the `let` binding exists but cannot be accessed inside its temporal dead zone.
 
 #### Common Interview Questions
 
-- **What is hoisted for each of these: var, let, const, function declaration, function expression?**
-  - var: name + implicit undefined initialization.
-  - let / const: name only; no init until definition line (TDZ).
-  - Function declaration: name and executable body.
-  - Function expression / arrow: variable name only; value assigned at runtime.
+- **What is initialized before statement evaluation for each of these: `var`, `let`, `const`, a function declaration, and a function expression?**
+  - `var`: the binding is initialized to `undefined`.
+  - `let` / `const`: the binding exists but remains uninitialized until its declaration is evaluated (TDZ).
+  - Function declaration: the binding is initialized with the function object.
+  - Function expression / arrow: the expression does not define separate hoisting behavior; the surrounding `var`, `let`, or `const` binding determines pre-declaration access.
 - **Explain the Temporal Dead Zone (TDZ).** The TDZ is the period between entering a scope and executing a let/const declaration. During this window the identifier exists but is uninitialized; any access throws a ReferenceError, enforcing safer ordering.
 - **Why does calling a function defined with const myFn = () => {} before its declaration fail, whereas calling a function myFn() {} succeeds?** With const, only the variable binding is hoisted - its value isn’t set yet (TDZ), so invoking it before assignment triggers a ReferenceError. A function declaration’s body is hoisted, so it’s fully defined and callable from the top of its scope.
 
@@ -707,15 +1051,33 @@ function speak() { console.log('Hi!'); }
 #### Definition
 
 An IIFE is a function expression that executes immediately after it is created. It encloses variables in a private scope and avoids polluting the surrounding (usually global) namespace. Syntax: wrap a function in parentheses to turn it into an expression, then append () to invoke it right away.
-#### Example
+
+#### Example — Task Board
 
 ```js
-(function () {
-  const secret = 'cookie';
-  console.log('Inside IIFE');
+const taskBoard = (() => {
+  let tasks = [
+    { id: 'TASK-101', title: 'Add status filter', status: 'todo', priority: 2, assigneeId: 'user-7', tags: ['ui'] }
+  ];
+
+  return {
+    complete(taskId) {
+      tasks = tasks.map((task) =>
+        task.id === taskId ? { ...task, status: 'done' } : task
+      );
+    },
+    list() {
+      return tasks.map((task) => ({ ...task, tags: [...task.tags] }));
+    }
+  };
 })();
-console.log(typeof secret); // "undefined"
+
+taskBoard.complete('TASK-101');
+console.log(taskBoard.list()[0].status); // "done"
+console.log(typeof tasks);               // "undefined"
 ```
+
+**What it demonstrates:** The IIFE runs once, keeps its mutable `tasks` binding private, and exposes a small public API; `list()` returns copies so callers cannot mutate that private state by reference.
 
 #### Common Interview Questions
 
@@ -725,11 +1087,14 @@ console.log(typeof secret); // "undefined"
   (() => console.log('Hello'))();
   ```
   Parentheses turn the arrow function into an expression; the trailing () invokes it.
-- **Can an IIFE return a value? Show a use-case.** Yes. Common pattern for singletons/config objects:
+- **Can an IIFE return a value? Show a use-case.** Yes. A module-like object can expose behavior while keeping supporting state private:
   ```js
-  const config = (() => { const apiKey = 'XYZ'; return { apiKey, timeout: 5000 }; })();
+  const taskUrls = (() => {
+    const apiBase = '/api';
+    return { byId: (id) => `${apiBase}/tasks/${id}` };
+  })();
   ```
-  config now holds the returned object, while apiKey remains private.
+  Callers can use `taskUrls.byId('TASK-101')`, while `apiBase` is not exposed as a property.
 
 ### Shallow vs deep copy
 
@@ -738,25 +1103,37 @@ console.log(typeof secret); // "undefined"
 A shallow copy duplicates the top-level properties of an object or array. If any of those properties are themselves objects, the references are copied, so the original and the copy still share nested data.
 
 A deep copy recursively duplicates the supported mutable data graph so cloned nodes do not share those mutable references with the source. Exact semantics depend on the cloning API: prototypes, functions, host objects, private state, transferables, and other special values may be rejected, transformed, transferred, or require domain-specific handling.
-#### Example
+
+#### Example — Task Board
 
 ```js
-const original = { id: 1, profile: { name: 'Ana' } };
-const shallow = { ...original };
-shallow.profile.name = 'Marko';
-console.log(original.profile.name); // 'Marko'
-// Deep copy using structuredClone (modern)
-const deep = structuredClone(original);
-deep.profile.name = 'Mila';
-console.log(original.profile.name); // 'Marko'
+const task = {
+  id: 'TASK-101',
+  title: 'Add status filter',
+  status: 'todo',
+  priority: 2,
+  assigneeId: 'user-7',
+  tags: ['ui']
+};
+
+const shallowCopy = { ...task };
+shallowCopy.tags.push('urgent');
+console.log(task.tags); // ["ui", "urgent"]: nested array is shared
+
+const deepCopy = structuredClone(task);
+deepCopy.tags.push('verified');
+console.log(task.tags);     // ["ui", "urgent"]
+console.log(deepCopy.tags); // ["ui", "urgent", "verified"]
 ```
+
+**What it demonstrates:** Object spread copies only the task's top level, while `structuredClone()` independently clones the supported nested data graph, including the `tags` array.
 
 #### Common Interview Questions
 
 - **Why does Object.assign or the spread operator { ...obj } not create a true deep copy?** They only copy enumerable own properties one level deep; nested objects are copied by reference. Mutating a nested field in the copy mutates the same object inside the original.
 - **Give two ways to deep-clone an object in modern JavaScript and list one trade-off for each.**
-  - `structuredClone(obj)` - handles most data types (even Map, Set, Date), but not functions or DOM nodes; requires modern runtime (Node 17+, modern browsers).
-  - `JSON.parse(JSON.stringify(obj))` - simple and widely supported but loses functions, undefined, symbols, circular references, and date objects turn into strings.
+  - `structuredClone(obj)` - supports structured-clone-compatible graphs, including `Map`, `Set`, `Date`, and cycles, but throws for functions and most DOM nodes; confirm support in the target runtime.
+  - `JSON.parse(JSON.stringify(obj))` - works only for JSON-compatible data: dates become strings, some unsupported property values are omitted, and cycles and `BigInt` throw.
 - **When is a shallow copy sufficient, and when must you choose a deep copy?** A shallow copy is sufficient when only top-level values change or when unchanged nested objects can be shared. Immutable Redux updates normally copy each object or array along the changed path and preserve references to unchanged branches (structural sharing); they do not deep-clone the whole state. Use a deep copy only when you genuinely need an independent clone of every supported nested value, such as before handing mutable configuration to untrusted code.
 
 ### DOM manipulation
@@ -764,28 +1141,507 @@ console.log(original.profile.name); // 'Marko'
 #### Definition
 
 DOM manipulation is the act of reading or changing the browser’s Document Object Model - the live tree of nodes representing HTML and XML documents - via JavaScript APIs. Core operations include selecting nodes (querySelector), creating/inserting/removing nodes (createElement, append, remove), modifying attributes and classes (setAttribute, classList), changing inline styles (style), and reacting to events (addEventListener).
-#### Example
+
+#### Example — Task Board
 
 ```html
-<!-- HTML -->
-<ul id="list"></ul>
+<section aria-labelledby="task-board-title">
+  <h2 id="task-board-title">Task board</h2>
+  <p id="task-count" aria-live="polite"></p>
+  <ul id="task-list"></ul>
+</section>
+
 <script>
-  const list = document.getElementById('list');
-  const item = document.createElement('li');
-  item.textContent = 'Dynamically added';
-  item.classList.add('highlight');
-  list.append(item);
+  let tasks = [
+    { id: 'TASK-101', title: 'Add status filter', status: 'todo', priority: 2, assigneeId: 'user-7', tags: ['ui'] },
+    { id: 'TASK-102', title: 'Handle empty state', status: 'done', priority: 3, assigneeId: null, tags: ['ux'] }
+  ];
+
+  const list = document.querySelector('#task-list');
+  const count = document.querySelector('#task-count');
+
+  function updateTaskAction(button, task) {
+    const isDone = task.status === 'done';
+    button.textContent = 'Done';
+    button.setAttribute('aria-pressed', String(isDone));
+    button.setAttribute('aria-label', `Done: ${task.title}`);
+  }
+
+  function updateTaskCount() {
+    const openCount = tasks.filter((task) => task.status !== 'done').length;
+    count.textContent = `${openCount} open task${openCount === 1 ? '' : 's'}`;
+  }
+
+  function renderTasks() {
+    const fragment = document.createDocumentFragment();
+
+    for (const task of tasks) {
+      const item = document.createElement('li');
+      const description = document.createElement('span');
+      const button = document.createElement('button');
+
+      description.textContent = `${task.id}: ${task.title} (${task.status})`;
+      button.type = 'button';
+      button.dataset.taskId = task.id;
+      updateTaskAction(button, task);
+
+      item.append(description, ' ', button);
+      fragment.append(item);
+    }
+
+    list.replaceChildren(fragment);
+    updateTaskCount();
+  }
+
+  list.addEventListener('click', (event) => {
+    if (!(event.target instanceof Element)) return;
+
+    const button = event.target.closest('button[data-task-id]');
+    if (!(button instanceof HTMLButtonElement) || !list.contains(button)) return;
+
+    const currentTask = tasks.find((task) => task.id === button.dataset.taskId);
+    if (!currentTask) return;
+
+    const updatedTask = {
+      ...currentTask,
+      status: currentTask.status === 'done' ? 'todo' : 'done'
+    };
+    tasks = tasks.map((task) =>
+      task.id === updatedTask.id ? updatedTask : task
+    );
+
+    const description = button.previousElementSibling;
+    if (description instanceof HTMLSpanElement) {
+      description.textContent = `${updatedTask.id}: ${updatedTask.title} (${updatedTask.status})`;
+    }
+    updateTaskAction(button, updatedTask);
+    updateTaskCount();
+  });
+
+  renderTasks();
 </script>
 ```
 
+**What it demonstrates:** Elements are created explicitly, untrusted task text is assigned with `textContent`, a fragment batches initial insertion, and one guarded delegated listener updates a semantic toggle button in place so keyboard focus is preserved.
+
 #### Common Interview Questions
 
-- **What is the difference between innerHTML and textContent, and when would you use each?** innerHTML parses and inserts markup, so it can create nested elements but is vulnerable to XSS if unsafe input is injected. textContent inserts plain text only (no parsing), making it faster and safer when you don’t need HTML.
+- **What is the difference between innerHTML and textContent, and when would you use each?** `innerHTML` parses and inserts markup, so it can create nested elements but creates an injection sink when given untrusted input. `textContent` inserts plain text without parsing markup, making it the safer default when HTML is not required; performance depends on the actual operation and document.
 - **Compare append/prepend with appendChild.** `append`/`prepend` (modern) can accept multiple arguments and strings, and return nothing; `appendChild` accepts one Node, returns that node, and errors on strings. Both move existing nodes instead of cloning them.
 - **Why is DocumentFragment useful for performance?** A DocumentFragment is a lightweight container for assembling a group of nodes before inserting them into the document. A single insertion can reduce repeated DOM mutation and layout work, although it does not guarantee exactly one render or zero reflows; browsers may batch direct DOM updates too, so measure performance-sensitive code.
 - **What are data attributes?** Data attributes (`data-*`) store custom data on standard HTML elements. They are available in JavaScript through `element.dataset` (for example, `data-user-id` becomes `element.dataset.userId`).
-- **What is the difference between the nodeValue and textContent properties?** nodeValue: For text nodes, it returns the text content. For element nodes, it returns null.
-  textContent: Returns the concatenated text of all descendants, including `<script>` and `<style>` content. It is more performant than innerText as it doesn't require layout calculations.
+- **What is the difference between the nodeValue and textContent properties?** `nodeValue` returns the text for text nodes and `null` for element nodes. `textContent` on an element returns the concatenated text of its descendants, including `<script>` and `<style>` content. Unlike the rendered-text-aware `innerText`, reading `textContent` does not itself require a layout calculation; actual performance still depends on the surrounding DOM work.
+
+## Modern JavaScript Deep Dive
+
+This deep dive expands on the ECMAScript 2015-2026 features introduced in the earlier Modern JavaScript section.
+
+### Running Example: Task Board
+
+This section continues the framework-free Task Board scenario from JavaScript Fundamentals. The examples use the same `taskSeed` fixture and focus on modern language features rather than UI-framework behavior.
+
+### Default Parameters & Rest/Spread
+
+#### Definition
+
+Functions can specify default parameter values (`function foo(x = 10) {...}`); rest parameters (`...args`) capture remaining arguments into an array; spread syntax (`...iterable`) expands an iterable in calls/array literals, while object spread copies own enumerable properties into an object literal.
+
+#### Example — Task Board
+
+```js
+function createTask(
+  id,
+  title,
+  status = 'todo',
+  priority = 3,
+  assigneeId = null,
+  ...tags
+) {
+  return { id, title, status, priority, assigneeId, tags };
+}
+
+const draft = createTask(
+  'TASK-104',
+  'Document empty state',
+  undefined,
+  3,
+  null,
+  'docs',
+  'ui',
+);
+const activeTask = { ...draft, status: 'in-progress' };
+const nextTasks = [...taskSeed, activeTask];
+```
+
+**What it demonstrates:** `undefined` activates a default parameter, rest gathers remaining tags into an array, and object/array spread creates shallow copies without changing the original bindings.
+
+#### Common Interview Questions
+
+- **What happens when a default parameter depends on a previous parameter?** Later parameters can reference earlier ones: `function greet(name, greeting = 'Hello ' + name) { return greeting; }`. The default expression is evaluated at call time only when the argument is `undefined`.
+- **How does rest syntax differ from spread syntax?** Rest syntax collects remaining arguments into an array parameter or remaining values/properties in a destructuring pattern. Spread supplies values from an iterable to a call or array literal; in an object literal, object spread instead copies own enumerable properties and does not require the source to be iterable.
+- **Do default parameters apply when the argument is null or undefined?** Only undefined triggers the default; null is treated as an explicit value.
+
+### Modules
+
+#### Definition
+
+ES modules (ESM) use `import` and `export`. Named exports (`export const foo = ...`) can be imported selectively; a default export (`export default ...`) represents a module's single default binding. Dynamic `import('./module.js')` loads a module asynchronously and returns a Promise for its module namespace object.
+
+#### Example — Task Board
+
+```js
+// task-data.js
+export const taskStatuses = ['todo', 'in-progress', 'blocked', 'done'];
+
+export function findTask(tasks, taskId) {
+  return tasks.find((task) => task.id === taskId) ?? null;
+}
+```
+
+```js
+// task-board.js
+import {
+  findTask as findTaskById,
+  taskSeed,
+  taskStatuses,
+} from './task-data.js';
+
+const selectedTask = findTaskById(taskSeed, 'TASK-103');
+
+if (selectedTask?.status === 'done') {
+  const { renderCompletionChart } = await import('./task-analytics.js');
+  renderCompletionChart(taskSeed, taskStatuses);
+}
+```
+
+**What it demonstrates:** Static named imports expose live module bindings and allow aliases, while dynamic `import()` defers an optional module and resolves to its namespace object.
+
+#### Common Interview Questions
+
+- **What is the difference between named and default exports?** Named exports use braces and expose declared export names, but an importer may alias them (`import { original as local }`). A default export is imported without braces and the importer chooses its local name.
+- **How do ES modules differ from CommonJS?** ESM has a statically analyzable module graph, live bindings, asynchronous dynamic `import()`, and native strict-mode semantics. CommonJS evaluates `require()` calls at runtime and exports values through `module.exports`; bundlers can sometimes optimize it, but its dynamic shape makes tree shaking less reliable.
+- **What are dynamic imports used for?** They load modules on demand (e.g., lazy loading routes) and return a Promise that resolves to the module’s exports.
+
+### Classes & Inheritance
+
+#### Definition
+
+JavaScript classes build on the prototype model while adding dedicated syntax and semantics: class bodies run in strict mode, declarations have a temporal dead zone, methods are non-enumerable, and private `#fields` are enforced by the language. Use `extends` and `super()` for inheritance.
+
+#### Example — Task Board
+
+```js
+class TaskRepository {
+  #tasks;
+
+  constructor(tasks = []) {
+    this.#tasks = tasks.map((task) => ({
+      ...task,
+      tags: [...task.tags],
+    }));
+  }
+
+  list() {
+    return this.#tasks.map((task) => ({
+      ...task,
+      tags: [...task.tags],
+    }));
+  }
+}
+
+class OpenTaskRepository extends TaskRepository {
+  list() {
+    return super.list().filter((task) => task.status !== 'done');
+  }
+}
+
+const repository = new OpenTaskRepository(taskSeed);
+console.log(repository.list());
+```
+
+**What it demonstrates:** Instance state lives in a language-private field, prototype methods are shared, and an overriding subclass method can extend the parent implementation with `super`.
+
+#### Common Interview Questions
+
+- **How do you create private properties in classes?** Use the # syntax (#privateField) or closures; private fields are only accessible within the class body.
+- **How do class fields differ from prototype methods?** Fields define properties on each instance; methods are placed on the prototype and shared across instances.
+- **How does method overriding work in subclasses?** A subclass can define a method with the same name as its parent; calling super.method() invokes the parent implementation.
+
+### Loops & Iteration
+
+#### Definition
+
+`for...of` iterates values from synchronous iterables such as arrays, strings, maps, sets, and generators. `for...in` enumerates an object's enumerable string property keys, including inherited ones, so own-object traversal usually uses `Object.keys()`, `Object.values()`, or `Object.entries()`. Generators (`function*`) create iterable iterators and suspend at each `yield`.
+
+#### Example — Task Board
+
+```js
+function* tasksByPriority(tasks) {
+  const ordered = [...tasks].sort((a, b) => a.priority - b.priority);
+  yield* ordered;
+}
+
+const queuedTasks = [
+  ...taskSeed,
+  {
+    ...taskSeed[0],
+    id: 'TASK-104',
+    title: 'Resolve API outage',
+    status: 'blocked',
+    priority: 4,
+  },
+  {
+    ...taskSeed[0],
+    id: 'TASK-105',
+    title: 'Release task board',
+    priority: 5,
+  },
+];
+
+for (const task of tasksByPriority(queuedTasks)) {
+  if (task.status === 'done') continue;
+  console.log(`${task.id}: ${task.title}`);
+  if (task.status === 'blocked') break;
+}
+```
+
+**What it demonstrates:** A generator lazily exposes an ordered iterable, `for...of` consumes its values, and loop control can skip completed work or stop at a blocked task.
+
+#### Common Interview Questions
+
+- **When would you prefer `for...of` over `forEach()`?** `for...of` supports `break`, `continue`, and an enclosing function's `return`, and it works with any synchronous iterable rather than arrays alone. `forEach()` always visits according to its own callback algorithm and does not await an async callback; use `for...of` with `await` for sequential asynchronous work or `for await...of` for an async iterable.
+- **What is the difference between `for...of` and `for...in`?** `for...of` consumes values from an iterable. `for...in` enumerates enumerable string keys, including inherited keys; for own object data, `Object.keys()` or `Object.entries()` is usually more explicit.
+- **What are generators and the `yield` keyword?** Calling a `function*` creates an iterator without running the body immediately. Each `next()` resumes execution until `yield` produces a value, and later calls continue from that suspended state until the generator returns.
+
+### Variables & Scoping
+
+#### Definition
+
+`let` and `const` create block-scoped bindings; `const` prevents rebinding but does not freeze an object value. `var` is function- or global-scoped and initialized to `undefined` when its scope begins. A `let`/`const` binding remains uninitialized in its temporal dead zone until evaluation reaches its declaration.
+
+#### Example — Task Board
+
+```js
+function createTaskLabels(tasks) {
+  const labels = [];
+
+  for (const task of tasks) {
+    const prefix = task.status === 'blocked' ? 'BLOCKED' : task.id;
+    let label = `${prefix}: ${task.title}`;
+
+    if (task.assigneeId === null) {
+      label += ' (unassigned)';
+    }
+    labels.push(label);
+  }
+
+  return labels;
+}
+```
+
+**What it demonstrates:** `const` protects bindings that never need reassignment, `let` marks the one value intentionally updated, and loop-local bindings cannot leak outside their block.
+
+#### Common Interview Questions
+
+- **Why is it generally better to use `const` or `let` instead of `var`?** Their block scope matches most local ownership, and their temporal dead zone exposes use-before-initialization mistakes instead of yielding `undefined`. Modules are strict mode and prevent accidental implicit globals; `const`/`let` alone do not make a classic script immune to every global-state mistake.
+- **Can a const array be mutated?** Yes - const prevents reassignment of the binding, but the contents of objects and arrays can still be modified.
+- **What is the temporal dead zone (TDZ)?** It is the period before a let/const declaration is initialized; accessing the binding then throws a ReferenceError.
+
+### Arrow Functions
+
+#### Definition
+
+Arrow functions provide concise syntax and capture `this`, `arguments`, `super`, and `new.target` from the surrounding non-arrow scope rather than defining their own. They have no `[[Construct]]`, so they cannot be called with `new`, and they are a poor choice for object methods that need a call-site receiver.
+
+#### Example — Task Board
+
+```js
+const board = {
+  tasks: taskSeed,
+
+  openTitles() {
+    return this.tasks
+      .filter((task) => task.status !== 'done')
+      .map((task) => task.title);
+  },
+
+  countLater() {
+    return new Promise((resolve) => {
+      queueMicrotask(() => resolve(this.tasks.length));
+    });
+  },
+};
+
+console.log(board.openTitles());
+console.log(await board.countLater());
+```
+
+**What it demonstrates:** Regular methods receive `board` as `this`, while nested arrows retain that receiver inside array callbacks and a later microtask.
+
+#### Common Interview Questions
+
+- **How does this behave in arrow functions versus regular functions?** Arrow functions capture this from the enclosing scope; regular functions have their own this depending on how they are called.
+- **Why can’t you use an arrow function as a constructor?** Arrow functions lack an internal [[Construct]] method; attempting to use new with them throws a TypeError.
+- **Do arrow functions have their own arguments object?** No. They capture arguments from the outer scope; use rest parameters when needed.
+
+### Maps, Sets & Weak Collections
+
+#### Definition
+
+`Map` stores key-value pairs with keys of any type and preserves insertion order; `Set` stores unique values using SameValueZero equality. `WeakMap` keys and `WeakSet` values can be objects or non-registered symbols and do not keep those garbage-collectable identities alive. Weak collections are intentionally non-enumerable because garbage collection is not observable.
+
+#### Example — Task Board
+
+```js
+const tasksById = new Map(taskSeed.map((task) => [task.id, task]));
+const representedStatuses = new Set(taskSeed.map((task) => task.status));
+const localViewState = new WeakMap();
+
+const selectedTask = tasksById.get('TASK-102');
+if (selectedTask) {
+  localViewState.set(selectedTask, { expanded: true });
+}
+
+console.log(representedStatuses.has('blocked'));
+console.log(localViewState.get(selectedTask)?.expanded ?? false);
+```
+
+**What it demonstrates:** `Map` indexes tasks by domain ID, `Set` deduplicates statuses, and `WeakMap` attaches non-domain UI metadata without changing the task object or retaining it by itself.
+
+#### Common Interview Questions
+
+- **When would you use a Map over an object?** When you need non‑string keys, maintain insertion order or frequently add/remove entries; objects are best for static structured data.
+- **Why might a WeakMap be useful?** A WeakMap allows objects to be garbage‑collected when there are no other references, useful for caching associated data without risking memory leaks.
+- **Why are most primitive values invalid WeakMap keys?** Weak keys must be garbage-collectable identities. Objects and non-registered symbols qualify; strings, numbers, booleans, bigints, `null`, `undefined`, and globally registered symbols do not.
+
+### Promises & Async/Await
+
+#### Definition
+
+Promises represent eventual asynchronous results and transition once from pending to fulfilled or rejected. `then`, `catch`, and `finally` register reactions that run as microtasks. `async` functions always return Promises, and `await` suspends only that async function/module evaluation rather than blocking the JavaScript thread.
+
+#### Example — Task Board
+
+```js
+async function loadTaskBoard(projectId, signal) {
+  const tasksRequest = taskApi.list(projectId, { signal });
+  const membersRequest = memberApi.list(projectId, { signal });
+  const [tasks, members] = await Promise.all([
+    tasksRequest,
+    membersRequest,
+  ]);
+  return { tasks, members };
+}
+
+const controller = new AbortController();
+
+try {
+  const board = await loadTaskBoard('PROJECT-7', controller.signal);
+  console.log(`Loaded ${board.tasks.length} tasks`);
+} catch (error) {
+  if (error?.name !== 'AbortError') throw error;
+} finally {
+  setLoading(false);
+}
+```
+
+**What it demonstrates:** Independent requests start before either is awaited, `Promise.all()` joins them, `AbortSignal` supplies cancellation to the underlying APIs, and `try`/`catch`/`finally` separates failure handling from cleanup.
+
+#### Common Interview Questions
+
+- **Explain Promise.all, Promise.allSettled, Promise.race, and Promise.any.**
+  - Promise.all: fulfills when all promises fulfill; rejects if any promise rejects.
+  - Promise.allSettled: waits for all promises to settle (fulfill or reject) and returns an array of their results.
+  - Promise.race: settles as soon as any promise in the iterable settles (fulfills or rejects).
+  - Promise.any: fulfills as soon as any promise fulfills; rejects only if all promises reject.
+- **Why use `async`/`await` instead of a `.then()` chain?** It often makes branching, loops, and `try`/`catch`/`finally` easier to read. It does not change Promise semantics or make operations concurrent automatically; start independent work first and then await it together when concurrency is intended.
+- **What are the different ways to handle Promises and when should you use each?**
+  - Async/Await - recommended for sequential logic, linear readable code with try/catch. Best for complex sequential operations and data processing pipelines.
+  - `.then().catch()` - useful for transformation pipelines and APIs that naturally compose callbacks. It does not make work parallel; concurrency comes from starting independent operations before awaiting them and coordinating them with APIs such as `Promise.all()`.
+  - Combined approach - use for mixed scenarios needing both patterns, like parallel fetching with sequential processing.
+- **What is the purpose of the finally block?** The finally block executes regardless of success or failure  -  ideal for cleanup operations like hiding loading spinners, resetting states, or logging completion.
+
+### Built-in Methods & Utilities
+
+#### Definition
+
+Annual ECMAScript editions continue to extend the standard library. Established APIs include `Object.entries`, `Array.from`, `Array.prototype.includes`, and `Number.isNaN`; recent editions added `Object.groupBy` and `Promise.withResolvers` (ES2024), iterator helpers and Set methods (ES2025), plus `Array.fromAsync`, `Iterator.concat`, `Math.sumPrecise`, `Error.isError`, binary `Uint8Array` conversion, JSON source/raw-JSON support, and Map/WeakMap get-or-insert methods (ES2026). Runtime support may lag the published specification, so production targets still need compatibility checks.
+
+#### Example — Task Board
+
+```js
+const tasksByStatus = Object.groupBy(
+  taskSeed,
+  (task) => task.status,
+);
+
+const averagePriority = Math.sumPrecise(
+  taskSeed.map((task) => task.priority),
+) / taskSeed.length;
+
+const tasksByAssignee = new Map();
+for (const task of taskSeed) {
+  const key = task.assigneeId ?? 'unassigned';
+  const bucket = tasksByAssignee.getOrInsertComputed(key, () => []);
+  bucket.push(task);
+}
+```
+
+**What it demonstrates:** ES2024 `Object.groupBy()` creates status buckets, while ES2026 `Math.sumPrecise()` and `Map.prototype.getOrInsertComputed()` express aggregation without hand-written initialization branches.
+
+#### Common Interview Questions
+
+- **What does Object.assign do?** It shallowly copies enumerable own properties from source objects into a target object and returns the target.
+- **How is Array.from different from Array.of?** Array.from converts array‑like or iterable objects into arrays (optionally mapping each element), while Array.of creates a new array from a list of arguments.
+- **What is the difference between Object.keys, Object.values, and Object.entries?** keys returns property names, values returns property values, and entries returns [key, value] pairs for own enumerable properties.
+- **What compatibility detail matters for newly standardized built-ins?** Standardization and runtime availability are separate. Check the browsers or server runtimes you support, transpile syntax where possible, and use a tested polyfill or a small fallback for missing library methods; a syntax transpiler alone does not add new runtime APIs.
+
+### Template Literals & Destructuring
+
+#### Definition
+
+Template literals use backticks and `${expression}` substitutions for interpolation, multi-line text, or tagged-template processing. Object and array destructuring patterns extract values into bindings, can rename properties, collect the remainder, and apply defaults only when the matched value is `undefined`.
+
+#### Example — Task Board
+
+```js
+function formatTask({
+  id,
+  title,
+  status = 'todo',
+  assigneeId: ownerId,
+}) {
+  const owner = ownerId ?? 'unassigned';
+  return `${id}: ${title} [${status}] — ${owner}`;
+}
+
+const [firstTask, ...remainingTasks] = taskSeed;
+const { priority, tags: [primaryTag = 'general'] = [] } = firstTask;
+
+console.log(formatTask(firstTask));
+console.log({ priority, primaryTag, remaining: remainingTasks.length });
+```
+
+**What it demonstrates:** Nested destructuring extracts and renames Task Board fields with defaults, array rest retains remaining tasks, and a template literal formats plain text without treating it as HTML.
+
+#### Common Interview Questions
+
+- **What are tagged template literals?** A tag function receives the template's string parts and substitution values and can return any JavaScript value, not only a string. Tagging does not sanitize values automatically. Example:
+  ```js
+  function emphasizeValues(strings, ...values) {
+    return strings.reduce((result, str, i) => {
+      const value = i < values.length
+        ? String(values[i]).toUpperCase()
+        : '';
+      return result + str + value;
+    }, '');
+  }
+  const taskTitle = 'Fix login redirect';
+  emphasizeValues`Task: ${taskTitle}`;
+  // → "Task: FIX LOGIN REDIRECT"
+  ```
+- **How do you provide default values in destructuring?** Specify `= value` in the pattern, for example `const { title = 'N/A' } = obj`. The default is used when the property value is `undefined`, not when it is `null`.
+- **How can you rename variables during destructuring?** Use property: newName syntax (e.g., const { id: userId } = user).
 
 ## Markup (Modern HTML)
 
@@ -5146,151 +6002,6 @@ export class StatusFilterComponent {
 
 - **Can Angular Aria be treated as stable in Angular 22?** Yes. The v22 release announcement and current guide/API treat all twelve patterns as stable and production-ready. Check the installed package's API when targeting another version; roadmap prose may lag the released status.
 - **When would you use `@angular/aria` instead of Angular Material?** Use `@angular/aria` when you need low-level accessible behavior while owning all rendering, styling, and application semantics yourself. Use Angular Material when you want complete, styled UI components.
-
-## Modern JavaScript Deep Dive
-
-This deep dive expands on the ECMAScript 2015-2026 features introduced in the earlier Modern JavaScript section.
-
-### Default Parameters & Rest/Spread
-
-#### Definition
-
-Functions can specify default parameter values (`function foo(x = 10) {...}`); rest parameters (`...args`) capture remaining arguments into an array; spread syntax (`...iterable`) expands an iterable in calls/array literals, while object spread copies own enumerable properties into an object literal.
-#### Common Interview Questions
-
-- **What happens when a default parameter depends on a previous parameter?** Later parameters can reference earlier ones: `function greet(name, greeting = 'Hello ' + name) { return greeting; }`. The default expression is evaluated at call time only when the argument is `undefined`.
-- **How does the rest operator differ from the spread operator?** The rest operator collects multiple arguments into a single array parameter, while spread expands an array or object into individual elements when passed to functions or array/object literals.
-- **Do default parameters apply when the argument is null or undefined?** Only undefined triggers the default; null is treated as an explicit value.
-
-### Modules
-
-#### Definition
-
-ES modules (ESM) use `import` and `export`. Named exports (`export const foo = ...`) can be imported selectively; a default export (`export default ...`) represents a module's single default binding. Dynamic `import('./module.js')` loads a module asynchronously and returns a Promise for its module namespace object.
-#### Common Interview Questions
-
-- **What is the difference between named and default exports?** Named exports use braces and expose declared export names, but an importer may alias them (`import { original as local }`). A default export is imported without braces and the importer chooses its local name.
-- **How do ES modules differ from CommonJS?** ES modules are statically analyzable and support tree shaking; imports are hoisted. CommonJS uses require/module.exports, is dynamically evaluated and cannot be tree‑shaken as easily.
-- **What are dynamic imports used for?** They load modules on demand (e.g., lazy loading routes) and return a Promise that resolves to the module’s exports.
-
-### Classes & Inheritance
-
-#### Definition
-
-ES6 classes provide syntactic sugar over prototypes. Use class declarations with constructors, instance methods and static methods. Inheritance is achieved with extends and super().
-#### Common Interview Questions
-
-- **How do you create private properties in classes?** Use the # syntax (#privateField) or closures; private fields are only accessible within the class body.
-- **How do class fields differ from prototype methods?** Fields define properties on each instance; methods are placed on the prototype and shared across instances.
-- **How does method overriding work in subclasses?** A subclass can define a method with the same name as its parent; calling super.method() invokes the parent implementation.
-
-### Loops & Iteration
-
-#### Definition
-
-ES6 introduced for…of for iterating over iterable objects (arrays, strings, maps, sets); for…in iterates over enumerable properties. Generators (function*) can create custom iterators and produce sequences via yield.
-#### Common Interview Questions
-
-- **When would you prefer for…of over forEach?** for…of supports break, continue and return, works with any iterable (not just arrays) and can be used in async functions; forEach cannot be broken out of and is synchronous.
-- **What is the difference between for…of and for…in?** for…of iterates over values of an iterable; for…in iterates over enumerable property keys (including inherited ones) and is better suited for objects.
-  Generators
-- **What are generators and the yield keyword?** Generators are functions that can be exited and later re‑entered while preserving their context. Declared with function*, they use yield to pause execution and return intermediate values. Example:
-  function* idGenerator() {
-  let id = 1;
-  while (true) {
-  yield id++;
-  }
-  }
-  const gen = idGenerator();
-  console.log(gen.next().value); // 1
-  console.log(gen.next().value); // 2
-
-### Variables & Scoping
-
-#### Definition
-
-let and const declare block‑scoped variables; const prevents reassignment. var is function‑scoped and hoisted. The temporal dead zone occurs when accessing a let/const before declaration.
-#### Common Interview Questions
-
-- **Why is it generally better to use const or let instead of var?** They avoid accidental global variables, respect block scope and help catch errors during compilation.
-- **Can a const array be mutated?** Yes - const prevents reassignment of the binding, but the contents of objects and arrays can still be modified.
-- **What is the temporal dead zone (TDZ)?** It is the period before a let/const declaration is initialized; accessing the binding then throws a ReferenceError.
-
-### Arrow Functions
-
-#### Definition
-
-Arrow functions provide concise syntax and lexical this binding. They cannot be used as constructors, have no arguments object and do not have their own this.
-#### Common Interview Questions
-
-- **How does this behave in arrow functions versus regular functions?** Arrow functions capture this from the enclosing scope; regular functions have their own this depending on how they are called.
-- **Why can’t you use an arrow function as a constructor?** Arrow functions lack an internal [[Construct]] method; attempting to use new with them throws a TypeError.
-- **Do arrow functions have their own arguments object?** No. They capture arguments from the outer scope; use rest parameters when needed.
-
-### Maps, Sets & Weak Collections
-
-#### Definition
-
-Map stores key-value pairs with any data type as keys; Set stores unique values. WeakMap keys and WeakSet values can be objects or non-registered symbols and do not prevent those garbage-collectable values from being collected.
-#### Common Interview Questions
-
-- **When would you use a Map over an object?** When you need non‑string keys, maintain insertion order or frequently add/remove entries; objects are best for static structured data.
-- **Why might a WeakMap be useful?** A WeakMap allows objects to be garbage‑collected when there are no other references, useful for caching associated data without risking memory leaks.
-- **Why are most primitive values invalid WeakMap keys?** Weak keys must be garbage-collectable identities. Objects and non-registered symbols qualify; strings, numbers, booleans, bigints, `null`, `undefined`, and globally registered symbols do not.
-
-### Promises & Async/Await
-
-#### Definition
-
-Promises represent asynchronous operations that can be pending, fulfilled or rejected. then and catch register callbacks; static methods like Promise.all, Promise.race, Promise.allSettled and Promise.any manage multiple promises. async/await syntax sugar wraps promises in synchronous‑looking code.
-#### Common Interview Questions
-
-- **Explain Promise.all, Promise.allSettled, Promise.race, and Promise.any.**
-  - Promise.all: fulfills when all promises fulfill; rejects if any promise rejects.
-  - Promise.allSettled: waits for all promises to settle (fulfill or reject) and returns an array of their results.
-  - Promise.race: settles as soon as any promise in the iterable settles (fulfills or rejects).
-  - Promise.any: fulfills as soon as any promise fulfills; rejects only if all promises reject.
-- **Why use async/await instead of plain promises?** async/await reads like synchronous code, enabling easier error handling via try/catch and avoiding nested callbacks.
-- **What are the different ways to handle Promises and when should you use each?**
-  - Async/Await - recommended for sequential logic, linear readable code with try/catch. Best for complex sequential operations and data processing pipelines.
-  - `.then().catch()` - useful for transformation pipelines and APIs that naturally compose callbacks. It does not make work parallel; concurrency comes from starting independent operations before awaiting them and coordinating them with APIs such as `Promise.all()`.
-  - Combined approach - use for mixed scenarios needing both patterns, like parallel fetching with sequential processing.
-- **What is the purpose of the finally block?** The finally block executes regardless of success or failure  -  ideal for cleanup operations like hiding loading spinners, resetting states, or logging completion.
-
-### Built-in Methods & Utilities
-
-#### Definition
-
-ES6+ introduced many built‑in methods such as Object.assign, Object.values, Object.entries, Array.from, Array.includes, String.startsWith, String.padStart and Number.isNaN.
-#### Common Interview Questions
-
-- **What does Object.assign do?** It shallowly copies enumerable own properties from source objects into a target object and returns the target.
-- **How is Array.from different from Array.of?** Array.from converts array‑like or iterable objects into arrays (optionally mapping each element), while Array.of creates a new array from a list of arguments.
-- **What is the difference between Object.keys, Object.values, and Object.entries?** keys returns property names, values returns property values, and entries returns [key, value] pairs for own enumerable properties.
-
-### Template Literals & Destructuring
-
-#### Definition
-
-Template literals (${placeholders}) support string interpolation and multi‑line strings. Destructuring assignments extract values from arrays or properties from objects into variables; default values and rest elements are supported.
-#### Common Interview Questions
-
-- **What are tagged template literals?** A tag function receives the template's string parts and substitution values and can return any JavaScript value, not only a string. Example:
-  ```js
-  function highlight(strings, ...values) {
-    return strings.reduce((result, str, i) => {
-      const value = i < values.length
-        ? `<span class="hl">${String(values[i])}</span>`
-        : '';
-      return result + str + value;
-    }, '');
-  }
-  const name = 'John';
-  highlight`Hello, ${name}!`;
-  // → "Hello, <span class=\"hl\">John</span>!"
-  ```
-- **How do you provide default values in destructuring?** Specify `= value` in the pattern, for example `const { title = 'N/A' } = obj`. The default is used when the property value is `undefined`, not when it is `null`.
-- **How can you rename variables during destructuring?** Use property: newName syntax (e.g., const { id: userId } = user).
 
 ## TypeScript Deep Dive
 
