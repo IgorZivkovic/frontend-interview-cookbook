@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.1] - 2026-07-14
+
+### Changed
+- Corrected the React Server Components security floor after CVE-2026-23870: affected 19.2.x RSC packages require 19.2.6 or later, with 19.2.7 as the current recommendation.
+
 ## [1.12.0] - 2026-07-14
 
 ### Added
