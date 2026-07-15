@@ -6005,67 +6005,491 @@ export class StatusFilterComponent {
 
 ## TypeScript Deep Dive
 
-### Definition
+TypeScript adds a static type system and type-aware tooling to JavaScript. Most type-only syntax is erased before execution, so the emitted JavaScript still needs runtime checks at trust boundaries. TypeScript's type system is structural: compatibility is based primarily on shape rather than an explicit class or interface name.
 
-TypeScript is a statically typed superset of JavaScript. It checks types at build time, improves editor tooling, and then erases type syntax so the emitted JavaScript runs normally in browsers and Node.js. Its type system is structural: compatibility is based on object shape, not class or interface names.
+As of July 14, 2026, [TypeScript 7.0](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/) is generally available; its stable 7.0.2 release shipped on July 8 as the native Go implementation of the compiler and LSP-based language server. TypeScript 7 adopts the modern defaults introduced by the [TypeScript 6 transition release](https://devblogs.microsoft.com/typescript/announcing-typescript-6-0/) and turns its deprecated options into hard errors.
 
-As of July 12, 2026, TypeScript 7 is generally available; it was released on July 8 as the native Go-based compiler and language server. TypeScript 7 adopts the modern defaults introduced by the TypeScript 6 bridge release and turns several TS 6 deprecations into errors, including legacy targets, module formats, and resolution modes.
+TypeScript 7.0 ships without a programmatic compiler API. Tools that embed the compiler can use the official `@typescript/typescript6` compatibility package or another documented fallback until the new API expected in TypeScript 7.1 is available. Framework support is a separate constraint: for example, the official [Angular version matrix](https://angular.dev/reference/versions) supports TypeScript `>=6.0.0 <6.1.0` for Angular 22.0.x, not TypeScript 7 for Angular compilation and template tooling.
 
-TypeScript 7.0 does not expose a stable programmatic compiler API. Tools that embed TypeScript, including many Angular, Vue, Svelte, Astro, MDX, and linting workflows, may need to keep TypeScript 6 side-by-side until a compatible API is available. Angular 22 officially supports `>=6.0.0 <6.1.0`, not TypeScript 7 for Angular compilation and template tooling.
+### Running Example: Typed Task Board
 
-### Example
+The examples below are independent excerpts from the framework-free Task Board used throughout the JavaScript sections. They assume these shared domain types and fixtures; imports, API implementations, and UI code unrelated to the type-system concept are omitted.
 
 ```ts
-type Role = "admin" | "user";
+export type TaskId = `TASK-${number}`;
+export type UserId = `USER-${number}`;
+export type TaskPriority = 1 | 2 | 3;
 
-interface ApiUser {
-  id: string;
-  role: Role;
-  email?: string;
+export const taskStatuses = [
+  'todo',
+  'in-progress',
+  'blocked',
+  'done',
+] as const;
+
+export type TaskStatus = (typeof taskStatuses)[number];
+
+export interface Task {
+  readonly id: TaskId;
+  readonly title: string;
+  readonly status: TaskStatus;
+  readonly priority: TaskPriority;
+  readonly assigneeId: UserId | null;
+  readonly tags: readonly string[];
+  readonly description?: string;
 }
 
-function isApiUser(value: unknown): value is ApiUser {
-  if (typeof value !== "object" || value === null) return false;
-
-  const candidate = value as Record<string, unknown>;
-  return typeof candidate.id === "string" &&
-    (candidate.role === "admin" || candidate.role === "user") &&
-    (candidate.email === undefined || typeof candidate.email === "string");
-}
-
-const routes = {
-  home: "/",
-  user: "/users/:id",
-} as const satisfies Record<string, string>;
-
-type RouteName = keyof typeof routes; // "home" | "user"
+export const taskSeed: readonly [Task, ...Task[]] = [
+  {
+    id: 'TASK-101',
+    title: 'Fix login redirect',
+    status: 'todo',
+    priority: 2,
+    assigneeId: null,
+    tags: ['auth'],
+  },
+  {
+    id: 'TASK-102',
+    title: 'Add empty state',
+    status: 'in-progress',
+    priority: 1,
+    assigneeId: 'USER-7',
+    tags: ['ui'],
+  },
+];
 ```
 
-### Common Interview Questions
+### Core Types, Inference, Nullability & Readonly
 
-- **What problem does TypeScript solve in frontend applications?** It catches many shape and API contract mistakes before runtime, improves refactoring safety, and gives better editor feedback for props, events, forms, API responses, and state. It does not make JavaScript runtime-safe by itself.
-- **What does it mean that TypeScript types are erased?** Types are used by the compiler and tooling, then removed from emitted JavaScript. Runtime checks still need JavaScript logic or schema validators such as Zod or Valibot.
-- **What is structural typing?** TypeScript compares object shapes. If a value has the required properties with compatible types, it can be assigned even if it does not explicitly implement an interface.
-- **When should you rely on inference versus explicit annotations?** Let TypeScript infer local variables and simple return values. Add annotations at public boundaries: exported functions, component props, API DTOs, event payloads, and places where widening would hide intent.
-- **What is the difference between type and interface?** Both can describe object shapes. Interfaces support declaration merging and are natural for public object contracts. Type aliases can express unions, tuples, primitives, mapped types, conditional types, and more complex compositions.
-- **How do unions and intersections differ?** A union (`A | B`) means a value can be one of several alternatives. An intersection (`A & B`) combines requirements, so a value must satisfy all intersected types.
-- **What is a discriminated union and why is it useful?** It is a union where every variant has a shared literal field such as `kind` or `status`. TypeScript can narrow by that field, making state machines, async states, and reducer actions safer.
-- **How does narrowing work?** TypeScript narrows broad types using runtime checks such as `typeof`, `instanceof`, `in`, equality checks, discriminants, custom type guards (`value is T`), and assertion functions (`asserts value is T`).
-- **How do any, unknown, never, and void differ?** `any` disables type checking. `unknown` accepts any value but requires narrowing before use. `never` represents impossible values and is useful for exhaustiveness checks. `void` means a function's return value should not be used.
-- **How should null and undefined be handled?** With `strictNullChecks`, nullable values must be represented explicitly (`string | null`) and narrowed before use. Modern TS 6/7 defaults enable strict checking, while older configurations may still need to enable it explicitly.
-- **What are generics and when should you use constraints?** Generics let functions and types preserve relationships between inputs and outputs. Constraints (`T extends { id: string }`) restrict what callers can pass while keeping useful inference.
-- **How do keyof and indexed access types work?** `keyof T` produces the allowed property names of `T`. `T[K]` retrieves the type of a property. Together they let you write safe helpers for picking, mapping, and updating object fields.
-- **What are mapped types and conditional types?** Mapped types transform keys (`{ [K in keyof T]: ... }`). Conditional types choose a type based on another type (`T extends Promise<infer U> ? U : T`). They power many utility types.
-- **What are template literal types used for?** They build string literal unions from other types, useful for event names, route names, CSS variable names, or typed API keys.
-- **Which utility types should a frontend engineer know?** `Partial`, `Required`, `Readonly`, `Pick`, `Omit`, `Record`, `ReturnType`, `Parameters`, `Awaited`, `NonNullable`, and `Extract`/`Exclude` are common in app and library code.
-- **What do as const, satisfies, and const type parameters solve?** `as const` preserves literal types and readonly structure. `satisfies` checks that a value matches a type without widening away its precise inferred type. Const type parameters preserve literal inference inside generic APIs.
-- **When should you avoid enums?** Regular enums emit runtime JavaScript and can add bundle/runtime complexity. For many frontend cases, literal unions or `as const` objects are simpler. Enums can still be useful for interop with existing APIs or generated code.
-- **What TypeScript 7 configuration changes matter in interviews?** TS 7 inherits TS 6 defaults such as `strict: true`, `module: "esnext"`, and a modern default target. It removes or errors on deprecated choices such as `target: "es5"`, AMD/UMD/SystemJS output, `moduleResolution: "classic"`/`"node10"`, and `baseUrl`. Migrate a project on TS 6 before switching compilers.
-- **Which tsconfig options are still worth discussing explicitly?** Even when strict mode is the default, explicitly committed project configuration can document intent. Interview-relevant options include `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `verbatimModuleSyntax`, `target`, `module`, and `moduleResolution`.
-- **What is the main TypeScript 7 ecosystem caveat?** TypeScript 7.0 has no stable programmatic API. The official compatibility package `@typescript/typescript6` allows tools that require the TS 6 API to run alongside the TS 7 `tsc` binary while the ecosystem migrates.
-- **How should moduleResolution be chosen?** Use `nodenext` when code runs directly in modern Node.js and follows Node's ESM/CJS rules. Use `bundler` for Vite, Webpack, Rollup, Rsbuild, and similar tools that resolve imports during bundling.
-- **How does TypeScript relate to runtime validation?** TypeScript only checks code at compile time. Data from APIs, localStorage, URL params, forms, or third-party scripts is still unknown at runtime; validate it with schemas or guards before trusting it.
-- **How is TypeScript used differently in React, Angular, and Vue?** React commonly types props, hooks, events, refs, and server/client boundaries. Angular is TypeScript-first and uses types heavily in DI, typed forms, signals, and services. Vue uses TypeScript through SFC macros like defineProps/defineEmits, template refs, and typed composables.
+#### Definition
+
+Type annotations describe intended contracts, while inference derives types from values and control flow. Literal unions constrain domain values, and `strictNullChecks` keeps `null` and `undefined` explicit. The separate `exactOptionalPropertyTypes` option distinguishes omission from assigning `undefined` to an optional property. `readonly` prevents writes through a TypeScript reference, but it is shallow, erased at runtime, and does not freeze the JavaScript object.
+
+#### Example — Task Board
+
+```ts
+export function completeTask(task: Task): Task {
+  return { ...task, status: 'done' };
+}
+
+const selectedTask = taskSeed.find((task) => task.assigneeId !== null);
+const selectedLabel = selectedTask?.title ?? 'No assigned task';
+const completedTask = completeTask(taskSeed[0]);
+
+console.log(selectedLabel);
+console.log(completedTask.status); // 'done'
+console.log(taskSeed[0].status);   // 'todo'
+```
+
+**What it demonstrates:** The exported function has an explicit contract, local values are inferred, `find()` forces the possibly missing task to be handled, and an immutable update respects the shared model's `readonly` fields.
+
+#### Common Interview Questions
+
+- **What problem does TypeScript solve in frontend applications?** It catches many shape and API-contract mistakes before runtime, improves refactoring safety, and gives better editor feedback for components, forms, API responses, events, and state. It does not make JavaScript runtime-safe by itself.
+- **When should you rely on inference versus explicit annotations?** Prefer inference when the type is obvious and local. Consider annotations when a public contract must remain stable or documented, when widening would lose intent, or when a boundary should be checked independently of its current implementation.
+- **How should `null`, `undefined`, and optional properties be modeled?** Represent intentional nullability explicitly, such as `UserId | null`, and narrow before use. With `exactOptionalPropertyTypes`, `description?: string` permits omission but does not automatically permit `{ description: undefined }`.
+- **What does type erasure mean?** Interfaces, type aliases, and most annotations exist only during checking and are removed from output. JavaScript checks are still required at runtime. Constructs with runtime semantics, such as regular enums, can emit JavaScript and are not purely erased.
+
+### Structural Typing, Interfaces & Type Aliases
+
+#### Definition
+
+TypeScript usually checks whether a value has the required structure. Interfaces and type aliases can both describe object shapes; interfaces support declaration merging and `extends`, while aliases can directly express unions, tuples, primitives, mapped types, conditional types, and intersections. The choice for ordinary object contracts is often a project convention.
+
+#### Example — Task Board
+
+```ts
+interface Identified {
+  readonly id: TaskId;
+}
+
+interface Titled {
+  readonly title: string;
+}
+
+type TaskPreview = Identified & Titled;
+
+function formatTaskPreview(item: TaskPreview): string {
+  return `${item.id}: ${item.title}`;
+}
+
+const importedPreview: TaskPreview = {
+  id: 'TASK-104',
+  title: 'Audit keyboard flow',
+};
+
+console.log(formatTaskPreview(taskSeed[0]));
+console.log(formatTaskPreview(importedPreview));
+```
+
+**What it demonstrates:** A complete `Task` can be passed without explicitly implementing `TaskPreview` because it has the required shape, while an intersection composes two smaller contracts.
+
+#### Common Interview Questions
+
+- **What is structural typing?** Compatibility is based on required members and their types. A value can satisfy an interface without naming or explicitly implementing it.
+- **What is the difference between `type` and `interface`?** Both can model object shapes, and a class can implement either compatible form. Interfaces uniquely support declaration merging and can extend other object contracts; type aliases can name any type expression, including unions and tuples. Neither is universally superior for every public contract.
+- **What does an intersection type do?** `A & B` requires a value to satisfy both sides. It composes compatible object requirements, but intersecting incompatible literal or primitive requirements can reduce a field—or the whole result—to `never`.
+- **Does structural typing make TypeScript object types exact?** No. A variable may contain additional properties and still be assignable to a narrower shape. Fresh object literals receive an additional excess-property check, but that is a typo-catching rule rather than exact runtime validation.
+
+### Discriminated Unions & Exhaustive Narrowing
+
+#### Definition
+
+A union (`A | B`) represents alternatives. A discriminated union gives every variant a shared literal property, allowing control-flow analysis to narrow safely. Once every variant is handled, the remaining value has type `never`, which can enforce exhaustive switches.
+
+#### Example — Task Board
+
+```ts
+type BoardState =
+  | { kind: 'idle' }
+  | { kind: 'loading' }
+  | { kind: 'ready'; tasks: readonly Task[] }
+  | { kind: 'failed'; message: string };
+
+function assertNever(value: never): never {
+  throw new Error(`Unhandled board state: ${JSON.stringify(value)}`);
+}
+
+function boardMessage(state: BoardState): string {
+  switch (state.kind) {
+    case 'idle':
+      return 'Board not loaded';
+    case 'loading':
+      return 'Loading tasks';
+    case 'ready':
+      return `${state.tasks.length} tasks`;
+    case 'failed':
+      return state.message;
+    default:
+      return assertNever(state);
+  }
+}
+
+console.log(boardMessage({ kind: 'ready', tasks: taskSeed }));
+```
+
+**What it demonstrates:** The `kind` check exposes only the fields valid for each state, and adding an unhandled variant turns the `assertNever(state)` call into a compile-time error.
+
+#### Common Interview Questions
+
+- **How does a discriminated union differ from one object with many optional fields?** Each union member represents one valid state and exposes only its legal fields. A loose object with optional fields can admit impossible combinations such as a ready state without tasks.
+- **Why are discriminated unions useful?** They model state machines, async results, reducer actions, and component variants without optional fields that are invalid in some states.
+- **What does `never` represent?** It represents values that cannot occur. Besides exhaustiveness checks, it appears for functions that never return and impossible branches after narrowing.
+
+### Unknown Data, Type Guards & Runtime Validation
+
+#### Definition
+
+External data should enter the application as `unknown`, which requires evidence before use. Built-in checks, discriminants, custom predicates (`value is T`), and assertion functions can narrow it. A type assertion such as `value as Task` changes only the compiler's view; it performs no runtime validation.
+
+#### Example — Task Board
+
+```ts
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+export function isTask(value: unknown): value is Task {
+  if (!isRecord(value)) return false;
+
+  const { id, title, status, priority, assigneeId, tags, description } = value;
+
+  return typeof id === 'string' && /^TASK-\d+$/.test(id)
+    && typeof title === 'string'
+    && taskStatuses.some((candidate) => candidate === status)
+    && (priority === 1 || priority === 2 || priority === 3)
+    && (assigneeId === null
+      || (typeof assigneeId === 'string' && /^USER-\d+$/.test(assigneeId)))
+    && Array.isArray(tags)
+    && tags.every((tag: unknown) => typeof tag === 'string')
+    && (description === undefined
+      ? !Object.hasOwn(value, 'description')
+      : typeof description === 'string');
+}
+
+export function parseTask(value: unknown): Task {
+  if (!isTask(value)) throw new TypeError('Invalid task payload');
+  return value;
+}
+
+async function readTask(response: Response): Promise<Task> {
+  const payload: unknown = await response.json();
+  return parseTask(payload);
+}
+```
+
+**What it demonstrates:** An API payload remains `unknown` until runtime checks establish every field required by `Task`; only then does the type predicate allow safe use.
+
+#### Common Interview Questions
+
+- **How do `any` and `unknown` differ?** `any` largely opts out of checking and propagates that loss of safety. `unknown` can hold any value but must be narrowed before property access, calls, or assignment to a more specific type.
+- **How does narrowing work?** TypeScript follows runtime checks such as `typeof`, `instanceof`, `in`, equality, discriminants, predicates, and assertion functions to refine a broader type along reachable control-flow paths.
+- **How does TypeScript relate to runtime validation?** Types cannot prove data from APIs, storage, URLs, forms, or third-party scripts. Validate those values with maintained guards or schema libraries such as Zod or Valibot before trusting them.
+- **What is the danger of assertions and the non-null assertion operator?** `as T` and `!` can suppress useful errors without changing the runtime value. Use them only when an invariant is established elsewhere and cannot be expressed through ordinary narrowing.
+
+### Function Types, Generics & Constraints
+
+#### Definition
+
+Function types describe parameters and results. Generics introduce type parameters when an API must preserve a relationship between values; constraints restrict the permitted inputs without discarding their concrete types. A type parameter that appears only once often adds complexity without expressing a useful relationship.
+
+#### Example — Task Board
+
+```ts
+function createIdLookup<T extends { readonly id: PropertyKey }>(
+  items: readonly T[],
+): (id: T['id']) => T | undefined {
+  return (id) => items.find((item) => item.id === id);
+}
+
+const findTask = createIdLookup(taskSeed);
+const selectedTask = findTask('TASK-102');
+
+console.log(selectedTask?.title);
+```
+
+**What it demonstrates:** The constraint guarantees an ID exists, while the generic preserves the concrete `Task` result and its `TaskId` input instead of widening both to unrelated types.
+
+#### Common Interview Questions
+
+- **When should you use generics?** Use them when callers choose a type and the API preserves a relationship between inputs, outputs, callbacks, or container contents. Prefer a concrete type when there is no useful relationship to retain.
+- **What does a generic constraint do?** `T extends Constraint` guarantees the members available inside the implementation while preserving the caller's more specific type for inference.
+- **When are overloads preferable to a union or a generic?** Use overloads when distinct call shapes have meaningfully different return types and cannot be expressed clearly with a union or generic relationship. Keep the implementation signature compatible with every overload.
+- **What does `void` mean in a function type?** It tells callers not to use a return value. A callback contextually typed as `() => void` may still return a value that the receiver ignores; that differs from a function implementation explicitly annotated `: void`, which should not return a meaningful value.
+
+### `keyof`, `typeof` & Indexed Access Types
+
+#### Definition
+
+`keyof T` produces the known property keys of a type, while `T[K]` retrieves the value type at a key. In a type position, `typeof value` derives a type from an existing value. Combining them lets APIs correlate a selected property with exactly the value it accepts or returns.
+
+#### Example — Task Board
+
+```ts
+type SeedTask = (typeof taskSeed)[number];
+type DirectlySettableTaskKey = Exclude<keyof Task, 'id' | 'description'>;
+
+function updateTaskField<K extends DirectlySettableTaskKey>(
+  task: SeedTask,
+  key: K,
+  value: Task[K],
+): Task {
+  return { ...task, [key]: value };
+}
+
+const reprioritizedTask = updateTaskField(taskSeed[0], 'priority', 1);
+const nextStatus: Task['status'] = 'in-progress';
+const activeTask = updateTaskField(reprioritizedTask, 'status', nextStatus);
+
+console.log(activeTask.priority, activeTask.status);
+// updateTaskField(activeTask, 'priority', 'high'); // compile-time error
+```
+
+**What it demonstrates:** `typeof` derives the fixture's element type, the key is limited to directly settable fields, and `Task[K]` makes each selected key accept only its corresponding value type. Optional `description` is deliberately handled by a separate set/remove contract instead of assigning `undefined` under `exactOptionalPropertyTypes`.
+
+#### Common Interview Questions
+
+- **How do `keyof` and indexed access types work?** `keyof Task` forms a union of known keys; `Task['status']` retrieves the status type. A generic `K extends keyof T` keeps the key correlated with `T[K]`.
+- **What is the difference between runtime `typeof` and type-position `typeof`?** Runtime `typeof value` returns a JavaScript string such as `'object'`. In a type expression, `typeof value` asks TypeScript for the static type of a declared value.
+- **Why does `Object.keys()` usually return `string[]` rather than `(keyof T)[]`?** JavaScript objects can contain additional runtime keys beyond a static view. A universal `(keyof T)[]` return type would be unsound for structurally compatible values with extra properties.
+
+### Mapped, Conditional & Utility Types
+
+#### Definition
+
+Mapped types transform properties by iterating over keys. Conditional types choose a result with `T extends U ? X : Y`, and `infer` can extract a related type. Standard utilities such as `Pick`, `Omit`, `Partial`, `Required`, `Readonly`, `Record`, `ReturnType`, `Parameters`, `Awaited`, `Extract`, and `Exclude` compose these mechanisms.
+
+#### Example — Task Board
+
+```ts
+type EditableTask = Pick<
+  Task,
+  'title' | 'status' | 'priority' | 'assigneeId' | 'tags' | 'description'
+>;
+type TaskPatch = Partial<EditableTask>;
+
+type FormState<T> = {
+  [K in keyof T]-?: {
+    value: T[K];
+    dirty: boolean;
+  };
+};
+
+type ElementOf<T> = T extends readonly (infer Item)[] ? Item : never;
+type TaskFromSeed = ElementOf<typeof taskSeed>; // Task
+type TitleField = FormState<Pick<Task, 'title'>>['title'];
+
+const titleField: TitleField = {
+  value: 'Fix login redirect',
+  dirty: false,
+};
+
+function applyTaskPatch(task: Task, patch: TaskPatch): Task {
+  return { ...task, ...patch };
+}
+
+const updatedTask = applyTaskPatch(taskSeed[0], { status: 'done' });
+console.log(titleField.value, updatedTask.status);
+```
+
+**What it demonstrates:** Utility types derive an intentional patch contract, a mapped type builds field state without duplicating keys, and a conditional type extracts the task element type with `infer`.
+
+#### Common Interview Questions
+
+- **What are mapped and conditional types?** A mapped type transforms each key from another type. A conditional type branches on assignability and can distribute over union members when its checked type is a bare type parameter.
+- **Which utility types should a frontend engineer know?** `Partial`, `Required`, `Readonly`, `Pick`, `Omit`, `Record`, `ReturnType`, `Parameters`, `Awaited`, `NonNullable`, `Extract`, and `Exclude` cover many component, form, state, and API contracts.
+- **Why is `Partial<Task>` not always a good update type?** It makes every property optional, including fields that should never change. Select editable fields first, then apply `Partial`, and remember that these transformations are shallow.
+
+### Literal Types, `as const`, `satisfies` & Const Type Parameters
+
+#### Definition
+
+Literal inference may widen a value such as `'todo'` to `string`. `as const` retains literal values and readonly structure; `satisfies` checks compatibility without replacing the expression's precise inferred type. A `const` type parameter asks a generic API to preserve literal information at the call site. None of these mechanisms freezes runtime data.
+
+#### Example — Task Board
+
+```ts
+interface ColumnDefinition {
+  readonly status: TaskStatus;
+  readonly label: string;
+}
+
+const columns = [
+  { status: 'todo', label: 'To do' },
+  { status: 'in-progress', label: 'In progress' },
+  { status: 'blocked', label: 'Blocked' },
+  { status: 'done', label: 'Done' },
+] as const satisfies readonly ColumnDefinition[];
+
+type ColumnStatus = (typeof columns)[number]['status'];
+
+function defineColumns<const T extends readonly ColumnDefinition[]>(
+  value: T,
+): T {
+  return value;
+}
+
+const compactColumns = defineColumns([
+  { status: 'todo', label: 'Open' },
+  { status: 'done', label: 'Closed' },
+]);
+
+type CompactLabel = (typeof compactColumns)[number]['label'];
+// ColumnStatus: 'todo' | 'in-progress' | 'blocked' | 'done'
+// CompactLabel: 'Open' | 'Closed'
+```
+
+**What it demonstrates:** `satisfies` verifies every column, `as const` preserves the exact status union, and the const generic retains caller-provided label literals.
+
+#### Common Interview Questions
+
+- **How do `as const`, `satisfies`, and a type annotation differ?** `as const` narrows literals and adds readonly structure. `satisfies` checks a target while preserving the expression's inferred type. An annotation makes the variable use the annotated type and can intentionally widen its visible contract.
+- **Does `satisfies readonly ColumnDefinition[]` guarantee every status appears exactly once?** No. It validates each listed element, not exhaustive or unique union coverage. Use a `Record<TaskStatus, ...>` keyed by status when missing keys must be a compile-time error, and enforce uniqueness separately when using arrays.
+- **Can these features make an object immutable?** Only at compile time through particular references. They do not call `Object.freeze()` or prevent other JavaScript code from mutating the same object at runtime.
+- **When should you avoid enums?** Regular enums emit JavaScript and can add a runtime abstraction that a literal union or `as const` object does not need. Enums remain reasonable for existing APIs, generated contracts, or teams that deliberately want their runtime object.
+
+### Template Literal Types, Typed Events & Routes
+
+#### Definition
+
+Template literal types build string patterns from literal unions. Combined with mapped and indexed access types, they can derive correlated event names, payloads, route strings, CSS variable names, and API keys from a single source contract.
+
+#### Example — Task Board
+
+```ts
+interface TaskEventFields {
+  title: Task['title'];
+  status: Task['status'];
+  priority: Task['priority'];
+}
+
+type TaskEvent = {
+  [K in keyof TaskEventFields]: {
+    type: `task:${K & string}:changed`;
+    taskId: TaskId;
+    value: TaskEventFields[K];
+  };
+}[keyof TaskEventFields];
+
+function publishTaskEvent(event: TaskEvent): void {
+  console.log(event.type, event.taskId, event.value);
+}
+
+publishTaskEvent({
+  type: 'task:status:changed',
+  taskId: 'TASK-101',
+  value: 'done',
+});
+
+type TaskRoute = `/tasks/${TaskId}`;
+
+function taskRoute(id: TaskId): TaskRoute {
+  return `/tasks/${id}`;
+}
+
+const route = taskRoute('TASK-101');
+```
+
+**What it demonstrates:** Event names remain correlated with their payload fields, while a typed route helper constrains internally constructed task URLs.
+
+#### Common Interview Questions
+
+- **What are template literal types used for?** They derive families of string literal types from existing unions, reducing drift between names and their payload or domain contracts.
+- **Why use a mapped union for events?** Indexing a mapped object type produces a discriminated union, so each event name remains paired with the correct value type instead of becoming two unrelated unions.
+- **Do template literal types validate arbitrary runtime strings?** No. They constrain statically known strings, but route parameters and API values still require parsing. `${number}` is also a numeric string pattern, not a complete positive-integer business rule.
+
+### Compiler Configuration, Modules & TypeScript 7
+
+#### Definition
+
+Type safety depends on project configuration as well as source types. `import type` makes an erased dependency explicit, while `verbatimModuleSyntax` keeps value imports aligned with runtime behavior. Bundler projects and code executed directly by Node.js use different module-resolution models.
+
+#### Example — Task Board
+
+```ts
+// src/data/task-api.ts
+import type { Task } from '../domain/task.js';
+import { parseTask } from './task-parser.js';
+
+export async function fetchTask(id: Task['id']): Promise<Task> {
+  const response = await fetch(`/api/tasks/${encodeURIComponent(id)}`);
+  if (!response.ok) {
+    throw new Error(`Task request failed: ${response.status}`);
+  }
+
+  const payload: unknown = await response.json();
+  return parseTask(payload);
+}
+```
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2025",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+    "rootDir": "./src",
+    "types": []
+  },
+  "include": ["src"]
+}
+```
+
+**What it demonstrates:** Type-only imports disappear, runtime validation remains a value import, network data stays `unknown`, and explicit strict options document the contract expected by a bundler-based project.
+
+#### Common Interview Questions
+
+- **What TypeScript 7 configuration changes matter in interviews?** TypeScript 7 adopts TypeScript 6 defaults such as `strict: true`, `module: "esnext"`, a modern target, `types: []`, and `noUncheckedSideEffectImports: true`. TypeScript 6 deprecations become errors, including ES5 targeting, legacy AMD/UMD/SystemJS output, `node`/`node10` resolution, and `baseUrl`; classic resolution is also unavailable.
+- **Which `tsconfig` options are worth discussing explicitly?** `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `verbatimModuleSyntax`, `target`, `module`, `moduleResolution`, `types`, and project-reference settings document important correctness and build assumptions even when some have modern defaults.
+- **How should `moduleResolution` be chosen?** Use `bundler` when Vite, Webpack, Rollup, Rsbuild, or a similar tool owns resolution. Use `nodenext` when emitted code runs directly under Node.js and must follow Node's ESM/CJS and package rules.
+- **What is the main TypeScript 7 ecosystem caveat?** TypeScript 7.0 ships without a programmatic compiler API. `@typescript/typescript6` provides `tsc6` and re-exports the TypeScript 6 API; tools that import `typescript` directly may require the documented npm-alias setup alongside the TypeScript 7 CLI.
+- **Why can a framework require an older TypeScript range?** Framework compilers, template tooling, language-service plugins, and build integrations may depend on a specific compiler API or behavior. Check the framework's compatibility table instead of assuming the newest `tsc` is supported.
+- **How is TypeScript used differently in React, Angular, and Vue?** React commonly types props, hooks, events, refs, and server/client boundaries. Angular is TypeScript-first and uses it across DI, forms, signals, services, and templates. Vue integrates it through SFC macros, template refs, composables, and tooling.
 
 ## Bundlers & Compilers
 

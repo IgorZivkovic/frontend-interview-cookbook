@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.0] - 2026-07-14
+
+### Added
+- Added a shared typed Task Board scenario and focused examples across ten TypeScript Deep Dive topics.
+
+### Changed
+- Reorganized TypeScript coverage around inference, structural typing, unions, runtime validation, generics, type operators, type transformations, literal preservation, typed strings, and compiler configuration.
+- Refreshed TypeScript 7 guidance for the stable 7.0.2 line, its compiler-API limitation, the TypeScript 6 compatibility package, and Angular 22's supported compiler range.
+
 ## [1.13.0] - 2026-07-14
 
 ### Added
